@@ -8,7 +8,7 @@
 import Foundation
 
 
-enum PairPosition {
+public enum PairPosition {
     case ns, ew
     var positions: (Position, Position)  {
         switch self {

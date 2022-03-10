@@ -8,7 +8,7 @@
 import Foundation
 
 
-enum Rank: Int, CaseIterable, Comparable {
+public enum Rank: Int, CaseIterable, Comparable {
     case two, three, four, five, six, seven, eight, nine, ten, jack, queen, king, ace
     init?(_ rankText: String) {
         switch(rankText.lowercased()) {
@@ -28,7 +28,7 @@ enum Rank: Int, CaseIterable, Comparable {
         default: return nil
         }
     }
-    static func < (lhs: Rank, rhs: Rank) -> Bool {
+    public static func < (lhs: Rank, rhs: Rank) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
     var shortDescription: String {

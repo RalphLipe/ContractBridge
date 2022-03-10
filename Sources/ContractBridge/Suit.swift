@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI      // TODO: Move color stuff to ContractBridgeUI
 
-enum Suit: Int, Comparable, CaseIterable {
+public enum Suit: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades
     init?(_ suit: String) {
         switch (suit.lowercased()) {
@@ -29,7 +29,7 @@ enum Suit: Int, Comparable, CaseIterable {
     func nextHigher() -> Suit? {
         return Suit(rawValue: self.rawValue+1)
     }
-    static func < (lhs: Suit, rhs: Suit) -> Bool {
+    public static func < (lhs: Suit, rhs: Suit) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
     var shortDescription : String {

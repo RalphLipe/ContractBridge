@@ -8,8 +8,8 @@
 import Foundation
 
 
-struct Board: Identifiable {
-    var id: Int {
+public struct Board: Identifiable {
+    public var id: Int {
         boardNumber
     }
     private var playerNames = Array<String?>(repeating: nil, count: Position.allCases.count)

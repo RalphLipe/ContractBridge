@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Penalty: CaseIterable {
+public enum Penalty: CaseIterable {
     case undoubled, doubled, redoubled
     
     var shortDescription: String {

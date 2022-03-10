@@ -8,13 +8,13 @@
 import Foundation
 
 
-enum TrickError: Error {
+public enum TrickError: Error {
     case mustFollowSuit(leadSuit: Suit)
     case playOutOfTurn(nextToAct: Position)
     case trickComplete
 }
 
-struct Trick {
+public struct Trick {
     let leadPosition: Position
     let strain: Strain
     private var winningIndex: Int

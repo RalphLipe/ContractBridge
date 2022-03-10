@@ -7,7 +7,7 @@
 
 import Foundation
 
-class MatchPoints {
+public class MatchPoints {
     public static func score(scores: [Int]) -> [Int : Float] {
         var matchPoints: [Int : Float] = [:]
         let sortedScores = scores.sorted()

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Deal {
+public struct Deal {
     private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
     subscript(position: Position) -> [Card] {
         get {

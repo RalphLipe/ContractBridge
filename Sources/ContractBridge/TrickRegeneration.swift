@@ -7,7 +7,7 @@
 
 import Foundation
 
-class TrickRegeneration {
+public class TrickRegeneration {
     var allInOrder = true
     var lastCardFrom: Position? = nil
     var firstCardFrom: Position? = nil

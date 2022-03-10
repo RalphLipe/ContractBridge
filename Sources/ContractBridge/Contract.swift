@@ -1,4 +1,4 @@
-struct Contract {
+public struct Contract {
     let level: Int
     let strain: Strain
     let penalty: Penalty

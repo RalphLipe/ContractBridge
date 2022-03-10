@@ -8,7 +8,7 @@
 import Foundation
 
 
-struct Card : Comparable, Hashable {
+public struct Card : Comparable, Hashable {
     let suit: Suit
     let rank: Rank
     
@@ -50,7 +50,7 @@ struct Card : Comparable, Hashable {
         return deck
     }
     
-    static func < (lhs: Card, rhs: Card) -> Bool {
+    public static func < (lhs: Card, rhs: Card) -> Bool {
         if (lhs.suit == rhs.suit) {
             return lhs.rank < rhs.rank
         } else {
@@ -60,7 +60,7 @@ struct Card : Comparable, Hashable {
 }
 
 extension Card: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         return "\(rank) of \(suit)"
     }
 }

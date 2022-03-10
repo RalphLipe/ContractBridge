@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Position: Int, CaseIterable {
+public enum Position: Int, CaseIterable {
     case north = 0, east, south, west
     init?(_ positionText: String) {
         switch (positionText.lowercased()) {

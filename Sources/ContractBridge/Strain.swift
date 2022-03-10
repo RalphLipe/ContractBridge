@@ -8,9 +8,9 @@
 import Foundation
 import SwiftUI  // TODO: Move to ContractBridgeUI
 
-enum Strain: Int, Comparable, CaseIterable {
+public enum Strain: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades, noTrump
-    static func < (lhs: Strain, rhs: Strain) -> Bool {
+    public static func < (lhs: Strain, rhs: Strain) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
     var shortDescription : String {
