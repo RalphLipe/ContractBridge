@@ -1,10 +1,10 @@
 public struct Contract {
-    let level: Int
-    let strain: Strain
-    let penalty: Penalty
-    let declarer: Position
+    public let level: Int
+    public let strain: Strain
+    public let penalty: Penalty
+    public let declarer: Position
     
-    init(level: Int, strain: Strain, penalty: Penalty, declarer: Position) {
+    public init(level: Int, strain: Strain, penalty: Penalty, declarer: Position) {
         assert(level >= 0 && level <= 7)
         self.level = level
         self.strain = strain
@@ -13,14 +13,14 @@ public struct Contract {
     }
 
     // Create a passed-out contract
-    init() {
+    public init() {
         self.level = 0
         self.strain = .noTrump
         self.penalty = .undoubled
         self.declarer = .north
     }
     
-    func score(vulnerability: Vulnerability, tricksTaken: Int) -> Int {
+    public func score(vulnerability: Vulnerability, tricksTaken: Int) -> Int {
         if isPassedOut { return 0 }
         let vulnerable = vulnerability.isVulnerable(declarer)
         if tricksTaken >= level + 6 {     // Contract was made
@@ -47,7 +47,7 @@ public struct Contract {
         }
     }
     
-    var shortDescription: String {
+    public var shortDescription: String {
         get {
             if isPassedOut {
                 return "passed out"
@@ -61,6 +61,6 @@ public struct Contract {
         }
     }
     
-    var isPassedOut: Bool { return level == 0 }
+    public var isPassedOut: Bool { return level == 0 }
 }
 

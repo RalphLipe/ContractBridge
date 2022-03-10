@@ -8,9 +8,9 @@
 import Foundation
 
 
-public struct Card : Comparable, Hashable {
-    let suit: Suit
-    let rank: Rank
+public struct Card : Comparable, Hashable, CustomStringConvertible {
+    public let suit: Suit
+    public let rank: Rank
     
     init(_ rank: Rank, _ suit: Suit) {
         self.suit = suit
@@ -25,11 +25,11 @@ public struct Card : Comparable, Hashable {
         }
     }
     
-    var shortDescription: String {
+    public var shortDescription: String {
         return "\(rank.shortDescription)\(suit.shortDescription)"
     }
     
-    var points: Int {
+    public var points: Int {
         switch self.rank {
         case .ace:   return 4
         case .king:  return 3
@@ -40,7 +40,7 @@ public struct Card : Comparable, Hashable {
     }
     
     //  BUGUBUG -- is this the right place to have this
-    static func newDeck() -> [Card] {
+    public static func newDeck() -> [Card] {
         var deck = Array<Card>()
         for suit in Suit.allCases {
             for rank in Rank.allCases {
@@ -57,9 +57,7 @@ public struct Card : Comparable, Hashable {
             return lhs.suit < rhs.suit
         }
     }
-}
-
-extension Card: CustomStringConvertible {
+    
     public var description: String {
         return "\(rank) of \(suit)"
     }
