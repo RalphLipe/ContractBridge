@@ -1,0 +1,49 @@
+//
+//  Suit.swift
+//  
+//
+//  Created by Ralph Lipe on 3/9/22.
+//
+
+import Foundation
+import SwiftUI      // TODO: Move color stuff to ContractBridgeUI
+
+enum Suit: Int, Comparable, CaseIterable {
+    case clubs = 0, diamonds, hearts, spades
+    init?(_ suit: String) {
+        switch (suit.lowercased()) {
+        case "c", "club", "clubs": self = .clubs
+        case "d", "diamond", "diamonds": self = .diamonds
+        case "h", "heart", "hearts": self = .hearts
+        case "s", "spade", "spades": self = .spades
+        default: return nil
+        }
+    }
+    init?(strain: Strain) {
+        if strain == .noTrump { return nil }
+        self.init(rawValue: strain.rawValue)
+    }
+    func nextLower() -> Suit? {
+        return Suit(rawValue: self.rawValue-1)
+    }
+    func nextHigher() -> Suit? {
+        return Suit(rawValue: self.rawValue+1)
+    }
+    static func < (lhs: Suit, rhs: Suit) -> Bool {
+        return lhs.rawValue < rhs.rawValue
+    }
+    var shortDescription : String {
+        switch self {
+        case .clubs: return "\u{2663}"
+        case .diamonds: return "\u{2666}"
+        case .hearts: return "\u{2665}"
+        case .spades: return "\u{2660}"
+        }
+    }
+    var color: SwiftUI.Color {
+        switch self {
+        case .clubs, .spades:    return .black
+        case .hearts, .diamonds: return .red
+        }
+    }
+}
