@@ -9,7 +9,7 @@ import Foundation
 
 public struct Deal {
     private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
-    subscript(position: Position) -> [Card] {
+    public subscript(position: Position) -> [Card] {
         get {
             return hands[position.rawValue]
         }

@@ -9,29 +9,31 @@ import Foundation
 
 
 public struct Board: Identifiable {
+    
+    // TODO:  I think this is wrong -- Not identifiable...
     public var id: Int {
         boardNumber
     }
     private var playerNames = Array<String?>(repeating: nil, count: Position.allCases.count)
     private var dd = Array<[Int?]>(repeating: Array<Int?>(repeating: nil, count: Strain.allCases.count),
                                 count: Position.allCases.count)
-    var boardNumber: Int = 0
-    var dealer: Position = .north
-    var vulnerablility: Vulnerability = []
-    var deal: Deal = Deal()
-    func playerName(_ position: Position) -> String? {
+    public var boardNumber: Int = 0
+    public var dealer: Position = .north
+    public var vulnerablility: Vulnerability = []
+    public var deal: Deal = Deal()
+    public func playerName(_ position: Position) -> String? {
         return playerNames[position.rawValue]
     }
-    mutating func setPlayerName(_ position: Position, _ name: String?) {
+    public mutating func setPlayerName(_ position: Position, _ name: String?) {
         playerNames[position.rawValue] = name
     }
-    func doubleDummy(_ position: Position, _ strain: Strain) -> Int? {
+    public func doubleDummy(_ position: Position, _ strain: Strain) -> Int? {
         return dd[position.rawValue][strain.rawValue]
     }
-    func doubleDummy(_ position: Position) -> [Int?] {
+    public func doubleDummy(_ position: Position) -> [Int?] {
         return dd[position.rawValue]
     }
-    mutating func setDoubleDummy(_ position: Position, _ strain: Strain, _ value: Int?) {
+    public mutating func setDoubleDummy(_ position: Position, _ strain: Strain, _ value: Int?) {
         assert(value == nil || (value! >= 0 && value! <= 13))
         dd[position.rawValue][strain.rawValue] = value
     }

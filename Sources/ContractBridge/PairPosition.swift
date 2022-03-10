@@ -10,13 +10,13 @@ import Foundation
 
 public enum PairPosition {
     case ns, ew
-    var positions: (Position, Position)  {
+    public var positions: (Position, Position)  {
         switch self {
         case .ns: return (.north, .south)
         case .ew: return (.east, .west)
         }
     }
-    var shortDescription: String {
+    public var shortDescription: String {
         switch self {
         case .ns: return "N/S"
         case .ew:   return "E/W"

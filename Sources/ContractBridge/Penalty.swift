@@ -10,7 +10,7 @@ import Foundation
 public enum Penalty: CaseIterable {
     case undoubled, doubled, redoubled
     
-    var shortDescription: String {
+    public var shortDescription: String {
         switch self {
         case .undoubled: return ""
         case .doubled:   return "X"
