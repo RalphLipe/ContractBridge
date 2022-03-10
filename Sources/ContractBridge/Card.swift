@@ -63,3 +63,33 @@ public struct Card : Comparable, Hashable, CustomStringConvertible {
     }
 }
 
+
+
+public extension Array where Element == Card {
+    init(decks: Int) {
+        self.init()
+        var i = 0;
+        while i < decks {
+            self += Card.newDeck()
+            i += 1
+        }
+    }
+
+    func suitCards(_ suit: Suit) -> [Card] {
+        var suitCards: [Card] = []
+        for card in self {
+            if card.suit == suit {
+                suitCards.append(card)
+            }
+        }
+        return suitCards
+    }
+    var points: Int {
+        var points = 0
+        for card in self {
+            points += card.points
+        }
+        return points
+    }
+}
+
