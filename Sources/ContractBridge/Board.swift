@@ -8,12 +8,11 @@
 import Foundation
 
 
-public struct Board: Identifiable {
+public struct Board {
     
-    // TODO:  I think this is wrong -- Not identifiable...
-    public var id: Int {
-        boardNumber
-    }
+    public init() {}
+
+
     private var playerNames = Array<String?>(repeating: nil, count: Position.allCases.count)
     private var dd = Array<[Int?]>(repeating: Array<Int?>(repeating: nil, count: Strain.allCases.count),
                                 count: Position.allCases.count)
