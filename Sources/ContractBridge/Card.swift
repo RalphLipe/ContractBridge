@@ -12,12 +12,12 @@ public struct Card : Comparable, Hashable, CustomStringConvertible {
     public let suit: Suit
     public let rank: Rank
     
-    init(_ rank: Rank, _ suit: Suit) {
+    public init(_ rank: Rank, _ suit: Suit) {
         self.suit = suit
         self.rank = rank
     }
     
-    init?(suit: Suit, rankText: String) {
+    public init?(suit: Suit, rankText: String) {
         if let rank = Rank(rankText) {
             self.init(rank, suit)
         } else {
