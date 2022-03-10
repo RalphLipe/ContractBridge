@@ -10,7 +10,7 @@ import SwiftUI      // TODO: Move color stuff to ContractBridgeUI
 
 public enum Suit: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades
-    init?(_ suit: String) {
+    public init?(_ suit: String) {
         switch (suit.lowercased()) {
         case "c", "club", "clubs": self = .clubs
         case "d", "diamond", "diamonds": self = .diamonds
@@ -19,20 +19,20 @@ public enum Suit: Int, Comparable, CaseIterable {
         default: return nil
         }
     }
-    init?(strain: Strain) {
+    public init?(strain: Strain) {
         if strain == .noTrump { return nil }
         self.init(rawValue: strain.rawValue)
     }
-    func nextLower() -> Suit? {
+    public var nextLower: Suit? {
         return Suit(rawValue: self.rawValue-1)
     }
-    func nextHigher() -> Suit? {
+    public var nextHigher: Suit? {
         return Suit(rawValue: self.rawValue+1)
     }
     public static func < (lhs: Suit, rhs: Suit) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
-    var shortDescription : String {
+    public var shortDescription : String {
         switch self {
         case .clubs: return "\u{2663}"
         case .diamonds: return "\u{2666}"
