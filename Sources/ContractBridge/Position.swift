@@ -9,7 +9,7 @@ import Foundation
 
 public enum Position: Int, CaseIterable {
     case north = 0, east, south, west
-    init?(_ positionText: String) {
+    public init?(_ positionText: String) {
         switch (positionText.lowercased()) {
         case "n", "north": self = .north
         case "e", "east": self = .east
@@ -18,22 +18,22 @@ public enum Position: Int, CaseIterable {
         default: return nil
         }
     }
-    static func + (left: Position, right: Int) -> Position {
+    public static func + (left: Position, right: Int) -> Position {
         return Position(rawValue: (left.rawValue + right) % 4)!
     }
-    var next: Position {
+    public var next: Position {
         return self + 1
     }
-    var partner: Position {
+    public var partner: Position {
         return self + 2
     }
-    var pairPosition: PairPosition {
+    public var pairPosition: PairPosition {
         switch self {
         case .north, .south: return .ns
         case .east, .west:   return .ew
         }
     }
-    var shortDescription: String {
+    public var shortDescription: String {
         switch (self) {
         case .north: return "N"
         case .east:  return "E"

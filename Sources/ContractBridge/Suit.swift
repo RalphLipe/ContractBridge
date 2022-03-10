@@ -40,7 +40,7 @@ public enum Suit: Int, Comparable, CaseIterable {
         case .spades: return "\u{2660}"
         }
     }
-    var color: SwiftUI.Color {
+    public var color: SwiftUI.Color {
         switch self {
         case .clubs, .spades:    return .black
         case .hearts, .diamonds: return .red

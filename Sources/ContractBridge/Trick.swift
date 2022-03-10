@@ -27,14 +27,14 @@ public struct Trick {
     var winningPosition: Position { leadPosition + winningIndex }
     var winningCard: Card { cards[winningIndex] }
     
-    init(lead: Card, from: Position, strain: Strain) {
+    public init(lead: Card, from: Position, strain: Strain) {
         self.leadPosition = from
         self.cards = [lead]
         self.winningIndex = 0
         self.strain = strain
     }
     
-    mutating func play(card: Card, from: Position, remainingHand: [Card]) throws {
+    public mutating func play(card: Card, from: Position, remainingHand: [Card]) throws {
         if trickComplete {
             throw TrickError.trickComplete
         }
