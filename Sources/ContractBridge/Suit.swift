@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftUI      // TODO: Move color stuff to ContractBridgeUI
 
 public enum Suit: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades
@@ -38,12 +37,6 @@ public enum Suit: Int, Comparable, CaseIterable {
         case .diamonds: return "\u{2666}"
         case .hearts: return "\u{2665}"
         case .spades: return "\u{2660}"
-        }
-    }
-    public var color: SwiftUI.Color {
-        switch self {
-        case .clubs, .spades:    return .black
-        case .hearts, .diamonds: return .red
         }
     }
 }

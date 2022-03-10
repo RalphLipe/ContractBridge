@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftUI  // TODO: Move to ContractBridgeUI
 
 public enum Strain: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades, noTrump
@@ -19,12 +18,7 @@ public enum Strain: Int, Comparable, CaseIterable {
         default: return Suit(rawValue: self.rawValue)!.shortDescription
         }
     }
-    public var color: SwiftUI.Color {
-        switch self {
-        case .noTrump: return .black
-        default:       return Suit(rawValue: self.rawValue)!.color
-        }
-    }
+
     public var trickScore: Int {
         switch self {
         case .noTrump, .spades, .hearts:  return 30

@@ -1,6 +1,10 @@
 //
 //  TrickRegeneration.swift
-//  
+//
+//  This specialized class can be used to attempt to reconstruct card play from a deck of cards given
+//  the previous deal and contract.  If players keep tricks played in order and cut the deck at most one
+//  time then this code can determinw each card played in a sequence of tricks.  This can be useful
+//  to reconstruct the play of a hand while dealing out a new set of hands.
 //
 //  Created by Ralph Lipe on 3/9/22.
 //
