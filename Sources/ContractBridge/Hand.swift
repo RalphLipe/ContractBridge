@@ -39,6 +39,11 @@ public struct Hand: Codable {
                 self.cards.append(card)
             }
         }
+        sort()
+    }
+    
+    mutating public func sort() -> Void {
+        cards = cards.sorted { (lhc: Card, rhc: Card) -> Bool in return lhc > rhc }
     }
     
     public init(from: Decoder) throws {
