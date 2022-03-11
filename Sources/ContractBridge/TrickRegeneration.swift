@@ -22,7 +22,7 @@ public class TrickRegeneration {
     init(previousDeal: Deal) {
         // Initialize sets here
         for position in Position.allCases {
-            for card in previousDeal[position] {
+            for card in previousDeal[position].cards {
                 cardPositions[card] = position
             }
         }
@@ -36,30 +36,30 @@ public class TrickRegeneration {
             }
             if position == lastCardFrom {
                 if insertPos == nil {
-                    reconstructedDeal[position].append(card)
+                    reconstructedDeal[position].cards.append(card)
                 } else {
-                    reconstructedDeal[position].insert(card, at: insertPos!)
+                    reconstructedDeal[position].cards.insert(card, at: insertPos!)
                     insertPos! += 1
                 }
             } else {
                 if lastCardFrom == nil {
                     lastCardFrom = position
                     firstCardFrom = position
-                    reconstructedDeal[position].append(card)
+                    reconstructedDeal[position].cards.append(card)
                 } else {
                     // The hand has changed from one position to another.  If it's the first hand then there
                     // may be less than 13 cards.
-                    if lastCardFrom != firstCardFrom && reconstructedDeal[lastCardFrom!].count != 13 {
+                    if lastCardFrom != firstCardFrom && reconstructedDeal[lastCardFrom!].cards.count != 13 {
                         allInOrder = false
                         return
                     }
                     // Have we "wrapped around" a suit.  If so, set insertPos to 0 to start inserting at the
                     // front of the list.
                     if position == firstCardFrom {
-                        reconstructedDeal[position].insert(card, at: 0)
+                        reconstructedDeal[position].cards.insert(card, at: 0)
                         insertPos! = 1
                     } else {
-                        reconstructedDeal[position].append(card)
+                        reconstructedDeal[position].cards.append(card)
                     }
                     lastCardFrom = position
                 }

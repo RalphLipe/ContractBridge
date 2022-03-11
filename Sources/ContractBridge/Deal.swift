@@ -8,9 +8,9 @@
 import Foundation
 
 public struct Deal: Codable {
-    private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
+    private var hands = Array<Hand>(repeating: Hand(), count: Position.allCases.count)
     public init() {}
-    public subscript(position: Position) -> [Card] {
+    public subscript(position: Position) -> Hand {
         get {
             return hands[position.rawValue]
         }
