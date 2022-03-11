@@ -62,7 +62,7 @@ public struct Hand: Codable {
         var suit: Suit? = Suit.spades
         while suit != nil {
             for card in suitCards(suit!) {
-                s += card.shortDescription
+                s += card.rank.shortDescription
             }
             suit = suit!.nextLower
             if suit != nil { s += "." }
