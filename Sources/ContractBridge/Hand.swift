@@ -23,10 +23,10 @@ public struct Hand: Codable {
         self.cards = cards
     }
     
-    public init(fromSerialized: String) throws {
+    public init(from: String) throws {
         self.cards = []
         var suit = Suit.spades
-        for c in fromSerialized {
+        for c in from {
             if c == "." {
                 guard let nextSuit = suit.nextLower else {
                     throw HandSyntaxError.tooManySuitsInHand
@@ -49,7 +49,7 @@ public struct Hand: Codable {
     public init(from: Decoder) throws {
         let decoder = try from.singleValueContainer()
         let s = try decoder.decode(String.self)
-        try self.init(fromSerialized: s)
+        try self.init(from: s)
     }
     
     public func encode(to: Encoder) throws {
