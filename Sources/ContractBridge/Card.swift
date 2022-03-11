@@ -14,8 +14,7 @@ public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
     
     public init(from: Decoder) throws {
         let decoder = try from.singleValueContainer()
-        var s: String = "AC"
-        //s = try decoder.decode(String.Type)
+        var s = try decoder.decode(String.self)
         rank = Rank(String(s.removeFirst()))!
         suit = Suit(String(s.removeFirst()))!
     }
