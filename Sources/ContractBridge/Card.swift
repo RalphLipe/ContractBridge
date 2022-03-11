@@ -8,10 +8,11 @@
 import Foundation
 
 
-public struct Card : Comparable, Hashable, CustomStringConvertible {
+public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
     public let suit: Suit
     public let rank: Rank
     
+
     public init(_ rank: Rank, _ suit: Suit) {
         self.suit = suit
         self.rank = rank
@@ -24,7 +25,7 @@ public struct Card : Comparable, Hashable, CustomStringConvertible {
             return nil
         }
     }
-    
+
     public var shortDescription: String {
         return "\(rank.shortDescription)\(suit.shortDescription)"
     }

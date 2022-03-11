@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum Suit: Int, Comparable, CaseIterable {
+public enum Suit: Int, Codable, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades
     public init?(_ suit: String) {
         switch (suit.lowercased()) {

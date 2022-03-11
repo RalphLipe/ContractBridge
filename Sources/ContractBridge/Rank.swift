@@ -8,7 +8,7 @@
 import Foundation
 
 
-public enum Rank: Int, CaseIterable, Comparable {
+public enum Rank: Int, Codable, CaseIterable, Comparable {
     case two, three, four, five, six, seven, eight, nine, ten, jack, queen, king, ace
     
     public init?(_ rankText: String) {

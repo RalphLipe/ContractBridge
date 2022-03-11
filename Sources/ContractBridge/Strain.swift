@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum Strain: Int, Comparable, CaseIterable {
+public enum Strain: Int, Codable, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades, noTrump
     public static func < (lhs: Strain, rhs: Strain) -> Bool {
         return lhs.rawValue < rhs.rawValue
