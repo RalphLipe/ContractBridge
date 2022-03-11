@@ -65,7 +65,7 @@ public struct Hand: Codable {
         return s
     }
     
-    func suitCards(_ suit: Suit) -> [Card] {
+    public func suitCards(_ suit: Suit) -> [Card] {
         var suitCards: [Card] = []
         for card in self.cards {
             if card.suit == suit {
@@ -75,7 +75,7 @@ public struct Hand: Codable {
         return suitCards
     }
     
-    var points: Int {
+    public var points: Int {
         var points = 0
         for card in self.cards {
             points += card.points
