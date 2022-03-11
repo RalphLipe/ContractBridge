@@ -7,14 +7,14 @@
 
 import Foundation
 
-public enum Suit: Int, Codable, Comparable, CaseIterable {
+public enum Suit: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades
     public init?(_ suit: String) {
         switch (suit.lowercased()) {
-        case "c", "club", "clubs": self = .clubs
-        case "d", "diamond", "diamonds": self = .diamonds
-        case "h", "heart", "hearts": self = .hearts
-        case "s", "spade", "spades": self = .spades
+        case "c", "club", "clubs", "\u{2663}": self = .clubs
+        case "d", "diamond", "diamonds", "\u{2666}": self = .diamonds
+        case "h", "heart", "hearts", "\u{2665}": self = .hearts
+        case "s", "spade", "spades", "\u{2660}": self = .spades
         default: return nil
         }
     }

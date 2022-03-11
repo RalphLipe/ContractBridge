@@ -12,6 +12,18 @@ public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
     public let suit: Suit
     public let rank: Rank
     
+    public init(from: Decoder) throws {
+        let decoder = try from.singleValueContainer()
+        var s: String = "AC"
+        //s = try decoder.decode(String.Type)
+        rank = Rank(String(s.removeFirst()))!
+        suit = Suit(String(s.removeFirst()))!
+    }
+    
+    public func encode(to: Encoder) throws {
+        var encoder = to.singleValueContainer()
+        try encoder.encode(rank.shortDescription + suit.shortDescription)
+    }
 
     public init(_ rank: Rank, _ suit: Suit) {
         self.suit = suit
@@ -63,7 +75,6 @@ public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
         return "\(rank) of \(suit)"
     }
 }
-
 
 
 public extension Array where Element == Card {
