@@ -15,9 +15,11 @@ enum DealSyntaxError: Error {
 }
 
 public struct Deal: Codable {
-    private var hands = Array<Hand>(repeating: Hand(), count: Position.allCases.count)
+    private var hands = Array<CardCollection>(repeating: CardCollection(), count: Position.allCases.count)
+    
     public init() {}
-    public subscript(position: Position) -> Hand {
+    
+    public subscript(position: Position) -> CardCollection {
         get {
             return hands[position.rawValue]
         }
@@ -36,7 +38,7 @@ public struct Deal: Codable {
         self.init()
         let c0 = from.startIndex
         let c1 = from.index(c0, offsetBy: 1)
-        guard let firstPosition = Position(String(from[c0..<c1])) else {
+        guard let firstPosition = Position(from: String(from[c0..<c1])) else {
             throw DealSyntaxError.invalidFirstPosition
         }
         let c2 = from.index(c1, offsetBy: 1)
@@ -49,7 +51,7 @@ public struct Deal: Codable {
             throw DealSyntaxError.tooManyHands(serHands.count)
         }
         for serHand in serHands {
-            try self[position] = Hand(from: serHand)
+            try self[position] = CardCollection(from: serHand)
             position = position.next
         }
     }

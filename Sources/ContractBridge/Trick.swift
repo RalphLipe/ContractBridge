@@ -21,14 +21,16 @@ public struct Trick {
     private(set) public var cards: [Card]
     
     var leadSuit: Suit { cards[0].suit }
-    var nextToAct: Position { leadPosition + cards.count}
+    private(set) public var nextToAct: Position
     var trickComplete: Bool { cards.count == Position.allCases.count }
 
-    var winningPosition: Position { leadPosition + winningIndex }
+    private(set) public var winningPosition: Position
     var winningCard: Card { cards[winningIndex] }
     
     public init(lead: Card, from: Position, strain: Strain) {
         self.leadPosition = from
+        self.nextToAct = from.next
+        self.winningPosition = from
         self.cards = [lead]
         self.winningIndex = 0
         self.strain = strain
@@ -45,11 +47,13 @@ public struct Trick {
             remainingHand.contains(where: { $0.suit == leadSuit }) {
             throw TrickError.mustFollowSuit(leadSuit: leadSuit)
         }
-        cards.append(card)
-        let trumpSuit = Suit(strain: strain)
+        let trumpSuit = strain.suit
         if (card.suit == winningCard.suit && card.rank > winningCard.rank) ||
             (card.suit == trumpSuit && winningCard.suit != trumpSuit)  {
-            winningIndex = cards.count - 1
+            winningIndex = cards.count
+            winningPosition = from
         }
+        cards.append(card)
+        nextToAct = nextToAct.next
     }
 }

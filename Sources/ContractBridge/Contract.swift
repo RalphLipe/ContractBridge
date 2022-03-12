@@ -1,3 +1,10 @@
+//
+//  Contract.swift
+//
+//
+//  Created by Ralph Lipe on 3/9/22.
+//
+
 public struct Contract {
     public let level: Int
     public let strain: Strain

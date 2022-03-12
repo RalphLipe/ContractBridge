@@ -8,10 +8,11 @@
 import Foundation
 
 
-public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
-    public let suit: Suit
+public struct Card : Comparable, Hashable, CustomStringConvertible {
     public let rank: Rank
-    
+    public let suit: Suit
+
+    /*
     public init(from: Decoder) throws {
         let decoder = try from.singleValueContainer()
         var s = try decoder.decode(String.self)
@@ -23,19 +24,12 @@ public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
         var encoder = to.singleValueContainer()
         try encoder.encode(rank.shortDescription + suit.shortDescription)
     }
-
+*/
     public init(_ rank: Rank, _ suit: Suit) {
-        self.suit = suit
         self.rank = rank
+        self.suit = suit
     }
     
-    public init?(suit: Suit, rankText: String) {
-        if let rank = Rank(rankText) {
-            self.init(rank, suit)
-        } else {
-            return nil
-        }
-    }
 
     public var shortDescription: String {
         return "\(rank.shortDescription)\(suit.shortDescription)"
@@ -51,17 +45,7 @@ public struct Card : Comparable, Codable, Hashable, CustomStringConvertible {
         }
     }
     
-    //  BUGUBUG -- is this the right place to have this
-    public static func newDeck() -> [Card] {
-        var deck = Array<Card>()
-        for suit in Suit.allCases {
-            for rank in Rank.allCases {
-                deck.append(Card(rank, suit))
-            }
-        }
-        return deck
-    }
-    
+
     public static func < (lhs: Card, rhs: Card) -> Bool {
         if (lhs.suit == rhs.suit) {
             return lhs.rank < rhs.rank
