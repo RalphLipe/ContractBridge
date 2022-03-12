@@ -16,7 +16,7 @@ enum CardCollectionError: Error {
 
 public struct CardCollection: Codable {
 
-    private var cards: [Card]
+    private(set) public var cards: [Card]
     
     public init() {
         self.cards = []
