@@ -16,8 +16,7 @@ public enum CardCollectionError: Error {
 }
 
 public struct CardCollection: Codable {
-
-    private(set) public var cards: [Card]
+    private var cards: [Card]
     
     public init() {
         self.cards = []
@@ -129,7 +128,7 @@ public struct CardCollection: Codable {
     }
 }
 
-extension CardCollection: Collection {
+extension CardCollection: RandomAccessCollection {
     // The upper and lower bounds of the collection, used in iterations
     public var startIndex: Int { return cards.startIndex }
     public var endIndex: Int { return cards.endIndex }
@@ -150,4 +149,5 @@ extension CardCollection: ExpressibleByArrayLiteral {
         }
     }
 }
+
 
