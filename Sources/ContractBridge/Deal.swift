@@ -20,12 +20,8 @@ public struct Deal: Codable {
     public init() {}
     
     public subscript(position: Position) -> CardCollection {
-        get {
-            return hands[position.rawValue]
-        }
-        set {
-            hands[position.rawValue] = newValue
-        }
+        get { return hands[position.rawValue] }
+        set { hands[position.rawValue] = newValue }
     }
     
     public init(from: Decoder) throws {
@@ -62,13 +58,14 @@ public struct Deal: Codable {
     }
     
     public var serialized: String {
-        var s = "N:"
+        let s = NSMutableString(capacity: 52+2+(4*3)+3)
+        s.append("N:")
         for position in Position.allCases {
-            s += self[position].serialized
+            s.append(self[position].serialized)
             if position != .west {
-                s += " "
+                s.append(" ")
             }
         }
-        return s
+        return s as String
     }
 }

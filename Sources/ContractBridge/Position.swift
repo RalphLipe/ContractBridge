@@ -21,6 +21,10 @@ public enum Position: Int, CaseIterable {
     }
 
     public var next: Position {
+        assert(Position.north.rawValue == 0)
+        assert(Position.east.rawValue == 1)
+        assert(Position.south.rawValue == 2)
+        assert(Position.west.rawValue == 3)
         return Position(rawValue: (self.rawValue + 1) % 4)!
     }
     

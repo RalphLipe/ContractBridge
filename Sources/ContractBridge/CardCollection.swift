@@ -8,10 +8,11 @@
 import Foundation
 
 
-enum CardCollectionError: Error {
+public enum CardCollectionError: Error {
     case tooManySuits
     case invalidCardCharacter(_ character: Character)
-    case duplicateCard
+    case duplicateCard(_ card: Card)
+    case notFullHand(cardInHand: Int)
 }
 
 public struct CardCollection: Codable {
@@ -76,41 +77,38 @@ public struct CardCollection: Codable {
     }
 
     public var serialized: String {
-        var s = ""
+        let s = NSMutableString(capacity: cards.count + 3)
         var suit: Suit? = Suit.spades
         while suit != nil {
             for card in suitCards(suit!) {
-                s += card.rank.shortDescription
+                s.append(card.rank.shortDescription)
             }
             suit = suit!.nextLower
-            if suit != nil { s += "." }
+            if suit != nil { s.append(".") }
         }
-        return s
+        return s as String
     }
     
    
     public func suitCards(_ suit: Suit) -> CardCollection {
-        var suitCards: [Card] = []
-        for card in self.cards {
-            if card.suit == suit {
-                suitCards.append(card)
-            }
-        }
-        return CardCollection(suitCards)
+        return CardCollection(self.filter { $0.suit == suit })
     }
     
     public var points: Int {
         var points = 0
-        for card in self.cards {
-            points += card.points
-        }
+        for card in self.cards { points += card.points }
         return points
     }
     
-    public func validate() throws -> Void {
-        // TODO:  This will not work if "x" allowed for rank
-        if Set<Card>(self.cards).count < self.cards.count {
-            throw CardCollectionError.duplicateCard
+    public func validate(requireFullHand: Bool = false) throws -> Void {
+        if requireFullHand && self.count != 13 {
+            throw CardCollectionError.notFullHand(cardInHand: self.count)
+        }
+        var seenCards = Set<Card>()
+        for card in self.cards {
+            if seenCards.insert(card).inserted == false {
+                throw CardCollectionError.duplicateCard(card)
+            }
         }
     }
     
