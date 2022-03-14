@@ -21,7 +21,7 @@ public struct Trick {
     
     var leadSuit: Suit { cards[leadPosition]!.suit }
     private(set) public var nextToAct: Position
-    var trickComplete: Bool { cards.count == Position.allCases.count }
+    var isComplete: Bool { cards.count == Position.allCases.count }
 
     private(set) public var winningPosition: Position
     var winningCard: Card { cards[winningPosition]! }
