@@ -126,6 +126,14 @@ public struct CardCollection: Codable {
         return cards.remove(at: at)
     }
     
+    public mutating func removeFirst(_ card: Card) -> Bool {
+        if let i = cards.firstIndex(of: card) {
+            cards.remove(at: i)
+            return true
+        }
+        return false
+    }
+    
     public mutating func shuffle() {
         cards.shuffle()
     }
