@@ -39,7 +39,7 @@ public struct CardCollection: Codable {
         self.cards = cards
     }
     
-    public init(from: String) throws {
+    public init(from: String, allowDuplicates: Bool = false, requireFullHand: Bool = false, sort: Bool = true) throws {
         self.cards = []
         if from != "-" {
             var suit = Suit.spades
@@ -56,8 +56,8 @@ public struct CardCollection: Codable {
                     self.cards.append(Card(rank, suit))
                 }
             }
-            try validate()
-            self.sortHandOrder()
+            try validate(allowDuplicates: allowDuplicates, requireFullHand: requireFullHand)
+            if sort { self.sortHandOrder() }
         }
     }
     
@@ -102,14 +102,16 @@ public struct CardCollection: Codable {
         return points
     }
     
-    public func validate(requireFullHand: Bool = false) throws -> Void {
+    public func validate(allowDuplicates: Bool = false, requireFullHand: Bool = false) throws -> Void {
         if requireFullHand && self.count != 13 {
             throw CardCollectionError.notFullHand(cardInHand: self.count)
         }
-        var seenCards = Set<Card>()
-        for card in self.cards {
-            if seenCards.insert(card).inserted == false {
-                throw CardCollectionError.duplicateCard(card)
+        if allowDuplicates == false {
+            var seenCards = Set<Card>()
+            for card in self.cards {
+                if seenCards.insert(card).inserted == false {
+                    throw CardCollectionError.duplicateCard(card)
+                }
             }
         }
     }
@@ -126,12 +128,11 @@ public struct CardCollection: Codable {
         return cards.remove(at: at)
     }
     
-    public mutating func removeFirst(_ card: Card) -> Bool {
+    public mutating func removeFirst(_ card: Card) -> Card? {
         if let i = cards.firstIndex(of: card) {
-            cards.remove(at: i)
-            return true
+            return cards.remove(at: i)
         }
-        return false
+        return nil
     }
     
     public mutating func shuffle() {

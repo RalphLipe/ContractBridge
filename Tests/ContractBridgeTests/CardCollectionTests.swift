@@ -57,6 +57,18 @@ class CardCollectionTests: XCTestCase {
         XCTAssertEqual(hand.suitCards(.clubs).count, 4)
     }
 
+    func testRemoveFirst() throws {
+        var hand = try CardCollection(from: "ajt7.432.kq.at52")
+        XCTAssertEqual(hand.removeFirst(Card(.ace, .clubs)), Card(.ace, .clubs))
+        XCTAssertNil(hand.removeFirst(Card(.ace, .clubs)))
+        
+        hand = try CardCollection(from: "QKJJJ", allowDuplicates: true)
+        XCTAssertEqual(hand.removeFirst(Card(.jack, .spades)), Card(.jack, .spades))
+        XCTAssertEqual(hand.removeFirst(Card(.jack, .spades)), Card(.jack, .spades))
+        XCTAssertEqual(hand.removeFirst(Card(.jack, .spades)), Card(.jack, .spades))
+        XCTAssertNil(hand.removeFirst(Card(.jack, .spades)))
+    }
+    
     func testValidate() throws {
         let ccDupCard: CardCollection = [Card(.two, .clubs), Card(.ace, .spades), Card(.two, .clubs)]
         var caughtDuplicate = false
