@@ -17,45 +17,43 @@ public enum TrickError: Error {
 public struct Trick {
     let leadPosition: Position
     let strain: Strain
-    private var winningIndex: Int
-    private(set) public var cards: CardCollection
+    private(set) public var cards: Dictionary<Position, Card>
     
-    var leadSuit: Suit { cards[0].suit }
+    var leadSuit: Suit { cards[leadPosition]!.suit }
     private(set) public var nextToAct: Position
     var trickComplete: Bool { cards.count == Position.allCases.count }
 
     private(set) public var winningPosition: Position
-    var winningCard: Card { cards[winningIndex] }
+    var winningCard: Card { cards[winningPosition]! }
     var isTrumped: Bool { return leadSuit != strain.suit && winningCard.suit == strain.suit }
     
-    public init(lead: Card, from: Position, strain: Strain) {
-        self.leadPosition = from
-        self.nextToAct = from.next
-        self.winningPosition = from
-        self.cards = [lead]
-        self.winningIndex = 0
+    public init(lead: Card, position: Position, strain: Strain) {
+        self.cards = [position: lead]
+        self.leadPosition = position
+        self.winningPosition = position
+        self.nextToAct = position.next
         self.strain = strain
     }
     
-    public mutating func play(card: Card, from: Position, remainingHand: [Card]) throws {
+    public mutating func play(card: Card, position: Position, remainingHand: CardCollection) throws {
         if trickComplete {
             throw TrickError.trickComplete
         }
-        if from != nextToAct {
+        if position != nextToAct {
             throw TrickError.playOutOfTurn(nextToAct: nextToAct)
         }
         if card.suit != leadSuit &&
             remainingHand.contains(where: { $0.suit == leadSuit }) {
             throw TrickError.mustFollowSuit(leadSuit: leadSuit)
         }
+        assert(cards[position] == nil)
+        cards[position] = card
         let trumpSuit = strain.suit
         if (card.suit == winningCard.suit && card.rank > winningCard.rank) ||
             (card.suit == trumpSuit && winningCard.suit != trumpSuit)  {
-            winningIndex = cards.count
-            winningPosition = from
+            winningPosition = position
         }
-        cards.append(card)
-        nextToAct = nextToAct.next
+        nextToAct = trickComplete ? winningPosition : nextToAct.next
     }
     
     

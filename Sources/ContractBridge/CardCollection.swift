@@ -41,22 +41,24 @@ public struct CardCollection: Codable {
     
     public init(from: String) throws {
         self.cards = []
-        var suit = Suit.spades
-        for c in from {
-            if c == "." {
-                guard let nextSuit = suit.nextLower else {
-                    throw CardCollectionError.tooManySuits
+        if from != "-" {
+            var suit = Suit.spades
+            for c in from {
+                if c == "." {
+                    guard let nextSuit = suit.nextLower else {
+                        throw CardCollectionError.tooManySuits
+                    }
+                    suit = nextSuit
+                } else {
+                    guard let rank = Rank(String(c)) else {
+                        throw CardCollectionError.invalidCardCharacter(c)
+                    }
+                    self.cards.append(Card(rank, suit))
                 }
-                suit = nextSuit
-            } else {
-                guard let rank = Rank(String(c)) else {
-                    throw CardCollectionError.invalidCardCharacter(c)
-                }
-                self.cards.append(Card(rank, suit))
             }
+            try validate()
+            self.sortHandOrder()
         }
-        try validate()
-        self.sortHandOrder()
     }
     
     public mutating func sortHandOrder() {
@@ -76,6 +78,7 @@ public struct CardCollection: Codable {
     }
 
     public var serialized: String {
+        if cards.count == 0 { return "-" }
         let s = NSMutableString(capacity: cards.count + 3)
         var suit: Suit? = Suit.spades
         while suit != nil {
@@ -129,7 +132,6 @@ public struct CardCollection: Codable {
 }
 
 extension CardCollection: RandomAccessCollection {
-    // The upper and lower bounds of the collection, used in iterations
     public var startIndex: Int { return cards.startIndex }
     public var endIndex: Int { return cards.endIndex }
 
