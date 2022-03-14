@@ -90,4 +90,9 @@ public struct Trick {
         let suitCards = hand.suitCards(leadSuit)
         return suitCards.count > 0 ? cheapestCard(suitCards) : cheapestCard(hand)
     }
+    
+    public func winIfPossible(hand: CardCollection) -> Card? {
+        let winningCard = winningCard(hand: hand)
+        return winningCard == nil ? legalCard(hand: hand) : winningCard
+    }
 }
