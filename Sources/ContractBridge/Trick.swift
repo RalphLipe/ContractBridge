@@ -36,7 +36,7 @@ public struct Trick {
     }
     
     public mutating func play(card: Card, position: Position, remainingHand: CardCollection) throws {
-        if trickComplete {
+        if isComplete {
             throw TrickError.trickComplete
         }
         if position != nextToAct {
@@ -53,7 +53,7 @@ public struct Trick {
             (card.suit == trumpSuit && winningCard.suit != trumpSuit)  {
             winningPosition = position
         }
-        nextToAct = trickComplete ? winningPosition : nextToAct.next
+        nextToAct = isComplete ? winningPosition : nextToAct.next
     }
     
     
