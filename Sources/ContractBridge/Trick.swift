@@ -15,17 +15,17 @@ public enum TrickError: Error {
 }
 
 public struct Trick {
-    let leadPosition: Position
-    let strain: Strain
-    private(set) public var cards: Dictionary<Position, Card>
+    public let leadPosition: Position
+    public let strain: Strain
     
-    var leadSuit: Suit { cards[leadPosition]!.suit }
+    private(set) public var cards: Dictionary<Position, Card>
     private(set) public var nextToAct: Position
-    var isComplete: Bool { cards.count == Position.allCases.count }
-
     private(set) public var winningPosition: Position
-    var winningCard: Card { cards[winningPosition]! }
-    var isTrumped: Bool { return leadSuit != strain.suit && winningCard.suit == strain.suit }
+    
+    public var isComplete: Bool { cards.count == Position.allCases.count }
+    public var leadSuit: Suit { cards[leadPosition]!.suit }
+    public var winningCard: Card { cards[winningPosition]! }
+    public var isTrumped: Bool { return leadSuit != strain.suit && winningCard.suit == strain.suit }
     
     public init(lead: Card, position: Position, strain: Strain) {
         self.cards = [position: lead]
