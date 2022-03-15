@@ -33,10 +33,10 @@ public enum Suit: Int, Comparable, CaseIterable {
     }
     public var shortDescription : String {
         switch self {
-        case .clubs: return "\u{2663}"
+        case .clubs:    return "\u{2663}"
         case .diamonds: return "\u{2666}"
-        case .hearts: return "\u{2665}"
-        case .spades: return "\u{2660}"
+        case .hearts:   return "\u{2665}"
+        case .spades:   return "\u{2660}"
         }
     }
 }

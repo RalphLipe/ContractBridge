@@ -32,6 +32,10 @@ class CardCollectionTests: XCTestCase {
         XCTAssertEqual(try CardCollection(from: "").count, 0)           // Blank string is valid, no cards
         XCTAssertEqual(try CardCollection(from: "7").first, Card(.seven, .spades))
         XCTAssertEqual(try CardCollection(from: "..4.").first, Card(.four, .diamonds))
+        
+        XCTAssertEqual(CardCollection(numberOfDecks: 1).count, 52)
+        let fourDecks = CardCollection(numberOfDecks: 4)
+        XCTAssertEqual(fourDecks.count, 52*4)
     }
     
     func testCodable() throws {
@@ -46,6 +50,37 @@ class CardCollectionTests: XCTestCase {
         XCTAssertEqual(cc.serialized, cc2.serialized)
     }
     
+    func testSortHandOrder() throws {
+        var cc: CardCollection = [Card(.two, .clubs), Card(.three, .clubs), Card(.ace, .spades)]
+        cc.sortHandOrder()
+        XCTAssertEqual(cc[0], Card(.ace, .spades))
+        XCTAssertEqual(cc[2], Card(.two, .clubs))
+    }
+    
+    func testSerialized() throws {
+        var cc = CardCollection()
+        XCTAssertEqual(cc.serialized, "-")
+        cc.append(Card(.two, .diamonds))
+        XCTAssertEqual(cc.serialized, "..2.")
+        cc.append(Card(.jack, .hearts))
+        XCTAssertEqual(cc.serialized, ".J.2.")
+        cc.append(Card(.queen, .hearts))
+        XCTAssertEqual(cc.serialized, ".QJ.2.")
+        cc.append(Card(.two, .clubs))
+        XCTAssertEqual(cc.serialized, ".QJ.2.2")
+        cc.append(Card(.ten, .spades))
+        XCTAssertEqual(cc.serialized, "T.QJ.2.2")
+        cc.shuffle()
+        XCTAssertEqual(cc.serialized, "T.QJ.2.2")
+        
+        
+        cc = CardCollection(numberOfDecks: 1)
+        XCTAssertEqual(cc.serialized, "AKQJT98765432.AKQJT98765432.AKQJT98765432.AKQJT98765432")
+        cc.shuffle()
+        XCTAssertEqual(cc.serialized, "AKQJT98765432.AKQJT98765432.AKQJT98765432.AKQJT98765432")
+    }
+    
+    
     func testPoints() throws {
         XCTAssertEqual(try CardCollection(from: "akq.akq.akq.akqj").points, 37)
         XCTAssertEqual(CardCollection().points, 0)
@@ -55,6 +90,7 @@ class CardCollectionTests: XCTestCase {
         let hand = try CardCollection(from: "ajt7.432.kq.at52")
         XCTAssert(hand.suitCards(.diamonds).contains(Card(.king, .diamonds)))
         XCTAssertEqual(hand.suitCards(.clubs).count, 4)
+        XCTAssertEqual(hand.suitCards(.hearts).serialized, ".432..")
     }
 
     func testRemoveFirst() throws {
@@ -69,6 +105,24 @@ class CardCollectionTests: XCTestCase {
         XCTAssertNil(hand.removeFirst(Card(.jack, .spades)))
     }
     
+    func testRemoveCard() throws {
+        var cc = try CardCollection(from: "AKQ.234")
+        let removed = cc.removeFirst(Card(.king, .spades))
+        XCTAssertEqual(removed, Card(.king, .spades))
+        let removeSameCard = cc.removeFirst(Card(.king, .spades))
+        XCTAssertNil(removeSameCard)
+        _ = cc.removeFirst(Card(.three, .hearts))
+        XCTAssertEqual(cc.serialized, "AQ.42..")
+        
+        cc = CardCollection(Array<Card>(repeating: Card(.four, .diamonds), count: 5))
+        cc.append(Card(.ace, .spades))
+        XCTAssertEqual(cc.serialized, "A..44444.")
+        _ = cc.removeFirst(Card(.four, .diamonds))
+        XCTAssertEqual(cc.serialized, "A..4444.")
+        _ = cc.removeFirst(Card(.four, .diamonds))
+        XCTAssertEqual(cc.serialized, "A..444.")
+    }
+    
     func testValidate() throws {
         let ccDupCard: CardCollection = [Card(.two, .clubs), Card(.ace, .spades), Card(.two, .clubs)]
         var caughtDuplicate = false
@@ -78,7 +132,7 @@ class CardCollectionTests: XCTestCase {
             caughtDuplicate = true
             XCTAssertEqual(card, Card(.two, .clubs))
         } catch {
-            XCTFail("Undepected error: \(error)")
+            XCTFail("Unexpected error: \(error)")
         }
         XCTAssert(caughtDuplicate)
         
@@ -102,5 +156,8 @@ class CardCollectionTests: XCTestCase {
         
         let ccFullValid = try! CardCollection(from: "2345.234.234.234")
         XCTAssertNoThrow(try ccFullValid.validate(requireFullHand: true))
+        
+        XCTAssertNoThrow(try CardCollection(from: "aaakkkqqq", allowDuplicates: true))
+        XCTAssertThrowsError(try CardCollection(from: "aakqj"))
     }
 }

@@ -82,7 +82,9 @@ public struct CardCollection: Codable {
         let s = NSMutableString(capacity: cards.count + 3)
         var suit: Suit? = Suit.spades
         while suit != nil {
-            for card in suitCards(suit!) {
+            var suitCards = suitCards(suit!)
+            suitCards.sortHandOrder()
+            for card in suitCards {
                 s.append(card.rank.shortDescription)
             }
             suit = suit!.nextLower
