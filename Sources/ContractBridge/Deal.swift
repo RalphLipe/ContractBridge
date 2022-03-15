@@ -7,11 +7,12 @@
 
 import Foundation
 
-enum DealSyntaxError: Error {
+enum DealError: Error {
     case invalidNumverOfHands(_ numberOfHands: Int)
     case invalidFirstPosition
     case tooManyHands(_ numberOfHands: Int)
-
+    case notFullHand(position: Position, numberOfCards: Int)
+    case duplicateCard(_ card: Card)
 }
 
 public struct Deal: Codable {
@@ -35,16 +36,16 @@ public struct Deal: Codable {
         let c0 = from.startIndex
         let c1 = from.index(c0, offsetBy: 1)
         guard let firstPosition = Position(from: String(from[c0..<c1])) else {
-            throw DealSyntaxError.invalidFirstPosition
+            throw DealError.invalidFirstPosition
         }
         let c2 = from.index(c1, offsetBy: 1)
         if String(from[c1..<c2]) != ":" {
-            throw DealSyntaxError.invalidFirstPosition
+            throw DealError.invalidFirstPosition
         }
         var position = firstPosition
         let serHands = String(from[c2...]).components(separatedBy: .whitespaces)
         if serHands.count > Position.allCases.count {
-            throw DealSyntaxError.tooManyHands(serHands.count)
+            throw DealError.tooManyHands(serHands.count)
         }
         for serHand in serHands {
             try self[position] = CardCollection(from: serHand)
@@ -54,18 +55,41 @@ public struct Deal: Codable {
     
     public func encode(to: Encoder) throws {
         var encoder = to.singleValueContainer()
-        try encoder.encode(self.serialized)
+        try encoder.encode(self.serialize())
     }
     
-    public var serialized: String {
+    public func serialize(startPosition: Position = .north) -> String {
         let s = NSMutableString(capacity: 52+2+(4*3)+3)
-        s.append("N:")
-        for position in Position.allCases {
+        s.append(startPosition.shortDescription)
+        s.append(":")
+        var position = startPosition
+        for _ in Position.allCases {
             s.append(self[position].serialized)
-            if position != .west {
+            position = position.next
+            if position != startPosition {
                 s.append(" ")
             }
         }
         return s as String
+    }
+    
+    public func validate(allowDuplicates: Bool = false, fullDeal: Bool = true) throws -> Void {
+        if fullDeal {
+            for position in Position.allCases {
+                if self[position].count != 13 {
+                    throw DealError.notFullHand(position: position, numberOfCards: self[position].count)
+                }
+            }
+        }
+        if allowDuplicates == false {
+            var seenCards = Set<Card>()
+            for hand in self.hands {
+                for card in hand {
+                    if seenCards.insert(card).inserted == false {
+                        throw DealError.duplicateCard(card)
+                    }
+                }
+            }
+        }
     }
 }

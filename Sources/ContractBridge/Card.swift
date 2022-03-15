@@ -21,7 +21,7 @@ public struct Card : Comparable, Hashable, CustomStringConvertible {
         return "\(rank.shortDescription)\(suit.shortDescription)"
     }
     
-    public var points: Int {
+    public var highCardPoints: Int {
         switch self.rank {
         case .ace:   return 4
         case .king:  return 3

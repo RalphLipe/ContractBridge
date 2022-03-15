@@ -35,8 +35,8 @@ public struct CardCollection: Codable {
         }
     }
     
-    public init(_ cards: [Card]) {
-        self.cards = cards
+    public init<S>(_ cards: S) where S : Sequence, Card == S.Element {
+        self.cards = Array(cards)
     }
     
     public init(from: String, allowDuplicates: Bool = false, requireFullHand: Bool = false, sort: Bool = true) throws {
@@ -61,11 +61,6 @@ public struct CardCollection: Codable {
         }
     }
     
-    public mutating func sortHandOrder() {
-        cards.sort()
-        cards.reverse()
-    }
- 
     public init(from: Decoder) throws {
         let decoder = try from.singleValueContainer()
         let s = try decoder.decode(String.self)
@@ -93,14 +88,18 @@ public struct CardCollection: Codable {
         return s as String
     }
     
-   
+    public mutating func sortHandOrder() {
+        cards.sort()
+        cards.reverse()
+    }
+ 
     public func suitCards(_ suit: Suit) -> CardCollection {
         return CardCollection(self.filter { $0.suit == suit })
     }
     
-    public var points: Int {
+    public var highCardPoints: Int {
         var points = 0
-        for card in self.cards { points += card.points }
+        for card in self.cards { points += card.highCardPoints }
         return points
     }
     
@@ -117,7 +116,15 @@ public struct CardCollection: Codable {
             }
         }
     }
-    
+
+    public mutating func removeFirst(_ card: Card) -> Card? {
+        if let i = cards.firstIndex(of: card) {
+            return cards.remove(at: i)
+        }
+        return nil
+    }
+
+    // Methods supported by Array<Card> that need to be passed to underlying array
     public mutating func append(_ card: Card) {
         cards.append(card)
     }
@@ -125,30 +132,33 @@ public struct CardCollection: Codable {
     public mutating func insert(_ card: Card, at: Int) {
         cards.insert(card, at: at)
     }
+
+    public mutating func insert<C>(contentsOf newElements: C, at i: Int) where C : Collection, Card == C.Element {
+        cards.insert(contentsOf: newElements, at: i)
+    }
     
     public mutating func remove(at: Int) -> Card {
         return cards.remove(at: at)
     }
     
-    public mutating func removeFirst(_ card: Card) -> Card? {
-        if let i = cards.firstIndex(of: card) {
-            return cards.remove(at: i)
-        }
-        return nil
-    }
-    
-    public mutating func shuffle() {
-        cards.shuffle()
+    public mutating func append<S>(contentsOf newElements: S) where Element == S.Element, S : Sequence {
+        cards.append(contentsOf: newElements)
     }
 }
 
-extension CardCollection: RandomAccessCollection {
+extension CardCollection: RandomAccessCollection, MutableCollection, Sequence {
+    public subscript(position: Int) -> Card {
+        get {
+            return cards[position]
+        }
+        set(newValue) {
+            cards[position] = newValue
+        }
+    }
+    
     public var startIndex: Int { return cards.startIndex }
     public var endIndex: Int { return cards.endIndex }
 
-    public subscript(index: Int) -> Card {
-        get { return cards[index] }
-    }
     public func index(after i: Int) -> Int {
         return cards.index(after: i)
     }

@@ -82,8 +82,9 @@ class CardCollectionTests: XCTestCase {
     
     
     func testPoints() throws {
-        XCTAssertEqual(try CardCollection(from: "akq.akq.akq.akqj").points, 37)
-        XCTAssertEqual(CardCollection().points, 0)
+        XCTAssertEqual(try CardCollection(from: "akq.akq.akq.akqj").highCardPoints, 37)
+        XCTAssertEqual(CardCollection().highCardPoints, 0)
+        XCTAssertEqual(CardCollection(numberOfDecks: 2).highCardPoints, 80)
     }
     
     func testSuitCards() throws {
@@ -114,6 +115,8 @@ class CardCollectionTests: XCTestCase {
         _ = cc.removeFirst(Card(.three, .hearts))
         XCTAssertEqual(cc.serialized, "AQ.42..")
         
+        let cardArray = [Card(.two, .diamonds), Card(.jack, .hearts)]
+        cc = CardCollection(cardArray)
         cc = CardCollection(Array<Card>(repeating: Card(.four, .diamonds), count: 5))
         cc.append(Card(.ace, .spades))
         XCTAssertEqual(cc.serialized, "A..44444.")
@@ -121,6 +124,48 @@ class CardCollectionTests: XCTestCase {
         XCTAssertEqual(cc.serialized, "A..4444.")
         _ = cc.removeFirst(Card(.four, .diamonds))
         XCTAssertEqual(cc.serialized, "A..444.")
+    }
+    
+    // Test for all the pass-through mutating methods.
+    func testArrayMethods() throws {
+        var cc = try CardCollection(from: "AJT.234.A5")
+        XCTAssertEqual(cc.count, 8)
+        cc.append(Card(.two, .clubs))
+        XCTAssertEqual(cc.count, 9)
+        XCTAssertEqual(cc[8], Card(.two, .clubs))
+        cc.insert(Card(.king, .hearts), at: 5)
+        XCTAssertEqual(cc[5], Card(.king, .hearts))
+        cc.sort()
+        XCTAssertEqual(cc.first, Card(.two, .clubs))
+        cc.sortHandOrder()
+        XCTAssertEqual(cc.last, Card(.two, .clubs))
+        XCTAssertFalse(cc.isEmpty)
+        
+        XCTAssertEqual(cc.remove(at: 1), Card(.jack, .spades))
+        XCTAssertEqual(cc.firstIndex(of: Card(.king, .hearts)), 2)
+        
+        let ccDeck = CardCollection(numberOfDecks: 1)
+        cc.append(contentsOf: ccDeck)
+        cc.append(contentsOf: [Card(.jack, .diamonds)])
+        
+
+        let ccSomeTwos = [Card(.two, .spades), Card(.two, .hearts), Card(.two, .diamonds), Card(.two, .clubs)]
+        cc = ccDeck
+        cc.sortHandOrder()
+        cc.insert(contentsOf: ccSomeTwos, at: 4)
+        XCTAssertEqual(cc[4], Card(.two, .spades))
+        XCTAssertEqual(cc[7], Card(.two, .clubs))
+
+        
+        // These methods are implemented by swift base classes.  Call them here just to make
+        // sure implementation supports them (would not compile if they didn't exist).
+        cc = ccDeck
+        cc.sortHandOrder()  // Just to get .first/.last in order for test
+        XCTAssertEqual(cc.first, Card(.ace, .spades))
+        XCTAssertEqual(cc.last, Card(.two, .clubs))
+        cc.shuffle()
+        _ = cc.randomElement()
+        
     }
     
     func testValidate() throws {
