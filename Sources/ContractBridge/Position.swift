@@ -27,10 +27,15 @@ public enum Position: Int, CaseIterable {
         assert(Position.west.rawValue == 3)
         return Position(rawValue: (self.rawValue + 1) % 4)!
     }
-    
+
     public var partner: Position {
         return Position(rawValue: (self.rawValue + 2) % 4)!
     }
+
+    public var previous: Position {
+        return Position(rawValue: (self.rawValue + 3) % 4)!
+    }
+
     
     public var pairPosition: PairPosition {
         switch self {

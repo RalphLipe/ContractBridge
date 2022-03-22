@@ -12,6 +12,7 @@ public enum TrickError: Error {
     case mustFollowSuit(leadSuit: Suit)
     case playOutOfTurn(nextToAct: Position)
     case trickComplete
+    case cantUndoLead
 }
 
 public struct Trick {
@@ -35,15 +36,15 @@ public struct Trick {
         self.strain = strain
     }
     
-    public mutating func play(card: Card, position: Position, remainingHand: CardCollection) throws {
+    public mutating func play(card: Card, position: Position, remainingHand: CardCollection? = nil) throws {
         if isComplete {
             throw TrickError.trickComplete
         }
         if position != nextToAct {
             throw TrickError.playOutOfTurn(nextToAct: nextToAct)
         }
-        if card.suit != leadSuit &&
-            remainingHand.contains(where: { $0.suit == leadSuit }) {
+        if card.suit != leadSuit && remainingHand != nil &&
+            remainingHand!.contains(where: { $0.suit == leadSuit }) {
             throw TrickError.mustFollowSuit(leadSuit: leadSuit)
         }
         assert(cards[position] == nil)
@@ -56,6 +57,34 @@ public struct Trick {
         nextToAct = isComplete ? winningPosition : nextToAct.next
     }
     
+    private mutating func rollBackToLead() {
+        if cards.count == 1 {
+            winningPosition = leadPosition
+        } else {
+            let position = nextToAct.previous
+            let card = cards.removeValue(forKey: position)!
+            nextToAct = position
+            rollBackToLead()
+            try! play(card: card, position: position)
+        }
+    }
+    
+    public mutating func undoPlay() throws -> Card {
+        if cards.count == 1 {
+            throw TrickError.cantUndoLead
+        }
+        // IMPORTANT!  When the trick is complete, nextToAct becomes the winner of the
+        // trick. If the trick is complete then use the lead position's previous to undo
+        let position = isComplete ? leadPosition.previous : nextToAct.previous
+        let card = cards.removeValue(forKey: position)!
+        nextToAct = position
+        // If the last card was the winner then we have to figure out the winning card all over again.
+        // The best way to do this is to undo all the plays up to the lead and then redo them
+        if winningPosition == position {
+            rollBackToLead()
+        }
+        return card
+    }
     
     private func cheapestWinner(_ suitCards: CardCollection) -> Card? {
         var winner: Card? = nil
