@@ -92,4 +92,8 @@ public struct Deal: Codable {
             }
         }
     }
+    
+    public mutating func sortHandOrder() -> Void {
+        for position in Position.allCases { self[position].sortHandOrder() }
+    }
 }
