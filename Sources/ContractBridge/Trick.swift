@@ -43,17 +43,13 @@ public struct Trick {
         if position != nextToAct {
             throw TrickError.playOutOfTurn(nextToAct: nextToAct)
         }
-        if card.suit != leadSuit && remainingHand != nil &&
+        if remainingHand != nil && card.suit != leadSuit && 
             remainingHand!.contains(where: { $0.suit == leadSuit }) {
             throw TrickError.mustFollowSuit(leadSuit: leadSuit)
         }
         assert(cards[position] == nil)
+        if wouldWin(card) { winningPosition = position }
         cards[position] = card
-        let trumpSuit = strain.suit
-        if (card.suit == winningCard.suit && card.rank > winningCard.rank) ||
-            (card.suit == trumpSuit && winningCard.suit != trumpSuit)  {
-            winningPosition = position
-        }
         nextToAct = isComplete ? winningPosition : nextToAct.next
     }
     
@@ -84,6 +80,14 @@ public struct Trick {
             rollBackToLead()
         }
         return card
+    }
+    
+    public func wouldWin(_ card: Card) -> Bool {
+        if isTrumped {
+            return card.suit == strain.suit && card.rank > winningCard.rank
+        } else {
+            return card.suit == strain.suit || (card.suit == leadSuit && card.rank > winningCard.rank)
+        }
     }
     
     private func cheapestWinner(_ suitCards: CardCollection) -> Card? {

@@ -50,7 +50,7 @@ public struct CardCollection: Codable {
                     }
                     suit = nextSuit
                 } else {
-                    guard let rank = Rank(String(c)) else {
+                    guard let rank = Rank(from: String(c)) else {
                         throw CardCollectionError.invalidCardCharacter(c)
                     }
                     self.cards.append(Card(rank, suit))

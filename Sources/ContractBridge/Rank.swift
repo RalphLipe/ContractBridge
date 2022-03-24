@@ -11,7 +11,7 @@ import Foundation
 public enum Rank: Int, CaseIterable, Comparable {
     case two, three, four, five, six, seven, eight, nine, ten, jack, queen, king, ace
     
-    public init?(_ rankText: String) {
+    public init?(from rankText: String) {
         switch(rankText.lowercased()) {
         case "2", "two": self = .two
         case "3", "three": self = .three
@@ -28,6 +28,14 @@ public enum Rank: Int, CaseIterable, Comparable {
         case "a", "ace": self = .ace
         default: return nil
         }
+    }
+    
+    public var nextLower: Rank? {
+        return self == .two ? nil : Rank(rawValue: self.rawValue - 1)
+    }
+    
+    public var nextHigher: Rank? {
+        return self == .ace ? nil : Rank(rawValue: self.rawValue + 1)
     }
     
     public static func < (lhs: Rank, rhs: Rank) -> Bool {

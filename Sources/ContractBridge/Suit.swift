@@ -9,8 +9,8 @@ import Foundation
 
 public enum Suit: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades
-    public init?(_ suit: String) {
-        switch (suit.lowercased()) {
+    public init?(from suitText: String) {
+        switch (suitText.lowercased()) {
         case "c", "club", "clubs", "\u{2663}": self = .clubs
         case "d", "diamond", "diamonds", "\u{2666}": self = .diamonds
         case "h", "heart", "hearts", "\u{2665}": self = .hearts
