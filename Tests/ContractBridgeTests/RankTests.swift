@@ -34,14 +34,14 @@ class RankTests: XCTestCase {
         XCTAssertTrue(range.contains(.eight))
         XCTAssertFalse(range.contains(.ace))
         XCTAssertTrue(range.contains(.six))
+        XCTAssertTrue(Rank.two < Rank.three)
+        XCTAssertEqual(Rank.two.distance(to: .six), 4)
+        
+        let lowCards = Rank.two...Rank.ten
+        let honors = Rank.jack...Rank.ace
+        XCTAssertFalse(lowCards.overlaps(honors))
     }
     
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
-    }
 
     
 }
