@@ -29,6 +29,13 @@ class RankTests: XCTestCase {
         XCTAssertEqual(Rank.two.nextHigher, Rank.three)
     }
     
+    func testRange() throws {
+        let range = Rank.four...Rank.eight
+        XCTAssertTrue(range.contains(.eight))
+        XCTAssertFalse(range.contains(.ace))
+        XCTAssertTrue(range.contains(.six))
+    }
+    
     func testPerformanceExample() throws {
         // This is an example of a performance test case.
         self.measure {
@@ -36,4 +43,5 @@ class RankTests: XCTestCase {
         }
     }
 
+    
 }

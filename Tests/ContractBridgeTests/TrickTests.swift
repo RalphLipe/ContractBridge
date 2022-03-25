@@ -10,6 +10,21 @@ import ContractBridge
 
 class TrickTests: XCTestCase {
 
+    func testInit() throws {
+        let jackClubs = Card(.jack, .clubs)
+        let trick = Trick(lead: jackClubs, position: .west, strain: .hearts)
+        XCTAssertEqual(trick.nextToAct, .north)
+        XCTAssertFalse(trick.isComplete)
+        XCTAssertFalse(trick.isTrumped)
+        XCTAssertEqual(trick.strain, .hearts)
+        XCTAssertEqual(trick.winningCard, jackClubs)
+        XCTAssertEqual(trick.winningPosition, .west)
+        XCTAssertEqual(trick.leadSuit, .clubs)
+        XCTAssertEqual(trick.leadPosition, .west)
+        XCTAssertEqual(trick.cards.count, 1)
+        XCTAssertNil(trick.cards[.north])
+        XCTAssertEqual(trick.cards[.west], jackClubs)
+    }
 
     func testUndoPlay() throws {
         var trick = Trick(lead: Card(.nine, .clubs), position: .north, strain: .hearts)

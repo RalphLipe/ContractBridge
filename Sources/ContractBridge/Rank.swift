@@ -60,3 +60,13 @@ public enum Rank: Int, CaseIterable, Comparable {
         }
     }
 }
+
+extension Rank: Strideable {
+    public func advanced(by n: Int) -> Rank {
+        return Rank(rawValue: self.rawValue + n)!
+    }
+
+    public func distance(to other: Rank) -> Int {
+        return other.rawValue - self.rawValue
+    }
+}
