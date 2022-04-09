@@ -173,6 +173,10 @@ class CardCollectionTests: XCTestCase {
         cc.removeLast(0)
         XCTAssertEqual(cc.count, 47)
 
+        let first = cc.first
+        let removed = cc.removeFirst()
+        XCTAssertEqual(first, removed)
+        XCTAssertNotEqual(first, cc.first)
     }
     
     func testValidate() throws {

@@ -126,6 +126,9 @@ public struct CardCollection: Codable {
     
 
     // Methods supported by Array<Card> that need to be passed to underlying array
+    public mutating func removeFirst() -> Card { return cards.removeFirst() }
+    public mutating func removeLast() -> Card { return cards.removeLast() }
+    
     public mutating func append(_ card: Card) {
         cards.append(card)
     }
