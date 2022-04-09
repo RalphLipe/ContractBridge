@@ -166,6 +166,13 @@ class CardCollectionTests: XCTestCase {
         cc.shuffle()
         _ = cc.randomElement()
         
+        
+        cc = ccDeck
+        cc.removeLast(5)
+        XCTAssertEqual(cc.count, 47)
+        cc.removeLast(0)
+        XCTAssertEqual(cc.count, 47)
+
     }
     
     func testValidate() throws {

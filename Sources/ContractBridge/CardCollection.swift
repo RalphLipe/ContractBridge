@@ -123,6 +123,7 @@ public struct CardCollection: Codable {
         }
         return nil
     }
+    
 
     // Methods supported by Array<Card> that need to be passed to underlying array
     public mutating func append(_ card: Card) {
@@ -137,10 +138,9 @@ public struct CardCollection: Codable {
         cards.insert(contentsOf: newElements, at: i)
     }
     
-    public mutating func remove(at: Int) -> Card {
-        return cards.remove(at: at)
-    }
-    
+    public mutating func remove(at: Int) -> Card { return cards.remove(at: at) }
+    public mutating func removeLast(_ k: Int) { cards.removeLast(k) }
+
     public mutating func append<S>(contentsOf newElements: S) where Element == S.Element, S : Sequence {
         cards.append(contentsOf: newElements)
     }

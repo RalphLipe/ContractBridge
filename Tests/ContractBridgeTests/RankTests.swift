@@ -40,6 +40,11 @@ class RankTests: XCTestCase {
         let lowCards = Rank.two...Rank.ten
         let honors = Rank.jack...Rank.ace
         XCTAssertFalse(lowCards.overlaps(honors))
+        
+        XCTAssertEqual(honors.lowerBound, .jack)
+        let oneCardRange = Rank.king...Rank.king
+        XCTAssertTrue(oneCardRange.contains(.king))
+        XCTAssertFalse(oneCardRange.contains(.queen))
     }
     
 
