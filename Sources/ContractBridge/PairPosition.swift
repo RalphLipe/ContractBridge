@@ -16,6 +16,9 @@ public enum PairPosition {
         case .ew: return (.east, .west)
         }
     }
+    public var opponents: PairPosition {
+        return self == .ns ? .ew : .ns
+    }
     public var shortDescription: String {
         switch self {
         case .ns: return "N/S"
