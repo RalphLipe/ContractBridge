@@ -22,5 +22,6 @@ class CardTest: XCTestCase {
         XCTAssertLessThan(Card(.ten, .spades), Card(.jack, .spades))
         XCTAssertEqual(Card(.jack, .diamonds).description, "jack of diamonds")
         XCTAssertEqual(Card(.queen, .clubs).highCardPoints, 2)
+        XCTAssertEqual(Card.twoOfClubs, Card(.two, .clubs))
     }
 }

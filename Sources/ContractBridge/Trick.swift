@@ -36,7 +36,7 @@ public struct Trick {
         self.strain = strain
     }
     
-    public mutating func play(card: Card, position: Position, remainingHand: CardCollection? = nil) throws {
+    public mutating func play(card: Card, position: Position, remainingHand: [Card]? = nil) throws {
         if isComplete {
             throw TrickError.trickComplete
         }
@@ -90,7 +90,7 @@ public struct Trick {
         }
     }
     
-    private func cheapestWinner(_ suitCards: CardCollection) -> Card? {
+    private func cheapestWinner(_ suitCards: [Card]) -> Card? {
         var winner: Card? = nil
         for card in suitCards {
             if card > winningCard && (winner == nil || card < winner!) { winner = card }
@@ -98,7 +98,7 @@ public struct Trick {
         return winner
     }
     
-    private func cheapestCard(_ cards: CardCollection) -> Card? {
+    private func cheapestCard(_ cards: [Card]) -> Card? {
         var cheapest: Card? = nil
         for card in cards {
             if cheapest == nil || card.rank < cheapest!.rank { cheapest = card }
@@ -106,25 +106,25 @@ public struct Trick {
         return cheapest
     }
     
-    public func winningCard(hand: CardCollection) -> Card? {
-        let suitCards = hand.suitCards(leadSuit)
+    public func winningCard(hand: [Card]) -> Card? {
+        let suitCards = hand.filter(by: leadSuit)
         if suitCards.count > 0 {
             return isTrumped ? nil : cheapestWinner(suitCards)
         } else {
             if strain == .noTrump {
                 return nil
             }
-            let trumps = hand.suitCards(strain.suit!)
+            let trumps = hand.filter(by: strain.suit!)
             return isTrumped ? cheapestWinner(trumps) : cheapestCard(trumps)
         }
     }
     
-    public func legalCard(hand: CardCollection) -> Card? {
-        let suitCards = hand.suitCards(leadSuit)
+    public func legalCard(hand: [Card]) -> Card? {
+        let suitCards = hand.filter(by: leadSuit)
         return suitCards.count > 0 ? cheapestCard(suitCards) : cheapestCard(hand)
     }
     
-    public func winIfPossible(hand: CardCollection) -> Card? {
+    public func winIfPossible(hand: [Card]) -> Card? {
         let winningCard = winningCard(hand: hand)
         return winningCard == nil ? legalCard(hand: hand) : winningCard
     }

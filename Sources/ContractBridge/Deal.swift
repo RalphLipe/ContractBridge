@@ -16,11 +16,11 @@ enum DealError: Error {
 }
 
 public struct Deal: Codable {
-    private var hands = Array<CardCollection>(repeating: CardCollection(), count: Position.allCases.count)
+    private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
     
     public init() {}
     
-    public subscript(position: Position) -> CardCollection {
+    public subscript(position: Position) -> [Card] {
         get { return hands[position.rawValue] }
         set { hands[position.rawValue] = newValue }
     }
@@ -48,7 +48,7 @@ public struct Deal: Codable {
             throw DealError.tooManyHands(serHands.count)
         }
         for serHand in serHands {
-            try self[position] = CardCollection(from: serHand)
+            try self[position] = Array<Card>.fromSerialized(serHand)
             position = position.next
         }
     }

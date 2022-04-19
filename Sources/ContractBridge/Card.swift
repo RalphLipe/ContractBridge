@@ -8,13 +8,26 @@
 import Foundation
 
 
-public struct Card : Comparable, Hashable, CustomStringConvertible {
-    public let rank: Rank
-    public let suit: Suit
+public enum Card : Int, Comparable, CaseIterable, Hashable, CustomStringConvertible {
+    case twoOfClubs = 0, twoOfDiamonds,    twoOfHearts,  twoOfSpades
+    case threeOfClubs,   threeOfDiamonds, threeOfHearts, threeOfSpades
+    case fourOfClubs,    fourOfDiamonds,  fourOfHearts,  fourOfSpades
+    case fiveOfClubs,    fiveOfDiamonds,  fiveOfHearts,  fiveOfSpades
+    case sixOfClubs,     sixOfDiamonds,   sixOfHearts,   sixOfSpades
+    case sevenOfClubs,   sevenOfDiamonds, sevenOfHearts, sevenOfSpades
+    case eightOfClubs,   eightOfDiamonds, eightOfHearts, eightOfSpades
+    case nineOfClubs,    nineOfDiamonds,  nineOfHearts,  nineOfSpades
+    case tenOfClubs,     tenOfDiamonds,   tenOfHearts,   tenOfSpades
+    case jackOfClubs,    jackOfDiamonds,  jackOfHearts,  jackOfSpades
+    case queenOfClubs,   queenOfDiamonds, queenOfHearts, queenOfSpades
+    case kingOfClubs,    kingOfDiamonds,  kingOfHearts,  kingOfSpades
+    case aceOfClubs,     aceOfDiamonds,   aceOfHearts,   aceOfSpades
+
+    public var rank: Rank { Rank(rawValue: self.rawValue / 4)! }
+    public var suit: Suit { Suit(rawValue: self.rawValue % 4)! }
 
     public init(_ rank: Rank, _ suit: Suit) {
-        self.rank = rank
-        self.suit = suit
+        self.init(rawValue: (rank.rawValue * 4) + suit.rawValue)!
     }
     
     public var shortDescription: String {
@@ -32,11 +45,7 @@ public struct Card : Comparable, Hashable, CustomStringConvertible {
     }
     
     public static func < (lhs: Card, rhs: Card) -> Bool {
-        if (lhs.suit == rhs.suit) {
-            return lhs.rank < rhs.rank
-        } else {
-            return lhs.suit < rhs.suit
-        }
+        return lhs.rawValue < rhs.rawValue
     }
     
     public var description: String {
