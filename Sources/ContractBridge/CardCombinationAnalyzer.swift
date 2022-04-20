@@ -9,8 +9,7 @@ import Foundation
 
 
 public class CardCombinationAnalyzer {
-    let nsHands: PairCardRange
-    let ewHands: PairCardRange
+    let suitHolding: SuitHolding
     var tricks: [Trick] = []
     var shortSide: Position? = nil
     var showsOut: Set<Position> = []
@@ -42,11 +41,13 @@ public class CardCombinationAnalyzer {
             self.ranks[currentPosition] = rankRange
             self.nextToAct = self.nextToAct.next
             if let rankRange = rankRange {
-                rankRange.count -= 1
+                rankRange.playCard(play: true)
                 if rankRange > self.winningRankRange { self.winningPosition = currentPosition }
             }
             let maxTricks = nextStep(self, isFinal)
-            if rankRange != nil { rankRange!.count += 1 }
+            if let rankRange = rankRange {
+                rankRange.playCard(play: false)
+            }
             self.ranks[currentPosition] = nil
             self.nextToAct = currentPosition
             self.winningPosition = currentWinningPosition
@@ -56,61 +57,39 @@ public class CardCombinationAnalyzer {
     }
 
 
-    
+    // TODO: Remvove this method...
     private func hand(_ position: Position) -> CompositeCardRange {
-        return rangePair(position).hand(position)
+        return suitHolding[position]
     }
-    
-    private func rangePair(_ position: Position) -> PairCardRange {
-        return position.pairPosition == .ns ? self.nsHands : self.ewHands
-    }
-    
-    
-    func choices(_ position: Position) -> RangeChoices {
-        return self.rangePair(position).choices(position)
-    }
+
     
 
-    public init(partialDeal: Deal) {
-        var allNS = partialDeal[.north]
-        allNS.append(contentsOf: partialDeal[.south])
-        
-        let usedCards = Set<Card>(allNS)
-        var allEW: [Card] = []
-        for rank in Rank.allCases {
-            let card = Card(rank, .spades)
-            if usedCards.contains(card) == false {
-                allEW.append(card)
-            }
-        }
-        assert(allNS.count + allEW.count == 13)
+    
+
+    public init(suitHolding: SuitHolding) {
+        self.shortSide = .south     // BUGBUG: Fix this.  Wheere is it used
+        self.suitHolding = suitHolding
+
+        let northCards = suitHolding[.north].toCards()
+        let southCards = suitHolding[.south].toCards()
+        let allNS = northCards + southCards
+        let allEW = suitHolding[.east].toCards() + suitHolding[.west].toCards()
         
         var longestHand: Int
-        if partialDeal[.north].count < partialDeal[.south].count {
+        if northCards.count < southCards.count {
             shortSide = .north
-            longestHand = partialDeal[.south].count
-        } else if partialDeal[.north].count > partialDeal[.south].count {
+            longestHand = southCards.count
+        } else if northCards.count > southCards.count {
             shortSide = .south
-            longestHand = partialDeal[.north].count
+            longestHand = northCards.count
         } else {
-            longestHand = partialDeal[.north].count
+            longestHand = northCards.count
         }
         
-        let ranges = CountedCardRange.createRanges(from: partialDeal)[.spades]!
-        
-        self.nsHands = PairCardRange(allRanges: ranges, pair: .ns)
-        self.ewHands = PairCardRange(allRanges: ranges, pair: .ew)
         let worstCaseTricks = CardCombinationAnalyzer.computeMinTricks(ns: allNS, ew: allEW, longestHand: longestHand)
         
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
         self.openingLeads = LeadAnalysis(leads: [], worstCase: worstCaseTricks)
-    
-        partialDeal[.north].forEach { self.hand(.north).solidRangeFor($0.rank).count += 1 }
-        partialDeal[.south].forEach { self.hand(.south).solidRangeFor($0.rank).count += 1 }
-
-        // Start with all the cards in east's hand
-        allEW.forEach { self.hand(.east).solidRangeFor($0.rank).count += 1 }
-        
         self.openingLeads = LeadAnalysis(leads: generateLeads(), worstCase: worstCaseTricks)
     }
 
@@ -148,12 +127,7 @@ public class CardCombinationAnalyzer {
     
     
     
-    private func setPlayed(_ rank: CountedCardRange, playedFrom: Position, _ newValue: Bool) -> Void {
-        // NOTE: We want to get the rangePair for the oppenents of "playedFrom" so just using .next
-        // will give us one of the oppenents
-        self.rangePair(playedFrom.next).opponentPlayed(rank, played: newValue)
-    }
-    
+
 
     // Note that this number may be greater than the number of winners you can actually claim.  To find
     // that number use numCashableWinners which returns the lesser of the length of the longest hand or
@@ -223,7 +197,7 @@ public class CardCombinationAnalyzer {
         if trick.lead.intent == .cashWinner { return hand.lowest(cover: nil) }
         
         let position = trick.nextToAct
-        let ourChoices = self.choices(position)
+        let ourChoices = suitHolding.choices(position)
         // Simplest case is that we have only one real choice of cards in this hand.  Just return a card now
         if ourChoices.all.count == 1 {
             return hand.lowest(cover: nil)
@@ -369,9 +343,7 @@ public class CardCombinationAnalyzer {
         
         let maxTricks: Int
         if let rank = rank {
-            self.setPlayed(rank, playedFrom: position, true)
             maxTricks = trick.play(rank, nextStep: self.playNextPosition, isFinal: isFinal)
-            self.setPlayed(rank, playedFrom: position, false)
         } else {
             if position.pairPosition == .ew {
                 let hadShownOut = self.showsOut.contains(position)
@@ -387,11 +359,7 @@ public class CardCombinationAnalyzer {
     
     // NOTE that this method is called by second hand logic.
     private func exploreSecondHandPlay(trick: Trick, rank: CountedCardRange) -> Int {
-        let position = trick.nextToAct
-        self.setPlayed(rank, playedFrom: position, true)
-        let maxTricks = trick.play(rank, nextStep: self.playNextPosition, isFinal: false)
-        self.setPlayed(rank, playedFrom: position, false)
-        return maxTricks
+        return trick.play(rank, nextStep: self.playNextPosition, isFinal: false)
     }
     
     
@@ -545,8 +513,8 @@ public class CardCombinationAnalyzer {
     }
     
     private func generateLeads() -> [LeadPlan] {
-        let northChoices = self.choices(.north)
-        let southChoices = self.choices(.south)
+        let northChoices = suitHolding.choices(.north)
+        let southChoices = suitHolding.choices(.south)
         var leads = generateLeads(choices: northChoices, partnerChoices: southChoices)
         leads.append(contentsOf: generateLeads(choices: southChoices, partnerChoices: northChoices))
         return leads

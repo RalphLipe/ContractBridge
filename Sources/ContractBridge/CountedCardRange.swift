@@ -8,24 +8,32 @@
 import Foundation
 
 
-public class CountedCardRange: Comparable, CustomStringConvertible {
-    public let index: Int
-    public let suit: Suit
+internal class CountedCardRange: Comparable, CustomStringConvertible {
+    private let suitHolding: SuitHolding
+////    public let index: Int
+    public var suit: Suit { return suitHolding.suit }
+    public var pair: PairPosition
     public let ranks: ClosedRange<Rank>
-    public let pair: PairPosition
+    public let position: Position?
     public var count: Int
+    public var positionRanks: Set<Rank>
+    private var playCardDestination: CountedCardRange?
 
-    init(pair: PairPosition, suit: Suit, ranks: ClosedRange<Rank>, index: Int, count: Int? = nil) {
-        self.index = index
-        self.suit = suit
-        self.ranks = ranks
+    init(suitHolding: SuitHolding, pair: PairPosition, ranks: ClosedRange<Rank>, position: Position? = nil, playCardDestination: CountedCardRange? = nil, positionRanks: Set<Rank> = []) {
+        self.suitHolding = suitHolding
         self.pair = pair
-        self.count = 0
+    ////    self.index = index
+        self.ranks = ranks
+        self.count = positionRanks.count    // TODO: Is this right?  Can we clone without ranks?
+        self.position = position
+        assert(position == nil || position?.pairPosition == pair)
+        self.positionRanks = positionRanks
+        self.playCardDestination = playCardDestination
     }
     
-    func copy(count: Int? = nil) -> CountedCardRange {
-        return CountedCardRange(pair: pair, suit: suit, ranks: ranks, index: index, count: count == nil ? self.count : count)
-    }
+//    func copy() -> CountedCardRange {
+//        return CountedCardRange(suitHolding: suitHolding, pair: pair, ranks: ranks)
+//    }
     
     public static func < (lhs: CountedCardRange, rhs: CountedCardRange) -> Bool {
         return lhs.ranks.upperBound < rhs.ranks.lowerBound
@@ -40,30 +48,19 @@ public class CountedCardRange: Comparable, CustomStringConvertible {
         return "\(ranks.lowerBound.shortDescription)...\(ranks.upperBound.shortDescription)"
     }
     
-    public static func createRanges(from _deal: Deal) -> [Suit:[CountedCardRange]] {
-        var nsAllCards = _deal[.north]
-        nsAllCards.append(contentsOf: _deal[.south])
-        var result: [Suit:[CountedCardRange]] = [:]
-        for suit in Suit.allCases {
-            let ranks = Set(nsAllCards.filter(by: suit).map { $0.rank })
-            var ranges: [CountedCardRange] = []
-            var rangeLower = Rank.two
-            var rangeUpper = Rank.two
-            var pair: PairPosition = ranks.contains(.two) ? .ns : .ew
-            for rank in Rank.three...Rank.ace {
-                let isNsCard = ranks.contains(rank)
-                if (isNsCard && pair == .ns) || (isNsCard == false && pair == .ew) {
-                    rangeUpper = rank
-                } else {
-                    ranges.append(CountedCardRange(pair: pair, suit: suit, ranks: rangeLower...rangeUpper, index: ranges.endIndex))
-                    rangeLower = rank
-                    rangeUpper = rank
-                    pair = pair.opponents
-                }
-            }
-            ranges.append(CountedCardRange(pair: pair, suit: suit, ranks: rangeLower...rangeUpper, index: ranges.endIndex))
-            result[suit] = ranges
+    public func playCard(rank: Rank? = nil, play: Bool) {
+        guard let playTo = playCardDestination else { fatalError("Can not play card from this range") }
+        let takeFrom = play ? self : playTo
+        let moveTo = play ? playTo : self
+        takeFrom.count -= 1
+        moveTo.count += 1
+        if count < 0 || playTo.count < 0 { fatalError("Card count has gone negative") }
+        if let rank = rank {
+            assert(ranks.contains(rank))
+            assert(takeFrom.positionRanks.contains(rank))
+            assert(moveTo.positionRanks.contains(rank) == false)
+            takeFrom.positionRanks.remove(rank)
+            moveTo.positionRanks.insert(rank)
         }
-        return result
     }
 }

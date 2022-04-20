@@ -8,11 +8,11 @@
 import Foundation
 
 
-public class CompositeCardRange {
+internal class CompositeCardRange {
     public let suit: Suit
     public let ranks: ClosedRange<Rank>
     public let pair: PairPosition
-    public internal(set) var cardRanges: [CountedCardRange]
+    var cardRanges: [CountedCardRange]
 
     public var count: Int {
         return cardRanges.reduce(0) { $0 + $1.count }
@@ -27,7 +27,7 @@ public class CompositeCardRange {
     
     // NOTE: This function assumes that child ranges are sorted in order from lowest to highest
     // Caller MUST be sure that remainingCount > 0 or a runtime error will occur
-    public func lowest(cover: CountedCardRange? = nil) -> CountedCardRange {
+    internal func lowest(cover: CountedCardRange? = nil) -> CountedCardRange {
         var low: CountedCardRange? = nil
         for child in cardRanges {
             if child.count > 0 {
@@ -38,6 +38,15 @@ public class CompositeCardRange {
         return low!
     }
     
+    func toCards() -> [Card] {
+        var cards: [Card] = []
+        for child in cardRanges {
+            for rank in child.positionRanks {
+                cards.append(Card(rank, suit))
+            }
+        }
+        return cards
+    }
 
     func solidRangeFor(_ rank: Rank) -> CountedCardRange {
         for child in self.cardRanges {

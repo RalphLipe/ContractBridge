@@ -37,20 +37,30 @@ class CardCombinationAnalyzerTest: XCTestCase {
     
     
     func testExample() throws {
-
-    }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
         var analysis: LeadAnalysis? = nil
+
+        var deal = Deal()
+        deal[.north] = [.aceOfSpades, .nineOfSpades, .threeOfSpades, .twoOfSpades]
+        deal[.south] = [.kingOfSpades, .tenOfSpades]
+        deal = DealGenerator.fillOutEWCards(partialDeal: deal, suit: .spades)
+        let sh = SuitHolding(deal: deal, suit: .spades)
+        let a = CardCombinationAnalyzer(suitHolding: sh)
+        analysis = a.analyze()
+        reportResults(analysis: analysis!)
+    }
+/*
+    func testPerformanceExample() throws {
+        // This is an example of a performance test case.l
         self.measure {
             var deal = Deal()
             deal[.north] = [.aceOfSpades, .nineOfSpades, .threeOfSpades, .twoOfSpades]
             deal[.south] = [.kingOfSpades, .tenOfSpades]
-            let a = CardCombinationAnalyzer(partialDeal: deal)
+            deal = DealGenerator.fillOutEWCards(partialDeal: deal, suit: .spades)
+            let sh = SuitHolding(deal: deal, suit: .spades)
+            let a = CardCombinationAnalyzer(suitHolding: sh)
             analysis = a.analyze()
         }
         reportResults(analysis: analysis!)
     }
-
+*/
 }
