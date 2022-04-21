@@ -52,14 +52,14 @@ public struct LeadPlan: CustomStringConvertible {
             }
                 
         case .ride:
-            desc += "\(rankRange) "
+            desc += "\(rankRange) from \(position) "
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
             } else {
                 desc += "not covering"
             }
         case .playLow:
-            desc += "\(rankRange)"
+            desc += "\(rankRange) from \(position)"
         }
         return desc
     }
@@ -69,9 +69,9 @@ public struct LeadPlan: CustomStringConvertible {
 
 
 public class LeadAnalysis {
-    private struct DealInfo {
-        let id: Int
-        let combinations: Int
+    public struct DealInfo {
+        public let id: Int
+        public let combinations: Int
     }
     
     public struct LeadStatistics {
@@ -79,6 +79,7 @@ public class LeadAnalysis {
         let index: Int
         public let totalCombinations: Int
         public let maxTrickCombinations: [Int]
+        public let deals: [[DealInfo]]
         
         public var maxTricks: Int { return maxTrickCombinations.count }
         public func combinationsFor(_ desiredTricks: Int) -> Int {
@@ -89,6 +90,9 @@ public class LeadAnalysis {
                 i += 1
             }
             return c
+        }
+        public func dealIdsFor(_ desiredTricks: Int) -> [DealInfo] {
+            return desiredTricks > deals.count ? [] : deals[desiredTricks - 1]
         }
         public func percentageFor(_ desiredTricks: Int) -> Double {
             let c = self.combinationsFor(desiredTricks)
@@ -124,12 +128,17 @@ public class LeadAnalysis {
     private func statsFor(leadIndex: Int) -> LeadStatistics {
         let maxTricks = self.maxTricks[leadIndex].reduce(0) { max($0, $1) }
         var trickCombinations = Array<Int>(repeating: 0, count: maxTricks)
+        var leadDeals = Array<[DealInfo]>(repeating: [], count: maxTricks)
         assert(self.deals.count == self.maxTricks[leadIndex].count)
         for d in deals.indices {
             let tricksThisDeal = self.maxTricks[leadIndex][d]
             trickCombinations[tricksThisDeal - 1] += self.deals[d].combinations
+            leadDeals[tricksThisDeal - 1].append(deals[d])
         }
-        return LeadStatistics(lead: self.leads[leadIndex], index: leadIndex, totalCombinations: self.combinations, maxTrickCombinations: trickCombinations)
+        for i in leadDeals.indices {
+            leadDeals[i].sort(by: { $0.combinations > $1.combinations })
+        }
+        return LeadStatistics(lead: self.leads[leadIndex], index: leadIndex, totalCombinations: self.combinations, maxTrickCombinations: trickCombinations, deals: leadDeals)
     }
     
     public func leadStatistics() -> [LeadStatistics] {

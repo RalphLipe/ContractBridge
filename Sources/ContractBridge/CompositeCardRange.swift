@@ -8,7 +8,7 @@
 import Foundation
 
 
-internal class CompositeCardRange {
+public class CompositeCardRange {
     public let suit: Suit
     public let ranks: ClosedRange<Rank>
     public let pair: PairPosition

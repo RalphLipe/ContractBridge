@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+/*
 public class DealGenerator {
     public static func fillOutEWCards(partialDeal: Deal, suit: Suit) -> Deal {
         // For now as a quick hack this just puts all the cards that are not present
@@ -24,4 +24,39 @@ public class DealGenerator {
         }
         return newDeal
     }
+    
+    public static func randomDealFromLayout(layout: Int, suit: Suit) -> Deal {
+        var deal = Deal()
+        var remainingLayout = layout / 4
+        var startPosition = Position(rawValue: layout % 4)!
+        var cards: [Card] = [Card(.two, suit)]
+        var positions: [Position] = [startPosition]
+        var rank: Rank? = Rank.three
+        while rank != nil {
+            let card = Card(rank!, suit)
+            let currentPosition = Position(rawValue: remainingLayout % 4)!
+            if currentPosition.pairPosition == startPosition.pairPosition {
+                cards.append(card)
+                positions.append(currentPosition)
+            } else {
+                cards.shuffle()
+                assert(cards.count == positions.count)
+                for i in positions.indices {
+                    deal[positions[i]].append(cards[i])
+                }
+                cards = [card]
+                positions = [currentPosition]
+                startPosition = currentPosition
+            }
+            rank = rank!.nextHigher
+            remainingLayout /= 4
+        }
+        cards.shuffle()
+        assert(cards.count == positions.count)
+        for i in positions.indices {
+            deal[positions[i]].append(cards[i])
+        }
+        return deal
+    }
 }
+*/

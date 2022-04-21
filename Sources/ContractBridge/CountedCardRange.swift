@@ -22,7 +22,6 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
     init(suitHolding: SuitHolding, pair: PairPosition, ranks: ClosedRange<Rank>, position: Position? = nil, playCardDestination: CountedCardRange? = nil, positionRanks: Set<Rank> = []) {
         self.suitHolding = suitHolding
         self.pair = pair
-    ////    self.index = index
         self.ranks = ranks
         self.count = positionRanks.count    // TODO: Is this right?  Can we clone without ranks?
         self.position = position
@@ -31,10 +30,7 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
         self.playCardDestination = playCardDestination
     }
     
-//    func copy() -> CountedCardRange {
-//        return CountedCardRange(suitHolding: suitHolding, pair: pair, ranks: ranks)
-//    }
-    
+
     public static func < (lhs: CountedCardRange, rhs: CountedCardRange) -> Bool {
         return lhs.ranks.upperBound < rhs.ranks.lowerBound
     }
