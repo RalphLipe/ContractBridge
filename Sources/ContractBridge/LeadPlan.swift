@@ -13,9 +13,9 @@ import Foundation
 
 
 public struct LeadPlan: CustomStringConvertible {
-    let position: Position
+    public let position: Position
     let rankRange: CountedCardRange
-    let intent: Intent
+    public let intent: Intent
     let minThirdHand: CountedCardRange?
     let maxThirdHand: CountedCardRange?
     
