@@ -61,7 +61,7 @@ public struct SuitLayout {
     }
     
     public func toDeal() -> Deal {
-        let deal = Deal()
+        var deal = Deal()
         for position in Position.allCases {
             deal[position] = Set(ranksFor(position: position).map { Card($0, suit) })
         }

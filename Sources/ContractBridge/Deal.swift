@@ -15,7 +15,7 @@ enum DealError: Error {
     case duplicateCard(_ card: Card)
 }
 
-public class Deal: Codable {
+public struct Deal: Codable {
   //  private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
     private var hands = Array<Set<Card>>(repeating: [], count: Position.allCases.count)
     public init() {}
@@ -25,13 +25,13 @@ public class Deal: Codable {
         set { hands[position.rawValue] = newValue }
     }
     
-    required public convenience init(from: Decoder) throws {
+    public init(from: Decoder) throws {
         let decoder = try from.singleValueContainer()
         let s = try decoder.decode(String.self)
         try self.init(from: s)
     }
 
-    public convenience init(from: String) throws {
+    public init(from: String) throws {
         self.init()
         let c0 = from.startIndex
         let c1 = from.index(c0, offsetBy: 1)
