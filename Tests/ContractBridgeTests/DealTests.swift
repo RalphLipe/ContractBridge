@@ -16,19 +16,8 @@ class DealTests: XCTestCase {
         XCTAssertEqual(deal[.east].count, 0)
         XCTAssertEqual(deal[.south].count, 3)
         
-        // Hands should be sorted in hand order
-        XCTAssertEqual(deal[.south][0], Card(.four, .spades))
-    }
-
-    func testSortHandOrder() throws {
-        var deal = Deal()
-        deal[.north] = [Card(.two, .clubs), Card(.three, .diamonds), Card(.four, .spades), Card(.ace, .spades)]
-        deal[.west] = [Card(.king, .hearts), Card(.ace, .hearts)]
-        XCTAssertEqual(deal[.north][0].rank, .two)
-        XCTAssertEqual(deal[.west][1].rank, .ace)
-        deal.sortHandOrder()
-        XCTAssertEqual(deal[.north][0].rank, .ace)
-        XCTAssertEqual(deal[.west][1], Card(.king, .hearts))
+        
+        XCTAssertTrue(deal[.south].contains(Card(.four, .spades)))
     }
     
 }

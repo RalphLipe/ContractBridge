@@ -15,23 +15,23 @@ enum DealError: Error {
     case duplicateCard(_ card: Card)
 }
 
-public struct Deal: Codable {
-    private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
-    
+public class Deal: Codable {
+  //  private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
+    private var hands = Array<Set<Card>>(repeating: [], count: Position.allCases.count)
     public init() {}
     
-    public subscript(position: Position) -> [Card] {
+    public subscript(position: Position) -> Set<Card> {
         get { return hands[position.rawValue] }
         set { hands[position.rawValue] = newValue }
     }
     
-    public init(from: Decoder) throws {
+    required public convenience init(from: Decoder) throws {
         let decoder = try from.singleValueContainer()
         let s = try decoder.decode(String.self)
         try self.init(from: s)
     }
 
-    public init(from: String) throws {
+    public convenience init(from: String) throws {
         self.init()
         let c0 = from.startIndex
         let c1 = from.index(c0, offsetBy: 1)
@@ -48,7 +48,7 @@ public struct Deal: Codable {
             throw DealError.tooManyHands(serHands.count)
         }
         for serHand in serHands {
-            try self[position] = Array<Card>.fromSerialized(serHand)
+            self[position] = try Set(Array<Card>.fromSerialized(serHand))
             position = position.next
         }
     }
@@ -64,7 +64,7 @@ public struct Deal: Codable {
         s.append(":")
         var position = startPosition
         for _ in Position.allCases {
-            s.append(self[position].serialized)
+            s.append(toCardArray(position: position).serialized)
             position = position.next
             if position != startPosition {
                 s.append(" ")
@@ -73,7 +73,19 @@ public struct Deal: Codable {
         return s as String
     }
     
-    public func validate(allowDuplicates: Bool = false, fullDeal: Bool = true) throws -> Void {
+    public func toCardArray(position: Position) -> [Card] {
+        return self[position].map { $0 }.sortedHandOrder()
+    }
+    
+    public func toDictOfArrays() -> [Position: [Card]] {
+        var dict: [Position: [Card]] = [:]
+        for position in Position.allCases {
+            dict[position] = toCardArray(position: position)
+        }
+        return dict
+    }
+    
+    public func validate(fullDeal: Bool = true) throws -> Void {
         if fullDeal {
             for position in Position.allCases {
                 if self[position].count != 13 {
@@ -81,19 +93,14 @@ public struct Deal: Codable {
                 }
             }
         }
-        if allowDuplicates == false {
-            var seenCards = Set<Card>()
-            for hand in self.hands {
-                for card in hand {
-                    if seenCards.insert(card).inserted == false {
-                        throw DealError.duplicateCard(card)
-                    }
+        // TODO:  Can be much more efficent.   Maybe doesn't matter
+        var seenCards = Set<Card>()
+        for hand in self.hands {
+            for card in hand {
+                if seenCards.insert(card).inserted == false {
+                    throw DealError.duplicateCard(card)
                 }
             }
         }
-    }
-    
-    public mutating func sortHandOrder() -> Void {
-        for position in Position.allCases { self[position].sortHandOrder() }
     }
 }

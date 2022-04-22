@@ -60,6 +60,14 @@ public struct SuitLayout {
         self.init(suit: suit, north: north, south: south, east: allRemaining, west: [])
     }
     
+    public func toDeal() -> Deal {
+        let deal = Deal()
+        for position in Position.allCases {
+            deal[position] = Set(ranksFor(position: position).map { Card($0, suit) })
+        }
+        return deal
+    }
+    
     public subscript(rank: Rank) -> Position {
         get { return rankPositions[rank.rawValue] }
         set { rankPositions[rank.rawValue] = newValue }

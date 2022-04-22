@@ -67,6 +67,18 @@ extension Array where Element == Card {
         sortBySuit()
         reverse()
     }
+    
+    public func sortedBySuit() -> [Card] {
+        var newArray = self
+        newArray.sortBySuit()
+        return newArray
+    }
+    
+    public func sortedHandOrder() -> [Card] {
+        var newArray = self
+        newArray.sortHandOrder()
+        return newArray
+    }
  
     public func filter(by _suit: Suit) -> [Card] {
         return filter { $0.suit == _suit }

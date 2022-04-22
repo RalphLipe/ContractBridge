@@ -10,7 +10,8 @@
 //
 
 import Foundation
-
+/*  TODO:  Make this work with deal using sets of cards instead of arrays.  May need to make
+ our own internal data structure...
 public class TrickRegeneration {
     var allInOrder = true
     var lastCardFrom: Position? = nil
@@ -36,7 +37,7 @@ public class TrickRegeneration {
             }
             if position == lastCardFrom {
                 if insertPos == nil {
-                    reconstructedDeal[position].append(card)
+                    reconstructedDeal[position].insert(card)
                 } else {
                     reconstructedDeal[position].insert(card, at: insertPos!)
                     insertPos! += 1
@@ -68,4 +69,4 @@ public class TrickRegeneration {
         
     }
 }
-
+*/
