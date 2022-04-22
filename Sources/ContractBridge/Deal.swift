@@ -73,8 +73,15 @@ public class Deal: Codable {
         return s as String
     }
     
+    // For this method we want to construct a pure array, instead of using the map method.
+    // This allows state bindings to use the array.  Map produces slices
     public func toCardArray(position: Position) -> [Card] {
-        return self[position].map { $0 }.sortedHandOrder()
+        var cards: [Card] = []
+        for card in self[position] {
+            cards.append(card)
+        }
+        cards.sortHandOrder()
+        return cards
     }
     
     public func toDictOfArrays() -> [Position: [Card]] {
