@@ -18,7 +18,7 @@ public struct TrickSequence {
         self.maxTricks = maxTricks
         self.leadPlan = leadPlan
         self.winningPosition = winningPosition
-        self.ranks = ranks.mapValues { $0.ranks }
+        self.ranks = ranks.mapValues { $0.promotedRange }
     }
 }
 
@@ -66,11 +66,13 @@ public class CardCombinationAnalyzer {
             }
             let maxTricks = nextStep(self)
             if positionsPlayed == 4 {
-                if recordFinalPlay {
-                    finalPlay = TrickSequence(maxTricks: maxTricks, leadPlan: leadPlan, winningPosition: winningPosition, ranks: ranks)
-                }
                 for range in self.ranks.values {
                     range.playCard(play: false)
+                }
+                // Make sure the final play is recoreded AFTER the cards have been "un-played" since
+                // the TrickSequence logic will attempt to find ranges of equal cards...
+                if recordFinalPlay {
+                    finalPlay = TrickSequence(maxTricks: maxTricks, leadPlan: leadPlan, winningPosition: winningPosition, ranks: ranks)
                 }
             }
             self.ranks[currentPosition] = nil
@@ -149,11 +151,14 @@ public class CardCombinationAnalyzer {
 
     
     static public func analyzeAllEastWest(suitHolding: SuitHolding) -> LeadAnalysis {
-        return CardCombinationAnalyzer(suitHolding: suitHolding).analyzeAllEastWest()
+        let workingHolding = SuitHolding(from: suitHolding, usePositionRanks: false)
+        workingHolding.movePairCardsTo(.east)
+        return CardCombinationAnalyzer(suitHolding: workingHolding).analyzeAllEastWest()
     }
     
    static public func analyze(suitHolding: SuitHolding) -> [TrickSequence] {
-       return CardCombinationAnalyzer(suitHolding: suitHolding).recordLeadSequences()
+       let workingHolding = SuitHolding(from: suitHolding, usePositionRanks: false)
+       return CardCombinationAnalyzer(suitHolding: workingHolding).recordLeadSequences()
    }
     
     internal func analyzeAllEastWest() -> LeadAnalysis {

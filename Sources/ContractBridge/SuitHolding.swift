@@ -138,8 +138,22 @@ public class SuitHolding {
         self.handRanges = []
         // Now that "self" has all members intialized, really finish initializing
         // The createHand method will copy all of the ranges from the playedRanges
-        self.playedRanges = initialLayout.pairRanges().map { CountedCardRange(suitHolding: self, pair: $0.pair, ranks: $0.ranks) }
-        Position.allCases.forEach { createHand(for: $0) }
+        let pairRanges = initialLayout.pairRanges()
+        for i in pairRanges.indices {
+            let pairRange = pairRanges[i]
+            playedRanges.append(CountedCardRange(suitHolding: self, index: i, pair: pairRange.pair, ranks: pairRange.ranks))
+        }
+       Position.allCases.forEach { createHand(for: $0) }
+    }
+    
+    internal init(from: SuitHolding, usePositionRanks: Bool) {
+        self.initialLayout = from.initialLayout
+        self.playedRanges = []
+        self.hands = []
+        self.handRanges = []
+        
+        self.playedRanges = from.playedRanges.map { CountedCardRange(from: $0, suitHolding: self, usePositionRanks: usePositionRanks)}
+        Position.allCases.forEach { copyHand(from: from, for: $0, usePositionRanks: usePositionRanks)}
     }
     
     private func createHand(for _position: Position) {
@@ -149,7 +163,7 @@ public class SuitHolding {
         for playRange in playedRanges {
             if playRange.pair == pair {
                 let positionRanks = initialLayout.ranksFor(position: _position, in: playRange.ranks)
-                newRanges.append(CountedCardRange(suitHolding: self, pair: pair, ranks: playRange.ranks, position: _position, playCardDestination: playRange, positionRanks: positionRanks))
+                newRanges.append(CountedCardRange(suitHolding: self, index: playRange.index, pair: pair, ranks: playRange.ranks, position: _position, playCardDestination: playRange, positionRanks: positionRanks))
             } else {
                 newRanges.append(playRange)
             }
@@ -158,37 +172,22 @@ public class SuitHolding {
         hands.append(CompositeCardRange(allRanges: newRanges, pair: pair))
     }
     
+    private func copyHand(from: SuitHolding, for _position: Position, usePositionRanks: Bool) {
+        assert(_position.rawValue == hands.count)
+        let pair = _position.pairPosition
+        var newRanges: [CountedCardRange] = []
+        for i in playedRanges.indices {
+            if playedRanges[i].pair == pair {
+                newRanges.append(CountedCardRange(from: from.handRanges[_position.rawValue][i], suitHolding: self, usePositionRanks: usePositionRanks, playCardDestination: playedRanges[i]))
+            } else {
+                newRanges.append(playedRanges[i])
+            }
+        }
+        handRanges.append(newRanges)
+        hands.append(CompositeCardRange(allRanges: newRanges, pair: pair))    }
     public subscript(position: Position) -> CompositeCardRange {
         get { return hands[position.rawValue] }
     }
-    
-    
- /*   private func createPlayedRanges(from _deal: Deal) {
-        let nsAllCards = _deal[.north] + _deal[.south]
-        let ranks = Set(nsAllCards.filter(by: suit).map { $0.rank })
-        assert(playedRanges.count == 0)
-        var rangeLower = Rank.two
-        var rangeUpper = Rank.two
-        var pair: PairPosition = ranks.contains(.two) ? .ns : .ew
-        for rank in Rank.three...Rank.ace {
-            let isNsCard = ranks.contains(rank)
-            if (isNsCard && pair == .ns) || (isNsCard == false && pair == .ew) {
-                rangeUpper = rank
-            } else {
-                playedRanges.append(CountedCardRange(suitHolding: self, pair: pair, ranks: rangeLower...rangeUpper))
-                rangeLower = rank
-                rangeUpper = rank
-                pair = pair.opponents
-            }
-        }
-        playedRanges.append(CountedCardRange(suitHolding: self, pair: pair, ranks: rangeLower...rangeUpper))
-    }
-    */
-//    internal func playCard(_ cardRange: CountedCardRange?, rank: Rank? = nil) {
- //       if let cardRange = cardRange {
- //           cardRange.count -= 1
- //       }
- //   }
     
     func choices(_ position: Position) -> RangeChoices {
         var group: [CountedCardRange] = []
@@ -207,19 +206,48 @@ public class SuitHolding {
         if groupHasCards { allRanges.append(CompositeCardRange(allRanges: group, pair: position.pairPosition))}
         return RangeChoices(allRanges, position: position)
     }
+  
+  
+    internal func promotedRangeFor(position: Position, index: Int) -> ClosedRange<Rank> {
+        let startRange = handRanges[position.rawValue][index].ranks
+        var upperBound = startRange.upperBound
+        var i = index + 1
+        while i < handRanges[position.rawValue].endIndex {
+            let range = handRanges[position.rawValue][i]
+            if range.position == position || range.count == range.ranks.count {
+                upperBound = range.ranks.upperBound
+                i += 1
+            } else {
+                break
+            }
+        }
+        return startRange.lowerBound...upperBound
+    }
     
-    // TODO:  IS THIS WHAT I WANT?  OR JUST A PLAY CARD METHOD?  NEED TO SEE WHAT CLIENT WANTS..
     public func playCards(from _trick: Trick) {
         assert(_trick.isComplete)
         for position in Position.allCases {
-            let played = _trick.cards[position]!    // TODO: This is not great...
-            if played.suit == suit {
-                let range = self[position].solidRangeFor(played.rank)
-                range.playCard(rank: played.rank, play: true)
+            if let played = _trick.cards[position] {
+                if played.suit == suit {
+                    let range = self[position].solidRangeFor(played.rank)
+                    range.playCard(rank: played.rank, play: true)
+                }
             }
         }
     }
     
+    public func movePairCardsTo(_ position: Position) {
+        for i in playedRanges.indices {
+            if handRanges[position.rawValue][i].position == position {
+                handRanges[position.rawValue][i].count += handRanges[position.partner.rawValue][i].count
+                handRanges[position.partner.rawValue][i].count = 0
+                handRanges[position.rawValue][i].positionRanks.formUnion(handRanges[position.partner.rawValue][i].positionRanks)
+                handRanges[position.partner.rawValue][i].positionRanks = []
+            }
+        }
+    }
+
+    // TODO:  This is only used by test code.  Move to test???
     public func playCards(from _trickSequence: TrickSequence) {
         for position in Position.allCases {
             if let ranks = _trickSequence.ranks[position] {
@@ -229,7 +257,7 @@ public class SuitHolding {
             }
         }
     }
-    
+
     
 }
 
