@@ -30,7 +30,7 @@ public class SuitHolding {
     private var playedRanges: [CountedCardRange]
     private var hands: [CompositeCardRange]
     private var handRanges: [[CountedCardRange]]
-    private var fixedEastWestRanges: Set<ClosedRange<Rank>> = []
+    private var fixedEastWestRanges: Set<ClosedRange<Rank>>
  
 
     
@@ -40,6 +40,7 @@ public class SuitHolding {
         self.playedRanges = []
         self.hands = []
         self.handRanges = []
+        self.fixedEastWestRanges = []
         // Now that "self" has all members intialized, really finish initializing
         // The createHand method will copy all of the ranges from the playedRanges
         let pairRanges = initialLayout.pairRanges()
@@ -55,6 +56,7 @@ public class SuitHolding {
         self.playedRanges = []
         self.hands = []
         self.handRanges = []
+        self.fixedEastWestRanges = from.fixedEastWestRanges
         
         self.playedRanges = from.playedRanges.map { CountedCardRange(from: $0, suitHolding: self, usePositionRanks: usePositionRanks)}
         Position.allCases.forEach { copyHand(from: from, for: $0, usePositionRanks: usePositionRanks)}
