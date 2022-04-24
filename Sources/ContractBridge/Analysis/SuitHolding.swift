@@ -6,9 +6,6 @@
 //
 
 import Foundation
-import AppKit
-
-
 
 public struct RangeChoices {
     let position: Position
