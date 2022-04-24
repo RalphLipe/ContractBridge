@@ -19,46 +19,46 @@ class CardCombinationAnalyzerTest: XCTestCase {
     }
 
     
-    private func reportResults(analysis: LeadAnalysis) -> Void {
-        print("Total combinations considered: \(analysis.combinations)")
-        for result in analysis.leadStatistics() {
-            print("\(result.lead) ")
+    private func reportResults(analysis: LayoutAnalysis) -> Void {
+        print("Total combinations considered: \(analysis.totalCombinations)")
+        for result in analysis.bestLeads() {
+            print("\(result.leadPlan) ")
             print("   tricks: ", terminator: "")
             var desired = analysis.worstCaseTricks + 1
             var printedTricks = false
-            while result.combinationsFor(desired) > 0 {
-                print("\(desired): \(result.combinationsFor(desired)) - \(result.percentageFor(desired))%   ", terminator: "")
+            while result.combinationsFor(desiredTricks: desired) > 0 {
+                print("\(desired): \(result.combinationsFor(desiredTricks: desired)) - \(result.percentageFor(desiredTricks: desired))%   ", terminator: "")
                 printedTricks = true
                 desired += 1
             }
             print(printedTricks ? "" : "worst case")
-        }
-    }
-    
-    func printTrickSequences(_ trickSequences: [TrickSequence]) {
-        for sequence in trickSequences {
-            print("\(sequence.leadPlan.description) makes \(sequence.maxTricks) tricks")
-            for (position, ranks) in sequence.ranks {
+            print("For specific layout makes \(result.maxTricksThisLayout) tricks")
+            print("Trick won by \(result.trickSequence.winningPosition)")
+            for (position, ranks) in result.trickSequence.play {
                 print("  \(position) plays \(ranks)")
             }
         }
     }
+
     
     func testExample() throws {
         let layout = SuitLayout(suit: .spades, north: [.ace, .nine, .three, .two], south: [.king, .ten])
         let sh = SuitHolding(suitLayout: layout)
-        let analysis = CardCombinationAnalyzer.analyzeAllEastWest(suitHolding: sh)
-        let stats = analysis.leadStatistics()
-        let dealInfo = stats[0].dealIdsFor(3)
+        let analysis = CardCombinationAnalyzer.analyze(suitHolding: sh)
         reportResults(analysis: analysis)
-        let bestDeal = SuitLayout(suitLayoutId: dealInfo[0].id)
-        let bestLayout = SuitLayout(suitLayoutId: bestDeal.id)
+        
+        let bestLeads = analysis.bestLeads()
+        let layoutInfo = bestLeads[0].layoutsFor(analysis.maxTricksAllLayouts)
+        let bestLayout = SuitLayout(suitLayoutId: layoutInfo[0].layoutId!)
         let bestHolding = SuitHolding(suitLayout: bestLayout)
+        
+        print("NOW FOR ONLY BEST HOLDING:")
         while bestHolding[.north].count > 0 || bestHolding[.south].count > 0 {
-            let trickSequences = CardCombinationAnalyzer.analyze(suitHolding: bestHolding)
-            printTrickSequences(trickSequences)
-            bestHolding.playCards(from: trickSequences[0])
-            print("************************")
+            let a2 = CardCombinationAnalyzer.analyze(suitHolding: bestHolding)
+            reportResults(analysis: a2)
+            bestHolding.playCards(from: a2.bestLeads()[0].trickSequence.play)
+            print("**************************************************************")
+            print("North has \(bestHolding[.north].count) cards.  South has \(bestHolding[.south].count)")
         }
     }
 /*

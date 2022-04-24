@@ -7,27 +7,16 @@
 
 import Foundation
 
-public struct TrickSequence {
-    public let maxTricks: Int
-    public let winningPosition: Position
-    public let leadPlan: LeadPlan
-    public var leadRank: ClosedRange<Rank> { return ranks[leadPlan.position]! }
-    public var winningRank: ClosedRange<Rank> { return ranks[winningPosition]! }
-    public let ranks: [Position: ClosedRange<Rank>]
-    internal init(maxTricks: Int, leadPlan: LeadPlan, winningPosition: Position, ranks: [Position:CountedCardRange]) {
-        self.maxTricks = maxTricks
-        self.leadPlan = leadPlan
-        self.winningPosition = winningPosition
-        self.ranks = ranks.mapValues { $0.promotedRange }
-    }
-}
+
 
 public class CardCombinationAnalyzer {
-    let suitHolding: SuitHolding
+    var suitHolding: SuitHolding    // TODO: Should be a let but hack!!!
     var tricks: [Trick] = []
     var shortSide: Position? = nil
     var showsOut: Set<Position> = []
-    var openingLeads: LeadAnalysis
+    var layoutAnalyzer: LayoutAnalyzer
+    var recordCombinationStatistics = true
+    let recordLayoutIds: Bool
     
     
     class Trick {
@@ -61,7 +50,7 @@ public class CardCombinationAnalyzer {
             }
             if positionsPlayed == 4 {
                 for range in self.ranks.values {
-                    range.playCard(play: true)
+                    range.playCard(play: true)  // And then move it to the played hand
                 }
             }
             let maxTricks = nextStep(self)
@@ -72,7 +61,7 @@ public class CardCombinationAnalyzer {
                 // Make sure the final play is recoreded AFTER the cards have been "un-played" since
                 // the TrickSequence logic will attempt to find ranges of equal cards...
                 if recordFinalPlay {
-                    finalPlay = TrickSequence(maxTricks: maxTricks, leadPlan: leadPlan, winningPosition: winningPosition, ranks: ranks)
+                    finalPlay = TrickSequence(winningPosition: winningPosition, play: ranks.mapValues { $0.promotedRange })
                 }
             }
             self.ranks[currentPosition] = nil
@@ -96,7 +85,8 @@ public class CardCombinationAnalyzer {
     private init(suitHolding: SuitHolding) {
         self.shortSide = .south     // BUGBUG: Fix this.  Wheere is it used
         self.suitHolding = suitHolding
-
+        recordLayoutIds = suitHolding.isFullHolding
+        
         let northCards = suitHolding[.north].toCards()
         let southCards = suitHolding[.south].toCards()
         let allNS = northCards + southCards
@@ -116,8 +106,9 @@ public class CardCombinationAnalyzer {
         let worstCaseTricks = CardCombinationAnalyzer.computeMinTricks(ns: allNS, ew: allEW, longestHand: longestHand)
         
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
-        self.openingLeads = LeadAnalysis(leads: [], worstCase: worstCaseTricks)
-        self.openingLeads = LeadAnalysis(leads: generateLeads(), worstCase: worstCaseTricks)
+        self.layoutAnalyzer = LayoutAnalyzer(suitLayoutId: suitHolding.initialLayout.id, leads: [], worstCase: worstCaseTricks)
+        self.layoutAnalyzer = LayoutAnalyzer(suitLayoutId: suitHolding.initialLayout.id, leads: generateLeads(), worstCase: worstCaseTricks)
+
     }
 
 
@@ -150,28 +141,21 @@ public class CardCombinationAnalyzer {
 
 
     
-    static public func analyzeAllEastWest(suitHolding: SuitHolding) -> LeadAnalysis {
+    static public func analyze(suitHolding: SuitHolding) -> LayoutAnalysis {
         let workingHolding = SuitHolding(from: suitHolding, usePositionRanks: false)
+        let cca = CardCombinationAnalyzer(suitHolding: workingHolding)
+        cca.recordCombinationStatistics = false
+        cca.recordLeadSequences()
+        cca.recordCombinationStatistics = true
         workingHolding.movePairCardsTo(.east)
-        return CardCombinationAnalyzer(suitHolding: workingHolding).analyzeAllEastWest()
+        cca.buildAllHandsAndAnalyze(moveIndex: 0, combinations: 1)
+
+        return cca.layoutAnalyzer.generateAnalysis()
     }
     
-   static public func analyze(suitHolding: SuitHolding) -> [TrickSequence] {
-       let workingHolding = SuitHolding(from: suitHolding, usePositionRanks: false)
-       return CardCombinationAnalyzer(suitHolding: workingHolding).recordLeadSequences()
-   }
-    
-    internal func analyzeAllEastWest() -> LeadAnalysis {
-        // When this starts off all of the cards are in East, so start moving and analyzing
-        buildAllHandsAndAnalyze(moveIndex: 0, combinations: 1)
-        return openingLeads
-    }
-   
-    internal func recordLeadSequences() -> [TrickSequence] {
-        assert(tricks.count == 0)
-        var results = openingLeads.leads.map { leadAndRecord($0) }
-        results.sort(by: { $0.maxTricks > $1.maxTricks })
-        return results
+
+    internal func recordLeadSequences() -> Void {
+        layoutAnalyzer.leads.forEach { leadAndRecordTrickSequence($0) }
     }
 
     
@@ -211,9 +195,11 @@ public class CardCombinationAnalyzer {
 
     private func analyzeThisDeal(combinations: Int) {
         assert(tricks.count == 0)
-        let results = analyzeLeads(leads: self.openingLeads.leads)
-        assert(openingLeads.leads.count == results.count)
-        openingLeads.recordResults(results, dealId: self.dealId(), combinations: combinations)
+        let results = analyzeLeads(leads: self.layoutAnalyzer.leads)
+        assert(layoutAnalyzer.leads.count == results.count)
+        if recordCombinationStatistics {
+            layoutAnalyzer.recordResults(results, layoutId: self.layoutId(), combinations: combinations)
+        }
     }
     
 
@@ -333,12 +319,13 @@ public class CardCombinationAnalyzer {
         return maxTricks
     }
     
-    private func leadAndRecord(_ lead: LeadPlan) -> TrickSequence {
+    private func leadAndRecordTrickSequence(_ lead: LeadPlan) -> Void {
+        assert(tricks.count == 0)
         let trick = Trick(lead: lead, recordFinalPlay: true)
         tricks.append(trick)
-        _ = self.playNextPosition(trick: trick)
+        let maxTricks = self.playNextPosition(trick: trick)
         _ = self.tricks.removeLast()
-        return trick.finalPlay!
+        layoutAnalyzer.recordTrickSequence(trick.finalPlay!, maxTricks: maxTricks)
     }
     
     
@@ -433,21 +420,25 @@ public class CardCombinationAnalyzer {
         return leads.map { lead($0) }
     }
     
-    private func dealId() -> SuitLayoutIdentifier {
-        var newLayout = self.suitHolding.initialLayout.clone()
-        let eastHand = suitHolding[.east]
-        let westHand = suitHolding[.west]
-        assert(eastHand.cardRanges.endIndex == westHand.cardRanges.endIndex)
-        for i in eastHand.cardRanges.indices {
-            let ranks = eastHand.cardRanges[i].ranks
-            var remainingEast = eastHand.cardRanges[i].count
-            assert(remainingEast + westHand.cardRanges[i].count == ranks.count)
-            for rank in ranks {
-                newLayout[rank] = remainingEast > 0 ? .east : .west
-                remainingEast -= 1
+    private func layoutId() -> SuitLayoutIdentifier? {
+        if recordLayoutIds {
+            var newLayout = self.suitHolding.initialLayout.clone()
+            let eastHand = suitHolding[.east]
+            let westHand = suitHolding[.west]
+            assert(eastHand.cardRanges.endIndex == westHand.cardRanges.endIndex)
+            for i in eastHand.cardRanges.indices {
+                let ranks = eastHand.cardRanges[i].ranks
+                var remainingEast = eastHand.cardRanges[i].count
+                assert(remainingEast + westHand.cardRanges[i].count == ranks.count)
+                for rank in ranks {
+                    newLayout[rank] = remainingEast > 0 ? .east : .west
+                    remainingEast -= 1
+                }
             }
+            return newLayout.id
+        } else {
+            return nil
         }
-        return newLayout.id
     }
     
 
