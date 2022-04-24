@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AppKit
 
 
 
@@ -32,6 +33,7 @@ public class SuitHolding {
     private var playedRanges: [CountedCardRange]
     private var hands: [CompositeCardRange]
     private var handRanges: [[CountedCardRange]]
+    private var fixedEastWestRanges: Set<ClosedRange<Rank>> = []
  
 
     
@@ -131,6 +133,13 @@ public class SuitHolding {
         return startRange.lowerBound...upperBound
     }
     
+    // This is called from client code to change the holding in a permanant, non-reveresable way.  Update fixedE/W
+    // ranges if:
+    //      Winner is N/S then all remaining high E/W cards about winner must be in 2nd hand
+    //      Winner is 4th hand then any range from 3nd hand through played by 4th hand are known.  If finesse of 10 in AQK wins
+    //      with king in 4th seat then 2nd seat must have the jack.
+    //  These cards will not be moved from their existing ranges when considering odds since their placement is known in the
+    //  current configuration
     public func playCards(from _trick: Trick) {
         assert(_trick.isComplete)
         for position in Position.allCases {
@@ -141,8 +150,21 @@ public class SuitHolding {
                 }
             }
         }
+        // Now update things we know
+        if _trick.winningPosition.pairPosition == .ns {
+            if _trick.winningCard.suit == suit {
+                let rank = _trick.winningCard.rank
+                for range in playedRanges {
+                    if range.pair == .ew && range.ranks.lowerBound > rank {
+                        fixedEastWestRanges.insert(range.ranks)
+                    }
+                }
+            }
+        } else {
+            // TODO:  BUGBUG:  Need to handle the finesse where higher rank wins....
+        }
     }
-    
+    /*
     public func movePairCardsTo(_ position: Position) {
         for i in playedRanges.indices {
             if handRanges[position.rawValue][i].position == position {
@@ -153,7 +175,76 @@ public class SuitHolding {
             }
         }
     }
-
+     */
+    
+    // NOTE:  Indices (ewSaveIndex) is index into composite card range, NOT handRanges
+    private func saveAndShiftHoldings(ewSaveIndex: Int, body: (_ combinations: Int) -> Void) -> Void {
+        assert(self[.east].cardRanges.endIndex == self[.west].cardRanges.endIndex)
+        if ewSaveIndex < self[.east].cardRanges.endIndex {
+            let eastRange = self[.east].cardRanges[ewSaveIndex]
+            if self.fixedEastWestRanges.contains(eastRange.ranks) {
+                saveAndShiftHoldings(ewSaveIndex: ewSaveIndex + 1, body: body)
+            } else {
+                let westRange = self[.west].cardRanges[ewSaveIndex]
+                let eastCount = eastRange.count
+                let westCount = westRange.count
+                eastRange.count += westCount
+                westRange.count = 0
+                saveAndShiftHoldings(ewSaveIndex: ewSaveIndex + 1, body: body)
+                eastRange.count = eastCount
+                westRange.count = westCount
+            }
+        } else {
+            forEachEastWestHolding(moveIndex: 0, combinations: 1, body: body)
+        }
+    }
+    
+    private func factorial(_ n: Int) -> Int {
+        assert(n > 0)
+        return n == 1 ? 1 : n * factorial(n - 1)
+    }
+    
+    private func combinations(numberOfCards: Int, numberOfSlots: Int) -> Int {
+        if numberOfCards == 0 || numberOfSlots == 0 || numberOfCards == numberOfSlots {
+            return 1
+        }
+        assert(numberOfCards > numberOfSlots)
+        return factorial(numberOfCards) / (factorial(numberOfSlots) * factorial(numberOfCards - numberOfSlots))
+    }
+    
+    
+    // NOTE:  Indices (moveIndex) is index into composite card range, NOT handRanges
+    private func forEachEastWestHolding(moveIndex: Int, combinations: Int, body: (_ combinations: Int) -> Void) -> Void {
+        if moveIndex < self[.east].cardRanges.endIndex {
+            // Depth first -- Don't move anything yet
+            forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations, body: body)
+            let eastRange = self[.east].cardRanges[moveIndex]
+            // If this range is fixed then we've already considered all of the combinations
+            if fixedEastWestRanges.contains(eastRange.ranks) == false {
+                // All the cards for a range start in the east and then are moved to the west...
+                let westRange = self[.west].cardRanges[moveIndex]
+                let numCards = eastRange.count
+                while eastRange.count > 0 {
+                    eastRange.count -= 1
+                    westRange.count += 1
+                    // You could compute this using eastRange or westRange for numberOfSlots...
+                    let newCombinations = combinations * self.combinations(numberOfCards: numCards, numberOfSlots: eastRange.count)
+                    forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
+                }
+                eastRange.count = numCards
+                westRange.count = 0
+            }
+        } else {
+            body(combinations)
+        }
+        
+    }
+    
+    public func forEachEastWestHolding(_ body: (_ combinations: Int) -> Void) -> Void {
+        saveAndShiftHoldings(ewSaveIndex: 0, body: body)
+    }
+    
+    
     // TODO:  This is only used by test code.  Move to test???
     public func playCards(from _play: [Position:ClosedRange<Rank>]) {
         for position in Position.allCases {

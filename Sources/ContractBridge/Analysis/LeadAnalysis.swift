@@ -65,7 +65,7 @@ public struct LayoutAnalysis {
 
 
 public class LayoutAnalyzer {
-    public let suitLayoutId: SuitLayoutIdentifier
+    public let suitHolding: SuitHolding
     public let worstCaseTricks: Int
     public internal(set) var combinations: Int
     
@@ -78,8 +78,8 @@ public class LayoutAnalyzer {
     private var thisLayoutMaxTricks: [Int]
 
    
-    internal init(suitLayoutId: SuitLayoutIdentifier, leads: [LeadPlan], worstCase: Int) {
-        self.suitLayoutId = suitLayoutId
+    internal init(suitHolding: SuitHolding, leads: [LeadPlan], worstCase: Int) {
+        self.suitHolding = suitHolding
         self.leads = leads
         self.worstCaseTricks = worstCase
         self.layouts = []
@@ -140,6 +140,6 @@ public class LayoutAnalyzer {
         }
         let maxTricksThisLayout = leadStats.reduce(0) { max($0, $1.maxTricksThisLayout) }
         let maxTricksAllLayouts = leadStats.reduce(0) { max($0, $1.maxTricksAnyLayout) }
-        return LayoutAnalysis(suitLayoutId: suitLayoutId, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats)
+        return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats)
     }
 }

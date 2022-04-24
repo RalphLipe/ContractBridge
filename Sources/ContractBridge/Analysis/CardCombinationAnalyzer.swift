@@ -10,7 +10,8 @@ import Foundation
 
 
 public class CardCombinationAnalyzer {
-    var suitHolding: SuitHolding    // TODO: Should be a let but hack!!!
+   // var suitHolding: SuitHolding    // TODO: Should be a let but hack!!!
+    var suitHolding: SuitHolding { return layoutAnalyzer.suitHolding }
     var tricks: [Trick] = []
     var shortSide: Position? = nil
     var showsOut: Set<Position> = []
@@ -84,7 +85,6 @@ public class CardCombinationAnalyzer {
 
     private init(suitHolding: SuitHolding) {
         self.shortSide = .south     // BUGBUG: Fix this.  Wheere is it used
-        self.suitHolding = suitHolding
         recordLayoutIds = suitHolding.isFullHolding
         
         let northCards = suitHolding[.north].toCards()
@@ -106,8 +106,8 @@ public class CardCombinationAnalyzer {
         let worstCaseTricks = CardCombinationAnalyzer.computeMinTricks(ns: allNS, ew: allEW, longestHand: longestHand)
         
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
-        self.layoutAnalyzer = LayoutAnalyzer(suitLayoutId: suitHolding.initialLayout.id, leads: [], worstCase: worstCaseTricks)
-        self.layoutAnalyzer = LayoutAnalyzer(suitLayoutId: suitHolding.initialLayout.id, leads: generateLeads(), worstCase: worstCaseTricks)
+        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [], worstCase: worstCaseTricks)
+        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads(), worstCase: worstCaseTricks)
 
     }
 
@@ -147,9 +147,10 @@ public class CardCombinationAnalyzer {
         cca.recordCombinationStatistics = false
         cca.recordLeadSequences()
         cca.recordCombinationStatistics = true
-        workingHolding.movePairCardsTo(.east)
-        cca.buildAllHandsAndAnalyze(moveIndex: 0, combinations: 1)
-
+    //    workingHolding.movePairCardsTo(.east)
+    //    cca.buildAllHandsAndAnalyze(moveIndex: 0, combinations: 1)
+        cca.suitHolding.forEachEastWestHolding(cca.analyzeThisDeal)
+        
         return cca.layoutAnalyzer.generateAnalysis()
     }
     
@@ -158,7 +159,7 @@ public class CardCombinationAnalyzer {
         layoutAnalyzer.leads.forEach { leadAndRecordTrickSequence($0) }
     }
 
-    
+    /*
     private func factorial(_ n: Int) -> Int {
         assert(n > 0)
         return n == 1 ? 1 : n * factorial(n - 1)
@@ -192,7 +193,7 @@ public class CardCombinationAnalyzer {
         eastRange.count = numCards
         westRange.count = 0
     }
-
+*/
     private func analyzeThisDeal(combinations: Int) {
         assert(tricks.count == 0)
         let results = analyzeLeads(leads: self.layoutAnalyzer.leads)
