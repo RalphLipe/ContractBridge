@@ -102,11 +102,14 @@ public class LayoutAnalyzer {
         ewSorted.sort()
         ewSorted.reverse()
 
-        // N/S can only win as any tricks as the length of the longest hand
+        // N/S can only win as any tricks as the length of the longest hand  Strip off low cards
         let maxPossible = max(nRanks.count, sRanks.count)
+        while nsSorted.count > maxPossible {
+            _ = nsSorted.removeLast()
+        }
         
         var minTricks = 0
-        while minTricks < maxPossible && ewSorted.count > 0 && nsSorted.count > 0 {
+        while ewSorted.count > 0 && nsSorted.count > 0 {
             let nsPlayed = nsSorted.removeFirst()
             if nsPlayed > ewSorted.first! {
                 minTricks += 1
@@ -115,7 +118,7 @@ public class LayoutAnalyzer {
                 _ = ewSorted.removeFirst()
             }
         }
-        return min(minTricks + nsSorted.count, maxPossible)
+        return minTricks + nsSorted.count
     }
     
     
