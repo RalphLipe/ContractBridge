@@ -26,7 +26,7 @@ public struct LeadStatistics {
     public let trickSequence: TrickSequence
     
     public var maxTricksAnyLayout: Int { return maxTrickCombinations.count - 1 }
-    
+
     public func combinationsFor(desiredTricks: Int) -> Int {
         return maxTrickCombinations.count > desiredTricks ? maxTrickCombinations[desiredTricks] : 0
     }
@@ -78,10 +78,10 @@ public class LayoutAnalyzer {
     private var thisLayoutMaxTricks: [Int]
 
    
-    internal init(suitHolding: SuitHolding, leads: [LeadPlan], worstCase: Int) {
+    internal init(suitHolding: SuitHolding, leads: [LeadPlan]) {
         self.suitHolding = suitHolding
         self.leads = leads
-        self.worstCaseTricks = worstCase
+        self.worstCaseTricks = LayoutAnalyzer.computeMinTricks(suitHolding: suitHolding)
         self.layouts = []
         self.thisLayoutMaxTricks = []
         self.trickSequences = []
@@ -89,6 +89,35 @@ public class LayoutAnalyzer {
 
         self.combinations = 0
     }
+    
+    private class func computeMinTricks(suitHolding: SuitHolding) -> Int {
+        let nRanks = suitHolding.initialLayout.ranksFor(position: .north)
+        let sRanks = suitHolding.initialLayout.ranksFor(position: .south)
+        let ewRanks = suitHolding.initialLayout.ranksFor(position: .east).union(suitHolding.initialLayout.ranksFor(position: .west))
+        
+        var nsSorted = Array(nRanks.union(sRanks))
+        nsSorted.sort()
+        nsSorted.reverse()
+        var ewSorted = Array(ewRanks)
+        ewSorted.sort()
+        ewSorted.reverse()
+
+        // N/S can only win as any tricks as the length of the longest hand
+        let maxPossible = max(nRanks.count, sRanks.count)
+        
+        var minTricks = 0
+        while minTricks < maxPossible && ewSorted.count > 0 && nsSorted.count > 0 {
+            let nsPlayed = nsSorted.removeFirst()
+            if nsPlayed > ewSorted.first! {
+                minTricks += 1
+                _ = ewSorted.removeLast()
+            } else {
+                _ = ewSorted.removeFirst()
+            }
+        }
+        return min(minTricks + nsSorted.count, maxPossible)
+    }
+    
     
     internal func recordResults(_ results: [Int], layoutId: SuitLayoutIdentifier?, combinations: Int) -> Void {
         assert(results.count == self.leads.count)

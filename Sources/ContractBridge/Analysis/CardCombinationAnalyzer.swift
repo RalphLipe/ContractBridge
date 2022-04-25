@@ -84,56 +84,22 @@ public class CardCombinationAnalyzer {
     
 
     private init(suitHolding: SuitHolding) {
-        self.shortSide = .south     // BUGBUG: Fix this.  Wheere is it used
         recordLayoutIds = suitHolding.isFullHolding
+        let nCount = suitHolding[.north].count
+        let sCount = suitHolding[.south].count
         
-        let northCards = suitHolding[.north].toCards()
-        let southCards = suitHolding[.south].toCards()
-        let allNS = northCards + southCards
-        let allEW = suitHolding[.east].toCards() + suitHolding[.west].toCards()
-        
-        var longestHand: Int
-        if northCards.count < southCards.count {
-            shortSide = .north
-            longestHand = southCards.count
-        } else if northCards.count > southCards.count {
-            shortSide = .south
-            longestHand = northCards.count
-        } else {
-            longestHand = northCards.count
-        }
-        
-        let worstCaseTricks = CardCombinationAnalyzer.computeMinTricks(ns: allNS, ew: allEW, longestHand: longestHand)
+        self.shortSide = nCount < sCount ? .north : .south
+
         
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
-        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [], worstCase: worstCaseTricks)
-        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads(), worstCase: worstCaseTricks)
+        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [])
+        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads())
 
     }
 
 
 
     
-    private class func computeMinTricks(ns: [Card], ew: [Card], longestHand: Int) -> Int {
-        var nsCards = ns
-        var ewCards = ew
-        nsCards.sortHandOrder()
-        ewCards.sortHandOrder()
-        nsCards.removeLast(nsCards.count - longestHand)
-
-        var minTricks = 0
-        while ewCards.count > 0 && nsCards.count > 0 {
-            let nsPlayed = nsCards.removeFirst()
-            if nsPlayed > ewCards.first! {
-                minTricks += 1
-                _ = ewCards.removeLast()
-            } else {
-                _ = ewCards.removeFirst()
-            }
-        }
-        minTricks += nsCards.count
-        return minTricks
-    }
     
     
     
@@ -142,13 +108,12 @@ public class CardCombinationAnalyzer {
 
     
     static public func analyze(suitHolding: SuitHolding) -> LayoutAnalysis {
+
         let workingHolding = SuitHolding(from: suitHolding, usePositionRanks: false)
         let cca = CardCombinationAnalyzer(suitHolding: workingHolding)
         cca.recordCombinationStatistics = false
         cca.recordLeadSequences()
         cca.recordCombinationStatistics = true
-    //    workingHolding.movePairCardsTo(.east)
-    //    cca.buildAllHandsAndAnalyze(moveIndex: 0, combinations: 1)
         cca.suitHolding.forEachEastWestHolding(cca.analyzeThisDeal)
         
         return cca.layoutAnalyzer.generateAnalysis()

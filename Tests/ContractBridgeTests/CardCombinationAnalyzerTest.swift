@@ -21,7 +21,7 @@ class CardCombinationAnalyzerTest: XCTestCase {
     
     private func reportResults(analysis: LayoutAnalysis) -> Void {
         print("Total combinations considered: \(analysis.totalCombinations)")
-        for result in analysis.bestLeads() {
+        for result in analysis.leads {
             print("\(result.leadPlan) ")
             print("   tricks: ", terminator: "")
             var desired = analysis.worstCaseTricks + 1
@@ -39,10 +39,32 @@ class CardCombinationAnalyzerTest: XCTestCase {
             }
         }
     }
-
+/*
+    public func CardFor(position: Position, from: SuitHolding, leadStats: LeadStatistics) -> Card {
+        if let rank = leadStats.trickSequence.play[position] {
+            let range = suitHolding[.]
+            return Card(rank.lowerBound, .spades)
+        } else {
+            return .twoOfClubs
+        }
+    }
+    
+    // TODO:  This is only used by test code.  Move to test???
+    public func playCards(suitHolding: SuitHolding, leadStats: LeadStatistics) {
+        let leadPosition = leadStats.leadPlan.position
+        var nextPos = leadPosition.next
+        var trick = Trick(lead: CardFor(position: leadPosition, from: suitHolding, leadStats: leadStats), position: leadPosition, strain: .noTrump)
+        while nextPos != leadPosition {
+            try! trick.play(card: CardFor(position: nextPos, from: suitHolding, leadStats: leadStats), position: nextPos)
+            nextPos = nextPos.next
+        }
+        suitHolding.playCards(from: trick)
+    }
+    
+  */
     
     func testExample() throws {
-        let layout = SuitLayout(suit: .spades, north: [.ace, .nine, .three, .two], south: [.king, .ten])
+        let layout = SuitLayout(suit: .spades, north: [.ace, .king, .ten, .nine], south: [.three, .two, .four])
         let sh = SuitHolding(suitLayout: layout)
         let analysis = CardCombinationAnalyzer.analyze(suitHolding: sh)
         reportResults(analysis: analysis)
@@ -56,7 +78,9 @@ class CardCombinationAnalyzerTest: XCTestCase {
         while bestHolding[.north].count > 0 || bestHolding[.south].count > 0 {
             let a2 = CardCombinationAnalyzer.analyze(suitHolding: bestHolding)
             reportResults(analysis: a2)
-            bestHolding.playCards(from: a2.bestLeads()[0].trickSequence.play)
+            let chosenLead = a2.bestLeads()[0]
+            print("CHOICE OF LEADS: \(chosenLead.leadPlan)")
+            bestHolding.playCards(from: chosenLead)
             print("**************************************************************")
             print("North has \(bestHolding[.north].count) cards.  South has \(bestHolding[.south].count)")
         }

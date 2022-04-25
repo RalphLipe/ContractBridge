@@ -149,20 +149,36 @@ public class SuitHolding {
                 }
             }
         }
-        // Now update things we know
-        if _trick.winningPosition.pairPosition == .ns {
-            if _trick.winningCard.suit == suit {
-                let rank = _trick.winningCard.rank
-                for range in playedRanges {
-                    if range.pair == .ew && range.ranks.lowerBound > rank {
-                        fixedEastWestRanges.insert(range.ranks)
-                    }
-                }
-            }
-        } else {
-            // TODO:  BUGBUG:  Need to handle the finesse where higher rank wins....
+        if _trick.winningCard.suit == suit {
+            updateKnownHoldings(winningRank: _trick.winningCard.rank, winningPosition: _trick.winningPosition)
         }
     }
+    
+    // TODO: Still need to update double finesse when 4th hand plays high rank but for now just north/south winning
+    private func updateKnownHoldings(winningRank: Rank, winningPosition: Position) {
+        if winningPosition.pairPosition == .ns {
+            for range in playedRanges {
+                if range.pair == .ew && range.ranks.lowerBound > winningRank {
+                    fixedEastWestRanges.insert(range.ranks)
+                }
+            }
+        }
+    }
+    
+    public func playCards(from _leadStats: LeadStatistics) {
+        var winningRank: Rank? = nil
+        let winningPosition = _leadStats.trickSequence.winningPosition
+        for position in Position.allCases {
+            if let played = _leadStats.trickSequence.play[position] {
+                let range = self[position].solidRangeFor(played.lowerBound)
+                let rank = range.positionRanks.first
+                range.playCard(rank: rank, play: true)
+                if position == winningPosition { winningRank = rank }
+            }
+        }
+        updateKnownHoldings(winningRank: winningRank!, winningPosition: winningPosition)
+    }
+    
     /*
     public func movePairCardsTo(_ position: Position) {
         for i in playedRanges.indices {
@@ -212,25 +228,44 @@ public class SuitHolding {
     }
     
     
+    /*   This is the code I removed to make "fake" configurations to consider.  I think this is bogus
+     if fixedEastWestRanges.contains(eastRange.ranks) {
+         // We are not going to move cards.  We just need to figure out the total number of
+         // combinations this represents.  So "pretend" to move cards and accumulate combinations
+         // Then just recurse one time with that number
+         let numberOfCards = eastRange.count + westRange.count   // Total number of cards
+         if numberOfCards == 0 {
+             forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations, body: body)
+         } else {
+             var numberOfSlots = 0
+             var combosMultiplier = 0
+             while numberOfSlots < numberOfCards {
+                 combosMultiplier += self.combinations(numberOfCards: numberOfCards, numberOfSlots: numberOfSlots)
+                 numberOfSlots += 1
+             }
+             forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations * combosMultiplier, body: body)
+         }
+     } else {
+
+     */
+    
     // NOTE:  Indices (moveIndex) is index into composite card range, NOT handRanges
     private func forEachEastWestHolding(moveIndex: Int, combinations: Int, body: (_ combinations: Int) -> Void) -> Void {
         if moveIndex < self[.east].cardRanges.endIndex {
-            // Depth first -- Don't move anything yet
             forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations, body: body)
             let eastRange = self[.east].cardRanges[moveIndex]
-            // If this range is fixed then we've already considered all of the combinations
+            // If the cards are "fixed" then we don't move them.  Their position is know based on previous play
             if fixedEastWestRanges.contains(eastRange.ranks) == false {
-                // All the cards for a range start in the east and then are moved to the west...
                 let westRange = self[.west].cardRanges[moveIndex]
-                let numCards = eastRange.count
+                let numberOfCards = eastRange.count
                 while eastRange.count > 0 {
                     eastRange.count -= 1
                     westRange.count += 1
                     // You could compute this using eastRange or westRange for numberOfSlots...
-                    let newCombinations = combinations * self.combinations(numberOfCards: numCards, numberOfSlots: eastRange.count)
+                    let newCombinations = combinations * self.combinations(numberOfCards: numberOfCards, numberOfSlots: eastRange.count)
                     forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
                 }
-                eastRange.count = numCards
+                eastRange.count = numberOfCards
                 westRange.count = 0
             }
         } else {
@@ -244,17 +279,7 @@ public class SuitHolding {
     }
     
     
-    // TODO:  This is only used by test code.  Move to test???
-    public func playCards(from _play: [Position:ClosedRange<Rank>]) {
-        for position in Position.allCases {
-            if let ranks = _play[position] {
-                let countedRange = self[position].solidRangeFor(ranks.lowerBound)
-                let rank = countedRange.positionRanks.first
-                assert(rank != nil)
-                countedRange.playCard(rank: rank, play: true)
-            }
-        }
-    }
+
 
     // Returns true if there are no played cards and the hands contain 13 cards
     public var isFullHolding: Bool {
