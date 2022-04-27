@@ -23,15 +23,48 @@ public struct SuitLayout {
         return (rankPositions.reversed().reduce(0) { return ($0 * 4) + $1.rawValue }) * 4 + suit.rawValue
     }
     
-    public func clone() -> SuitLayout {
-        return SuitLayout(suit: suit, rankPositions: rankPositions)
-    }
+
     private init(suit: Suit, rankPositions: [Position]) {
         self.suit = suit
         self.rankPositions = rankPositions
         assert(rankPositions.count == Rank.allCases.count)
     }
     
+    public init(from: SuitLayout) {
+        self.suit = from.suit
+        self.rankPositions = from.rankPositions
+    }
+
+    public init(from: SuitHolding) {
+        self.suit = from.suit
+        self.rankPositions = Array(repeating: .north, count: Rank.allCases.count)
+        if from.hasPositionRanks {
+            for position in Position.allCases {
+                for countedRange in from[position].cardRanges {
+                    for rank in countedRange.positionRanks! {
+                        self[rank] = position
+                    }
+                }
+            }
+        } else {
+            for pair in [PairPosition.ns, PairPosition.ew] {
+                let positions = pair.positions
+                let hand0 = from[positions.0]
+                let hand1 = from[positions.1]
+                assert(hand0.cardRanges.endIndex == hand0.cardRanges.endIndex)
+                for i in hand0.cardRanges.indices {
+                    let ranks = hand0.cardRanges[i].ranks
+                    var remaining0 = hand0.cardRanges[i].count
+                    assert(remaining0 + hand1.cardRanges[i].count == ranks.count)
+                    for rank in ranks {
+                        self[rank] = remaining0 > 0 ? positions.0 : positions.1
+                        remaining0 -= 1
+                    }
+                }
+            }
+        }
+    }
+
     public init(suitLayoutId: SuitLayoutIdentifier) {
         var id = suitLayoutId
         suit = Suit(rawValue: id % 4)!

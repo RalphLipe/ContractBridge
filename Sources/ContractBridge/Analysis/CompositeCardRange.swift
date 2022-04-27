@@ -41,14 +41,16 @@ public class CompositeCardRange {
     func toCards() -> [Card] {
         var cards: [Card] = []
         for child in cardRanges {
-            for rank in child.positionRanks {
-                cards.append(Card(rank, suit))
+            if let positionRanks = child.positionRanks {
+                for rank in positionRanks {
+                    cards.append(Card(rank, suit))
+                }
             }
         }
         return cards
     }
 
-    func solidRangeFor(_ rank: Rank) -> CountedCardRange {
+    func countedRangeFor(_ rank: Rank) -> CountedCardRange {
         for child in self.cardRanges {
             if child.ranks.contains(rank) { return child }
         }

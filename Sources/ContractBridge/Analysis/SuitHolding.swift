@@ -27,20 +27,22 @@ public struct RangeChoices {
 public class SuitHolding {
     public var suit: Suit { initialLayout.suit }
     public let initialLayout: SuitLayout
+    public let hasPositionRanks: Bool
     private var playedRanges: [CountedCardRange]
     private var hands: [CompositeCardRange]
     private var handRanges: [[CountedCardRange]]
-    private var fixedEastWestRanges: Set<ClosedRange<Rank>>
+    private var fixedPairRanges: [Set<ClosedRange<Rank>>]
  
 
     
 
     public init(suitLayout: SuitLayout) {
         self.initialLayout = suitLayout
+        self.hasPositionRanks = true
         self.playedRanges = []
         self.hands = []
         self.handRanges = []
-        self.fixedEastWestRanges = []
+        self.fixedPairRanges = Array<Set<ClosedRange<Rank>>>(repeating: [], count: PairPosition.allCases.count)
         // Now that "self" has all members intialized, really finish initializing
         // The createHand method will copy all of the ranges from the playedRanges
         let pairRanges = initialLayout.pairRanges()
@@ -51,15 +53,16 @@ public class SuitHolding {
        Position.allCases.forEach { createHand(for: $0) }
     }
     
-    internal init(from: SuitHolding, usePositionRanks: Bool) {
+    internal init(from: SuitHolding, copyPositionRanks: Bool) {
         self.initialLayout = from.initialLayout
+        self.hasPositionRanks = copyPositionRanks
         self.playedRanges = []
         self.hands = []
         self.handRanges = []
-        self.fixedEastWestRanges = from.fixedEastWestRanges
+        self.fixedPairRanges = from.fixedPairRanges
         
-        self.playedRanges = from.playedRanges.map { CountedCardRange(from: $0, suitHolding: self, usePositionRanks: usePositionRanks)}
-        Position.allCases.forEach { copyHand(from: from, for: $0, usePositionRanks: usePositionRanks)}
+        self.playedRanges = from.playedRanges.map { CountedCardRange(from: $0, suitHolding: self, copyPositionRanks: copyPositionRanks)}
+        Position.allCases.forEach { copyHand(from: from, for: $0, copyPositionRanks: copyPositionRanks)}
     }
     
     private func createHand(for _position: Position) {
@@ -78,13 +81,13 @@ public class SuitHolding {
         hands.append(CompositeCardRange(allRanges: newRanges, pair: pair))
     }
     
-    private func copyHand(from: SuitHolding, for _position: Position, usePositionRanks: Bool) {
+    private func copyHand(from: SuitHolding, for _position: Position, copyPositionRanks: Bool) {
         assert(_position.rawValue == hands.count)
         let pair = _position.pairPosition
         var newRanges: [CountedCardRange] = []
         for i in playedRanges.indices {
             if playedRanges[i].pair == pair {
-                newRanges.append(CountedCardRange(from: from.handRanges[_position.rawValue][i], suitHolding: self, usePositionRanks: usePositionRanks, playCardDestination: playedRanges[i]))
+                newRanges.append(CountedCardRange(from: from.handRanges[_position.rawValue][i], suitHolding: self, copyPositionRanks: copyPositionRanks, playCardDestination: playedRanges[i]))
             } else {
                 newRanges.append(playedRanges[i])
             }
@@ -144,7 +147,7 @@ public class SuitHolding {
         for position in Position.allCases {
             if let played = _trick.cards[position] {
                 if played.suit == suit {
-                    let range = self[position].solidRangeFor(played.rank)
+                    let range = self[position].countedRangeFor(played.rank)
                     range.playCard(rank: played.rank, play: true)
                 }
             }
@@ -155,11 +158,12 @@ public class SuitHolding {
     }
     
     // TODO: Still need to update double finesse when 4th hand plays high rank but for now just north/south winning
+    // TODO:  This should work for either pair having know cards. Right now just E/W
     private func updateKnownHoldings(winningRank: Rank, winningPosition: Position) {
         if winningPosition.pairPosition == .ns {
             for range in playedRanges {
                 if range.pair == .ew && range.ranks.lowerBound > winningRank {
-                    fixedEastWestRanges.insert(range.ranks)
+                    fixedPairRanges[PairPosition.ew.rawValue].insert(range.ranks)
                 }
             }
         }
@@ -170,8 +174,8 @@ public class SuitHolding {
         let winningPosition = _leadStats.trickSequence.winningPosition
         for position in Position.allCases {
             if let played = _leadStats.trickSequence.play[position] {
-                let range = self[position].solidRangeFor(played.lowerBound)
-                let rank = range.positionRanks.first
+                let range = self[position].countedRangeFor(played.lowerBound)
+                let rank = range.positionRanks!.first   // TODO: Think this through more...
                 range.playCard(rank: rank, play: true)
                 if position == winningPosition { winningRank = rank }
             }
@@ -192,25 +196,27 @@ public class SuitHolding {
     }
      */
     
-    // NOTE:  Indices (ewSaveIndex) is index into composite card range, NOT handRanges
-    private func saveAndShiftHoldings(ewSaveIndex: Int, body: (_ combinations: Int) -> Void) -> Void {
-        assert(self[.east].cardRanges.endIndex == self[.west].cardRanges.endIndex)
-        if ewSaveIndex < self[.east].cardRanges.endIndex {
-            let eastRange = self[.east].cardRanges[ewSaveIndex]
-            if self.fixedEastWestRanges.contains(eastRange.ranks) {
-                saveAndShiftHoldings(ewSaveIndex: ewSaveIndex + 1, body: body)
+    // NOTE:  Indices (saveIndex) is index into composite card range, NOT handRanges
+    private func saveAndShiftHoldings(pairPosition: PairPosition, saveIndex: Int, body: (_ combinations: Int) -> Void) -> Void {
+        let positions = pairPosition.positions
+        assert(self[positions.0].cardRanges.endIndex == self[positions.1].cardRanges.endIndex)
+        if saveIndex < self[positions.0].cardRanges.endIndex {
+            let range0 = self[positions.0].cardRanges[saveIndex]
+            // TODO:  IMPORTANT!
+            if self.fixedPairRanges[pairPosition.rawValue].contains(range0.ranks) {
+                saveAndShiftHoldings(pairPosition: pairPosition, saveIndex: saveIndex + 1, body: body)
             } else {
-                let westRange = self[.west].cardRanges[ewSaveIndex]
-                let eastCount = eastRange.count
-                let westCount = westRange.count
-                eastRange.count += westCount
-                westRange.count = 0
-                saveAndShiftHoldings(ewSaveIndex: ewSaveIndex + 1, body: body)
-                eastRange.count = eastCount
-                westRange.count = westCount
+                let range1 = self[positions.1].cardRanges[saveIndex]
+                let count0 = range0.count
+                let count1 = range1.count
+                range0.count += count1
+                range1.count = 0
+                saveAndShiftHoldings(pairPosition: pairPosition, saveIndex: saveIndex + 1, body: body)
+                range0.count = count0
+                range1.count = count1
             }
         } else {
-            forEachEastWestHolding(moveIndex: 0, combinations: 1, body: body)
+            forAllCombinations(pairPosition: pairPosition, moveIndex: 0, combinations: 1, body: body)
         }
     }
     
@@ -228,45 +234,26 @@ public class SuitHolding {
     }
     
     
-    /*   This is the code I removed to make "fake" configurations to consider.  I think this is bogus
-     if fixedEastWestRanges.contains(eastRange.ranks) {
-         // We are not going to move cards.  We just need to figure out the total number of
-         // combinations this represents.  So "pretend" to move cards and accumulate combinations
-         // Then just recurse one time with that number
-         let numberOfCards = eastRange.count + westRange.count   // Total number of cards
-         if numberOfCards == 0 {
-             forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations, body: body)
-         } else {
-             var numberOfSlots = 0
-             var combosMultiplier = 0
-             while numberOfSlots < numberOfCards {
-                 combosMultiplier += self.combinations(numberOfCards: numberOfCards, numberOfSlots: numberOfSlots)
-                 numberOfSlots += 1
-             }
-             forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations * combosMultiplier, body: body)
-         }
-     } else {
-
-     */
     
     // NOTE:  Indices (moveIndex) is index into composite card range, NOT handRanges
-    private func forEachEastWestHolding(moveIndex: Int, combinations: Int, body: (_ combinations: Int) -> Void) -> Void {
-        if moveIndex < self[.east].cardRanges.endIndex {
-            forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: combinations, body: body)
-            let eastRange = self[.east].cardRanges[moveIndex]
+    private func forAllCombinations(pairPosition: PairPosition, moveIndex: Int, combinations: Int, body: (_ combinations: Int) -> Void) -> Void {
+        let positions = pairPosition.positions
+        if moveIndex < self[positions.0].cardRanges.endIndex {
+            forAllCombinations(pairPosition: pairPosition, moveIndex: moveIndex + 1, combinations: combinations, body: body)
+            let range0 = self[positions.0].cardRanges[moveIndex]
             // If the cards are "fixed" then we don't move them.  Their position is know based on previous play
-            if fixedEastWestRanges.contains(eastRange.ranks) == false {
-                let westRange = self[.west].cardRanges[moveIndex]
-                let numberOfCards = eastRange.count
-                while eastRange.count > 0 {
-                    eastRange.count -= 1
-                    westRange.count += 1
-                    // You could compute this using eastRange or westRange for numberOfSlots...
-                    let newCombinations = combinations * self.combinations(numberOfCards: numberOfCards, numberOfSlots: eastRange.count)
-                    forEachEastWestHolding(moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
+            if self.fixedPairRanges[pairPosition.rawValue].contains(range0.ranks) == false {
+                let range1 = self[positions.1].cardRanges[moveIndex]
+                let numberOfCards = range0.count
+                while range0.count > 0 {
+                    range0.count -= 1
+                    range1.count += 1
+                    // You could compute this using either range for numberOfSlots...
+                    let newCombinations = combinations * self.combinations(numberOfCards: numberOfCards, numberOfSlots: range0.count)
+                    forAllCombinations(pairPosition: pairPosition, moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
                 }
-                eastRange.count = numberOfCards
-                westRange.count = 0
+                range0.count = numberOfCards
+                range1.count = 0
             }
         } else {
             body(combinations)
@@ -274,8 +261,8 @@ public class SuitHolding {
         
     }
     
-    public func forEachEastWestHolding(_ body: (_ combinations: Int) -> Void) -> Void {
-        saveAndShiftHoldings(ewSaveIndex: 0, body: body)
+    public func forAllCombinations(pairPosition: PairPosition, _ body: (_ combinations: Int) -> Void) -> Void {
+        saveAndShiftHoldings(pairPosition: pairPosition, saveIndex: 0, body: body)
     }
     
     

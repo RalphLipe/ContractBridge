@@ -10,7 +10,6 @@ import Foundation
 
 
 public class CardCombinationAnalyzer {
-   // var suitHolding: SuitHolding    // TODO: Should be a let but hack!!!
     var suitHolding: SuitHolding { return layoutAnalyzer.suitHolding }
     var tricks: [Trick] = []
     var shortSide: Position? = nil
@@ -73,14 +72,6 @@ public class CardCombinationAnalyzer {
         }
     }
 
-
-    // TODO: Remvove this method...
-    private func hand(_ position: Position) -> CompositeCardRange {
-        return suitHolding[position]
-    }
-
-    
-
     
 
     private init(suitHolding: SuitHolding) {
@@ -90,7 +81,6 @@ public class CardCombinationAnalyzer {
         
         self.shortSide = nCount < sCount ? .north : .south
 
-        
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
         self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [])
         self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads())
@@ -100,21 +90,13 @@ public class CardCombinationAnalyzer {
 
 
     
-    
-    
-    
-
-
-
-    
     static public func analyze(suitHolding: SuitHolding) -> LayoutAnalysis {
-
-        let workingHolding = SuitHolding(from: suitHolding, usePositionRanks: false)
+        let workingHolding = SuitHolding(from: suitHolding, copyPositionRanks: false)
         let cca = CardCombinationAnalyzer(suitHolding: workingHolding)
         cca.recordCombinationStatistics = false
         cca.recordLeadSequences()
         cca.recordCombinationStatistics = true
-        cca.suitHolding.forEachEastWestHolding(cca.analyzeThisDeal)
+        cca.suitHolding.forAllCombinations(pairPosition: .ew, cca.analyzeThisDeal)
         
         return cca.layoutAnalyzer.generateAnalysis()
     }
@@ -124,41 +106,7 @@ public class CardCombinationAnalyzer {
         layoutAnalyzer.leads.forEach { leadAndRecordTrickSequence($0) }
     }
 
-    /*
-    private func factorial(_ n: Int) -> Int {
-        assert(n > 0)
-        return n == 1 ? 1 : n * factorial(n - 1)
-    }
-    
-    private func combinations(numberOfCards: Int, numberOfSlots: Int) -> Int {
-        if numberOfCards == 0 || numberOfSlots == 0 || numberOfCards == numberOfSlots {
-            return 1
-        }
-        assert(numberOfCards > numberOfSlots)
-        return factorial(numberOfCards) / (factorial(numberOfSlots) * factorial(numberOfCards - numberOfSlots))
-    }
-    
-    private func buildAllHandsAndAnalyze(moveIndex: Int, combinations: Int) {
-        if moveIndex >= suitHolding[.east].cardRanges.endIndex {
-            analyzeThisDeal(combinations: combinations)
-            return
-        }
-        buildAllHandsAndAnalyze(moveIndex: moveIndex + 1, combinations: combinations)
-        let eastRange = self.hand(.east).cardRanges[moveIndex]
-        let westRange = self.hand(.west).cardRanges[moveIndex]
-        // All the cards for a range start in the east and then are moved to the west...
-        let numCards = eastRange.count  // This is the total number of cards in the range
-        while eastRange.count > 0 {
-            eastRange.count -= 1
-            westRange.count += 1
-            // You could compute this using eastRange or westRange for numberOfSlots...
-            let newCombinations = combinations * self.combinations(numberOfCards: numCards, numberOfSlots: eastRange.count)
-            buildAllHandsAndAnalyze(moveIndex: moveIndex + 1, combinations: newCombinations)
-        }
-        eastRange.count = numCards
-        westRange.count = 0
-    }
-*/
+
     private func analyzeThisDeal(combinations: Int) {
         assert(tricks.count == 0)
         let results = analyzeLeads(leads: self.layoutAnalyzer.leads)
@@ -170,66 +118,7 @@ public class CardCombinationAnalyzer {
     
 
 
-    // BUGBUG:  Shouldnt these second/third/fourth hand things return Rank not Rank? ?
-    // This function will only be called if there are two or more cards
-    private func secondHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
-        if trick.leadPlan.intent == .cashWinner { return hand.lowest(cover: nil) }
-        
-        let position = trick.nextToAct
-        let ourChoices = suitHolding.choices(position)
-        // Simplest case is that we have only one real choice of cards in this hand.  Just return a card now
-        if ourChoices.all.count == 1 {
-            return hand.lowest(cover: nil)
-        }
-        /*
-         OPTOPMIZE THIS LATER.  FOR NOW JUST DO ALL CHOICES
-        // Now if the rank in the a choice beats "mustBeat" then try all of them out
-         */
-        var lowestTrickRank: CountedCardRange? = nil
-        var lowestTrickCount: Int = 13
-        for choice in ourChoices.all {
-            let rankRange = choice.lowest(cover: nil)
-            let maxTricks = self.exploreSecondHandPlay(trick: trick, rank: rankRange)
-            if lowestTrickRank == nil || lowestTrickCount > maxTricks {
-                lowestTrickRank = rankRange
-                lowestTrickCount = maxTricks
-            }
-        }
-        return lowestTrickRank!
-    }
-    
-    // Won't be called with an empty hand, so we can force unwrap
-    private func thirdHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
-        assert(trick.nextToAct.pairPosition == .ns)
-        var cover: CountedCardRange? = nil
-        if let min = trick.leadPlan.minThirdHand {
-            if min > trick.winningRankRange {
-                cover = min
-            } else {
-                if let maxThirdHand = trick.leadPlan.maxThirdHand,
-                   maxThirdHand > trick.winningRankRange {
-                    cover = trick.winningRankRange
-                }
-            }
-        }
-        return hand.lowest(cover: cover)
-    }
-    
-    
-    private func fourthHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
-        let rankToCover = trick.winningPosition.pairPosition == .ns ? trick.winningRankRange : nil
-        return hand.lowest(cover: rankToCover)
-    }
-    
-    
-    private func leadAgain() -> Int {
-        if suitHolding[.north].count > 0 || suitHolding[.south].count > 0 {
-            return maxTricksAllLeads()
-        } else {
-            return tricks.reduce(0) { return $1.winningPosition.pairPosition == .ns ? $0 + 1 : $0 }
-        }
-    }
-    
+
 
  
     func playNextPosition(trick: Trick) -> Int {
@@ -237,7 +126,7 @@ public class CardCombinationAnalyzer {
             return self.leadAgain()
         }
         let position = trick.nextToAct
-        let hand = self.hand(position)
+        let hand = suitHolding[position]
         let numCards = hand.count
         var rank: CountedCardRange? = nil
         if numCards == 1 {
@@ -270,12 +159,57 @@ public class CardCombinationAnalyzer {
         }
         return maxTricks
     }
-    
-    // NOTE that this method is called by second hand logic.
-    private func exploreSecondHandPlay(trick: Trick, rank: CountedCardRange) -> Int {
-        return trick.play(rank, nextStep: self.playNextPosition)
+
+    // This function will only be called if there are two or more cards
+    private func secondHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
+        if trick.leadPlan.intent == .cashWinner { return hand.lowest(cover: nil) }
+        
+        let position = trick.nextToAct
+        let ourChoices = suitHolding.choices(position)
+        // Simplest case is that we have only one real choice of cards in this hand.  Just return a card now
+        if ourChoices.all.count == 1 {
+            return hand.lowest(cover: nil)
+        }
+        /*
+         OPTOPMIZE THIS LATER.  FOR NOW JUST DO ALL CHOICES
+        // Now if the rank in the a choice beats "mustBeat" then try all of them out
+         */
+        var lowestTrickRank: CountedCardRange? = nil
+        var lowestTrickCount: Int = 13
+        for choice in ourChoices.all {
+            let rankRange = choice.lowest(cover: nil)
+            let maxTricks = trick.play(rankRange, nextStep: self.playNextPosition)
+            if lowestTrickRank == nil || lowestTrickCount > maxTricks {
+                lowestTrickRank = rankRange
+                lowestTrickCount = maxTricks
+            }
+        }
+        return lowestTrickRank!
     }
     
+    private func thirdHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
+        assert(trick.nextToAct.pairPosition == .ns)
+        var cover: CountedCardRange? = nil
+        if let min = trick.leadPlan.minThirdHand {
+            if min > trick.winningRankRange {
+                cover = min
+            } else {
+                if let maxThirdHand = trick.leadPlan.maxThirdHand,
+                   maxThirdHand > trick.winningRankRange {
+                    cover = trick.winningRankRange
+                }
+            }
+        }
+        return hand.lowest(cover: cover)
+    }
+    
+    
+    private func fourthHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
+        let rankToCover = trick.winningPosition.pairPosition == .ns ? trick.winningRankRange : nil
+        return hand.lowest(cover: rankToCover)
+    }
+    
+
     
     private func lead(_ lead: LeadPlan) -> Int {
         let trick = Trick(lead: lead)
@@ -292,6 +226,15 @@ public class CardCombinationAnalyzer {
         let maxTricks = self.playNextPosition(trick: trick)
         _ = self.tricks.removeLast()
         layoutAnalyzer.recordTrickSequence(trick.finalPlay!, maxTricks: maxTricks)
+    }
+    
+    
+    private func leadAgain() -> Int {
+        if suitHolding[.north].count > 0 || suitHolding[.south].count > 0 {
+            return analyzeLeads(leads: generateLeads()).reduce(0) { $1 > $0 ? $1 : $0 }
+        } else {
+            return tricks.reduce(0) { return $1.winningPosition.pairPosition == .ns ? $0 + 1 : $0 }
+        }
     }
     
     
@@ -319,9 +262,7 @@ public class CardCombinationAnalyzer {
         return leads
     }
     
-    // Returns true if at least one lead was attempted.  Otherewise false if no leads from this hand
-    // make any sense for promotion.  If both hands return false, caller must play a loser from short
-    // hand
+
     private func generateLeads(choices: RangeChoices, partnerChoices: RangeChoices) -> [LeadPlan] {
         if choices.all.count == 0 {
             return []
@@ -331,7 +272,7 @@ public class CardCombinationAnalyzer {
             if let winners = choices.win {
                 return [LeadPlan(position: position, rankRange: winners.lowest(cover: nil), intent: .cashWinner)]
             }
-            return [LeadPlan(position: position, rankRange: self.hand(position).lowest(cover: nil), intent: .playLow)]
+            return [LeadPlan(position: position, rankRange: suitHolding[position].lowest(cover: nil), intent: .playLow)]
         }
         // TODO: Perhaps if next position shows out then we could avoid generating some of these leads.
         var leads: [LeadPlan] = []
@@ -376,41 +317,20 @@ public class CardCombinationAnalyzer {
         return leads
     }
     
-    private func maxTricksAllLeads() -> Int {
-        let results = analyzeLeads(leads: generateLeads())
-        let maxTricks = results.reduce(0) { $1 > $0 ? $1 : $0 }
-        return maxTricks
-    }
-    
+
     private func analyzeLeads(leads: [LeadPlan]) -> [Int] {
         return leads.map { lead($0) }
     }
     
     private func layoutId() -> SuitLayoutIdentifier? {
         if recordLayoutIds {
-            var newLayout = self.suitHolding.initialLayout.clone()
-            let eastHand = suitHolding[.east]
-            let westHand = suitHolding[.west]
-            assert(eastHand.cardRanges.endIndex == westHand.cardRanges.endIndex)
-            for i in eastHand.cardRanges.indices {
-                let ranks = eastHand.cardRanges[i].ranks
-                var remainingEast = eastHand.cardRanges[i].count
-                assert(remainingEast + westHand.cardRanges[i].count == ranks.count)
-                for rank in ranks {
-                    newLayout[rank] = remainingEast > 0 ? .east : .west
-                    remainingEast -= 1
-                }
-            }
+            let newLayout = SuitLayout(from: suitHolding)
             return newLayout.id
         } else {
             return nil
         }
     }
-    
 
-
-
-    
 
 }
 

@@ -8,8 +8,8 @@
 import Foundation
 
 
-public enum PairPosition {
-    case ns, ew
+public enum PairPosition: Int, CaseIterable {
+    case ns = 0, ew
     public var positions: (Position, Position)  {
         switch self {
         case .ns: return (.north, .south)

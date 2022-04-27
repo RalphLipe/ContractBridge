@@ -15,6 +15,8 @@ enum DealError: Error {
     case duplicateCard(_ card: Card)
 }
 
+
+
 public struct Deal: Codable {
   //  private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
     private var hands = Array<Set<Card>>(repeating: [], count: Position.allCases.count)

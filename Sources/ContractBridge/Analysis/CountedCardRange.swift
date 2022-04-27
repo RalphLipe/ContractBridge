@@ -16,22 +16,26 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
     public let ranks: ClosedRange<Rank>
     public let position: Position?
     public var count: Int
-    public var positionRanks: Set<Rank>
+    public var positionRanks: Set<Rank>?
     private var playCardDestination: CountedCardRange?
 
-    init(suitHolding: SuitHolding, index: Int, pair: PairPosition, ranks: ClosedRange<Rank>, position: Position? = nil, playCardDestination: CountedCardRange? = nil, positionRanks: Set<Rank> = []) {
+    init(suitHolding: SuitHolding, index: Int, pair: PairPosition, ranks: ClosedRange<Rank>, position: Position? = nil, playCardDestination: CountedCardRange? = nil, positionRanks: Set<Rank>? = []) {
         self.suitHolding = suitHolding
         self.index = index
         self.pair = pair
         self.ranks = ranks
-        self.count = positionRanks.count    
+        if let positionRanks = positionRanks {
+            self.count = positionRanks.count
+        } else {
+            self.count = 0
+        }
         self.position = position
         assert(position == nil || position?.pairPosition == pair)
         self.positionRanks = positionRanks
         self.playCardDestination = playCardDestination
     }
     
-    init(from: CountedCardRange, suitHolding: SuitHolding, usePositionRanks: Bool, playCardDestination: CountedCardRange? = nil) {
+    init(from: CountedCardRange, suitHolding: SuitHolding, copyPositionRanks: Bool, playCardDestination: CountedCardRange? = nil) {
         self.suitHolding = suitHolding
         self.index = from.index
         self.pair = from.pair
@@ -39,8 +43,8 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
         self.count = from.count
         self.position = from.position
         self.playCardDestination = playCardDestination
-        self.positionRanks = usePositionRanks ? from.positionRanks : []
-        assert(usePositionRanks == false || positionRanks.count == self.count)
+        self.positionRanks = copyPositionRanks ? from.positionRanks : nil
+  ///      assert(copyPositionRanks == false || positionRanks.count == self.count)
     }
 
     public static func < (lhs: CountedCardRange, rhs: CountedCardRange) -> Bool {
@@ -70,12 +74,13 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
         takeFrom.count -= 1
         moveTo.count += 1
         if count < 0 || playTo.count < 0 { fatalError("Card count has gone negative") }
+        assert((rank == nil && takeFrom.positionRanks == nil && moveTo.positionRanks == nil) || (rank != nil && takeFrom.positionRanks != nil && moveTo.positionRanks != nil))
         if let rank = rank {
             assert(ranks.contains(rank))
-            assert(takeFrom.positionRanks.contains(rank))
-            assert(moveTo.positionRanks.contains(rank) == false)
-            takeFrom.positionRanks.remove(rank)
-            moveTo.positionRanks.insert(rank)
+            assert(takeFrom.positionRanks!.contains(rank))
+            assert(moveTo.positionRanks!.contains(rank) == false)
+            takeFrom.positionRanks!.remove(rank)
+            moveTo.positionRanks!.insert(rank)
         }
     }
 }
