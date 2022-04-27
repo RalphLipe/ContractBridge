@@ -64,7 +64,8 @@ class CardCombinationAnalyzerTest: XCTestCase {
   */
     
     func testExample() throws {
-        let layout = SuitLayout(suit: .spades, north: [.ace, .king, .ten, .nine], south: [.three, .two, .four])
+        // Deal 412
+        let layout = SuitLayout(suit: .spades, north: [.ace, .queen, .ten, .seven, .six], south: [.three, .two, .four, .five])
         let sh = SuitHolding(suitLayout: layout)
         let analysis = CardCombinationAnalyzer.analyze(suitHolding: sh)
         reportResults(analysis: analysis)

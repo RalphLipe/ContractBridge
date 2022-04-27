@@ -18,8 +18,8 @@ public struct RangeChoices {
         self.position = position
         self.all = all
         var r = all
-        self.low = r.count > 0 && r.first!.ranks.lowerBound == .two ? r.removeFirst() : nil
-        self.win = r.count > 0 && r.last!.ranks.upperBound == .ace ? r.removeLast() : nil
+        self.low = r.count > 0 && r.first!.isLow ? r.removeFirst() : nil
+        self.win = r.count > 0 && r.last!.isWinner ? r.removeLast() : nil
         self.mid = r.count > 0 ? r : nil
     }
 }

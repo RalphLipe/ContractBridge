@@ -238,24 +238,34 @@ public class CardCombinationAnalyzer {
     }
     
     
+    private func coverRanges(finesseRange: CompositeCardRange, coverChoices: ArraySlice<CompositeCardRange>) -> [CountedCardRange?] {
+        var ranges = Array<CountedCardRange?>()
+        var lastRange = finesseRange
+        var mustCover: CompositeCardRange? = nil
+        // Starting with the first range and moving up, if the next range has a gap of one card
+        // then we will always cover it, so we don't want to generate an uncovered finesse.
+        for coverChoice in coverChoices {
+            if coverChoice.ranks.lowerBound.nextLower != lastRange.ranks.upperBound.nextHigher {
+                // Gap of > 1 card, so add this to the list (could be nil if first range has gap)
+                ranges.append(mustCover == nil ? nil : mustCover!.lowest())
+            }
+            mustCover = coverChoice
+            lastRange = coverChoice
+        }
+        ranges.append(mustCover == nil ? nil : mustCover!.lowest())
+        return ranges
+    }
+    
     private func generateFinesses(position: Position, leadRank: CountedCardRange, partnerChoices: RangeChoices) -> [LeadPlan] {
         var leads: [LeadPlan] = []
-        let winner = partnerChoices.win == nil ? nil : partnerChoices.win!.lowest(cover: nil)
-        if let midChoices = partnerChoices.mid {
-            for i in midChoices.indices {
-                if leadRank.ranks.upperBound < midChoices[i].ranks.lowerBound {
-                    let midRank = midChoices[i].lowest(cover: nil)
-                    // OK a finess can happen with this rank.  It's higher than the one being lead
-                    leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .finesse, minThirdHand: midRank))
-                    var j = i + 1
-                    while j < midChoices.count {
-                        let higherMidRank = midChoices[j].lowest(cover: nil)
-                        leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .finesse, minThirdHand: midRank, maxThirdHand: higherMidRank))
-                        j += 1
-                    }
-                    if winner != nil {
-                        leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .finesse, minThirdHand: midRank, maxThirdHand: winner))
-                    }
+        for i in partnerChoices.all.indices {
+            let finesseRange = partnerChoices.all[i]
+            if leadRank.ranks.upperBound < finesseRange.ranks.lowerBound &&
+                finesseRange.ranks.upperBound != .ace {
+                let coverRanges = i == partnerChoices.all.endIndex ? [nil] : coverRanges(finesseRange: finesseRange, coverChoices: partnerChoices.all[(i + 1)...])
+                let finesseRank = finesseRange.lowest()
+                for coverRange in coverRanges {
+                    leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .finesse, minThirdHand: finesseRank, maxThirdHand: coverRange))
                 }
             }
         }
@@ -290,16 +300,12 @@ public class CardCombinationAnalyzer {
         if let midChoices = choices.mid {
             for i in midChoices.indices {
                 let midRank = midChoices[i].lowest(cover: nil)
-                leads.append(contentsOf: generateFinesses(position: position, leadRank: midRank, partnerChoices:    partnerChoices))
-                leads.append(LeadPlan(position: position, rankRange: midRank, intent: .ride))
-                var j = i + 1
-                while j < midChoices.count {
-                    let higherMid = midChoices[j].lowest(cover: nil)
-                    leads.append(LeadPlan(position: position, rankRange: midRank, intent: .ride, maxThirdHand: higherMid))
-                    j += 1
-                }
-                if partnerWinner != nil {
-                    leads.append(LeadPlan(position: position, rankRange: midRank, intent: .ride, maxThirdHand: partnerWinner))
+                leads.append(contentsOf: generateFinesses(position: position, leadRank: midRank, partnerChoices: partnerChoices))
+                // TODO:  DONT DO THIS IF ITS JUST A LOSER!!!!
+                // This is the most basic example -- don't ride uncovered if there are low cards
+                // to play...
+                if choices.low == nil {
+                    leads.append(LeadPlan(position: position, rankRange: midRank, intent: .ride))
                 }
             }
         }

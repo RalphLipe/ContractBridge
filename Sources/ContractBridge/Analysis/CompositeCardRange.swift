@@ -18,6 +18,9 @@ public class CompositeCardRange {
         return cardRanges.reduce(0) { $0 + $1.count }
     }
     
+    public var isLow: Bool { return ranks.lowerBound == .two }
+    public var isWinner: Bool { return ranks.upperBound == .ace }
+    
     init(allRanges: [CountedCardRange], pair: PairPosition) {
         self.suit = allRanges.first!.suit
         self.pair = pair
