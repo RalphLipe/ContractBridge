@@ -51,10 +51,25 @@ public struct LayoutAnalysis {
     public let maxTricksThisLayout: Int
     public let maxTricksAllLayouts: Int
     public let leads: [LeadStatistics]
+    public let bestOddsLayouts: [[LayoutCombinations]]
     
     
     public func bestLeads() -> [LeadStatistics] {
         return bestLeads(desiredTricks: maxTricksAllLayouts)
+    }
+    
+    public func combinationsMaking(_ numberOfTricks: Int) -> Int {
+        var desiredTricks = numberOfTricks
+        var combinations = 0
+        while desiredTricks <= maxTricksAllLayouts {
+            combinations = bestOddsLayouts[desiredTricks].reduce(combinations) { $0 + $1.combinations }
+            desiredTricks += 1
+        }
+        return combinations
+    }
+    
+    public func percentageMaking(_ numberOfTricks: Int) -> Double {
+        return Double(combinationsMaking(numberOfTricks)) / Double(totalCombinations) * 100.0
     }
     
     public func bestLeads(desiredTricks: Int) -> [LeadStatistics] {
@@ -153,12 +168,31 @@ public class LayoutAnalyzer {
             }
 
         }
-        /* TODO:  Maybe???  Maybe not???
-        for i in leadDeals.indices {
-            leadDeals[i].sort(by: { $0.combinations > $1.combinations })
-        }
-         */
+   
         return LeadStatistics(leadPlan: leads[leadIndex], maxTrickCombinations: trickCombinations, layouts: leadLayouts, maxTricksThisLayout: thisLayoutMaxTricks[leadIndex], trickSequence: trickSequences[leadIndex])
+    }
+    
+    internal func findBestOddsLayouts(maxTricks: Int) -> [[LayoutCombinations]] {
+        var bestLayouts: [[LayoutCombinations]] = []
+        var tricksNeeded = 0
+        while tricksNeeded <= maxTricks {
+            var bestThisNeed = Array<LayoutCombinations>()
+            if tricksNeeded > worstCaseTricks {
+                for y in layouts.indices {
+                    var maxThisLayout = 0
+                    for x in leads.indices {
+                        maxThisLayout = max(maxThisLayout, self.maxTricks[x][y])
+                    }
+                    if maxThisLayout == tricksNeeded {
+                        bestThisNeed.append(self.layouts[y])
+                    }
+                }
+            }
+            bestThisNeed.sort { $0.combinations > $1.combinations }
+            bestLayouts.append(bestThisNeed)
+            tricksNeeded += 1
+        }
+        return bestLayouts
     }
     
     internal func generateAnalysis() -> LayoutAnalysis {
@@ -172,6 +206,7 @@ public class LayoutAnalyzer {
         }
         let maxTricksThisLayout = leadStats.reduce(0) { max($0, $1.maxTricksThisLayout) }
         let maxTricksAllLayouts = leadStats.reduce(0) { max($0, $1.maxTricksAnyLayout) }
-        return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats)
+        let bestOddsLayouts = findBestOddsLayouts(maxTricks: maxTricksAllLayouts)
+        return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats, bestOddsLayouts: bestOddsLayouts)
     }
 }

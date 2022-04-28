@@ -238,9 +238,9 @@ public class CardCombinationAnalyzer {
     }
     
     
-    private func coverRanges(finesseRange: CompositeCardRange, coverChoices: ArraySlice<CompositeCardRange>) -> [CountedCardRange?] {
+    private func coverRanges(cover: CompositeCardRange, coverChoices: ArraySlice<CompositeCardRange>) -> [CountedCardRange?] {
         var ranges = Array<CountedCardRange?>()
-        var lastRange = finesseRange
+        var lastRange = cover
         var mustCover: CompositeCardRange? = nil
         // Starting with the first range and moving up, if the next range has a gap of one card
         // then we will always cover it, so we don't want to generate an uncovered finesse.
@@ -256,13 +256,14 @@ public class CardCombinationAnalyzer {
         return ranges
     }
     
-    private func generateFinesses(position: Position, leadRank: CountedCardRange, partnerChoices: RangeChoices) -> [LeadPlan] {
+    private func generateFinesses(position: Position, leadRange: CompositeCardRange, partnerChoices: RangeChoices) -> [LeadPlan] {
         var leads: [LeadPlan] = []
+        let leadRank = leadRange.lowest()
         for i in partnerChoices.all.indices {
             let finesseRange = partnerChoices.all[i]
-            if leadRank.ranks.upperBound < finesseRange.ranks.lowerBound &&
-                finesseRange.ranks.upperBound != .ace {
-                let coverRanges = i == partnerChoices.all.endIndex ? [nil] : coverRanges(finesseRange: finesseRange, coverChoices: partnerChoices.all[(i + 1)...])
+            if leadRange.ranks.upperBound < finesseRange.ranks.lowerBound &&
+                finesseRange.isWinner == false {
+                let coverRanges = i == partnerChoices.all.endIndex ? [nil] : coverRanges(cover: finesseRange, coverChoices: partnerChoices.all[(i + 1)...])
                 let finesseRank = finesseRange.lowest()
                 for coverRange in coverRanges {
                     leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .finesse, minThirdHand: finesseRank, maxThirdHand: coverRange))
@@ -271,6 +272,22 @@ public class CardCombinationAnalyzer {
         }
         return leads
     }
+
+    private func generateRides(position: Position, leadRange: CompositeCardRange, partnerChoices: RangeChoices) -> [LeadPlan] {
+        var leads: [LeadPlan] = []
+        let leadRank = leadRange.lowest()
+        for i in partnerChoices.all.indices {
+            if leadRange.ranks.upperBound < partnerChoices.all[i].ranks.lowerBound {
+                let coverRanges = coverRanges(cover: leadRange, coverChoices: partnerChoices.all[i...])
+                for coverRange in coverRanges {
+                    leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .ride, minThirdHand: nil, maxThirdHand: coverRange))
+                }
+                break
+            }
+        }
+        return leads
+    }
+    
     
 
     private func generateLeads(choices: RangeChoices, partnerChoices: RangeChoices) -> [LeadPlan] {
@@ -288,25 +305,20 @@ public class CardCombinationAnalyzer {
         var leads: [LeadPlan] = []
         let partnerWinner = partnerChoices.win == nil ? nil : partnerChoices.win!.lowest(cover: nil)
         if let low = choices.low {
+            leads.append(contentsOf: generateFinesses(position: position, leadRange: low, partnerChoices: partnerChoices))
+            // TODO:  Both of the following are symetrica -- don't do it again.  Just replicate it
             let lowRank = low.lowest(cover: nil)
             if partnerChoices.low != nil {
                 leads.append(LeadPlan(position: position, rankRange: lowRank, intent: .playLow))
             }
-            leads.append(contentsOf: generateFinesses(position: position, leadRank: lowRank, partnerChoices: partnerChoices))
             if partnerWinner != nil {
                 leads.append(LeadPlan(position: position, rankRange: lowRank, intent: .cashWinner, minThirdHand: partnerWinner))
             }
         }
         if let midChoices = choices.mid {
-            for i in midChoices.indices {
-                let midRank = midChoices[i].lowest(cover: nil)
-                leads.append(contentsOf: generateFinesses(position: position, leadRank: midRank, partnerChoices: partnerChoices))
-                // TODO:  DONT DO THIS IF ITS JUST A LOSER!!!!
-                // This is the most basic example -- don't ride uncovered if there are low cards
-                // to play...
-                if choices.low == nil {
-                    leads.append(LeadPlan(position: position, rankRange: midRank, intent: .ride))
-                }
+            for midChoice in midChoices {
+                leads.append(contentsOf: generateFinesses(position: position, leadRange: midChoice, partnerChoices: partnerChoices))
+                leads.append(contentsOf: generateRides(position: position, leadRange: midChoice, partnerChoices: partnerChoices))
             }
         }
         if let win = choices.win {

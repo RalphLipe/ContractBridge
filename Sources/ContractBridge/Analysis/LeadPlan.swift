@@ -32,16 +32,16 @@ public struct LeadPlan: CustomStringConvertible {
     }
     
     public var description: String {
-        var desc = "\(self.intent) "
+        var desc: String = ""
         switch self.intent {
         case .cashWinner:
             if let thirdHandWinner = minThirdHand {
-                desc += "lead \(rankRange) toward \(thirdHandWinner)"
+                desc = "lead \(rankRange) from \(position) cashing winner \(thirdHandWinner) "
             } else {
-                desc += "\(rankRange)"
+                desc = "cash winner \(rankRange) in \(position)"
             }
         case .finesse:
-            desc += "lead \(rankRange) from \(position) finessing \(minThirdHand!) "
+            desc = "lead \(rankRange) from \(position) finessing \(minThirdHand!) "
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
             } else {
@@ -49,14 +49,14 @@ public struct LeadPlan: CustomStringConvertible {
             }
                 
         case .ride:
-            desc += "\(rankRange) from \(position) "
+            desc = "ride \(rankRange) from \(position) "
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
             } else {
                 desc += "not covering"
             }
         case .playLow:
-            desc += "\(rankRange) from \(position)"
+            desc = "play low \(rankRange) from \(position)"
         }
         return desc
     }

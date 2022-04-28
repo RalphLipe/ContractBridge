@@ -183,18 +183,8 @@ public class SuitHolding {
         updateKnownHoldings(winningRank: winningRank!, winningPosition: winningPosition)
     }
     
-    /*
-    public func movePairCardsTo(_ position: Position) {
-        for i in playedRanges.indices {
-            if handRanges[position.rawValue][i].position == position {
-                handRanges[position.rawValue][i].count += handRanges[position.partner.rawValue][i].count
-                handRanges[position.partner.rawValue][i].count = 0
-                handRanges[position.rawValue][i].positionRanks.formUnion(handRanges[position.partner.rawValue][i].positionRanks)
-                handRanges[position.partner.rawValue][i].positionRanks = []
-            }
-        }
-    }
-     */
+
+
     
     // NOTE:  Indices (saveIndex) is index into composite card range, NOT handRanges
     private func saveAndShiftHoldings(pairPosition: PairPosition, saveIndex: Int, body: (_ combinations: Int) -> Void) -> Void {
