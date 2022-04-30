@@ -12,7 +12,7 @@ public class CompositeCardRange {
     public let suit: Suit
     public let ranks: ClosedRange<Rank>
     public let pair: PairPosition
-    var cardRanges: [CountedCardRange]
+    let cardRanges: [CountedCardRange]
 
     public var count: Int {
         return cardRanges.reduce(0) { $0 + $1.count }
@@ -24,7 +24,7 @@ public class CompositeCardRange {
     init(allRanges: [CountedCardRange], pair: PairPosition) {
         self.suit = allRanges.first!.suit
         self.pair = pair
-        self.ranks = allRanges.first!.ranks.lowerBound...allRanges.last!.ranks.upperBound
+        self.ranks = allRanges.first!.rangeRanks.lowerBound...allRanges.last!.rangeRanks.upperBound
         self.cardRanges = allRanges.compactMap { return $0.pair == pair ? $0 : nil }
     }
     
@@ -55,7 +55,7 @@ public class CompositeCardRange {
 
     func countedRangeFor(_ rank: Rank) -> CountedCardRange {
         for child in self.cardRanges {
-            if child.ranks.contains(rank) { return child }
+            if child.rangeRanks.contains(rank) { return child }
         }
         fatalError()
     }

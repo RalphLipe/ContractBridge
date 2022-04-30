@@ -53,7 +53,7 @@ public struct SuitLayout {
                 let hand1 = from[positions.1]
                 assert(hand0.cardRanges.endIndex == hand0.cardRanges.endIndex)
                 for i in hand0.cardRanges.indices {
-                    let ranks = hand0.cardRanges[i].ranks
+                    let ranks = hand0.cardRanges[i].rangeRanks
                     var remaining0 = hand0.cardRanges[i].count
                     assert(remaining0 + hand1.cardRanges[i].count == ranks.count)
                     for rank in ranks {

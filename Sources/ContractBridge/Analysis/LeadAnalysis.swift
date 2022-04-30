@@ -51,25 +51,37 @@ public struct LayoutAnalysis {
     public let maxTricksThisLayout: Int
     public let maxTricksAllLayouts: Int
     public let leads: [LeadStatistics]
-    public let bestOddsLayouts: [[LayoutCombinations]]
+    public let exactTrickLayouts: [[LayoutCombinations]]
     
     
     public func bestLeads() -> [LeadStatistics] {
         return bestLeads(desiredTricks: maxTricksAllLayouts)
     }
     
+    // NOTE: This returns the double-dummy making statistics.  Maybe a bool for only best leads???
+    // TODO:  Figure out non-double dummy stuf
     public func combinationsMaking(_ numberOfTricks: Int) -> Int {
         var desiredTricks = numberOfTricks
         var combinations = 0
         while desiredTricks <= maxTricksAllLayouts {
-            combinations = bestOddsLayouts[desiredTricks].reduce(combinations) { $0 + $1.combinations }
+            combinations = exactTrickLayouts[desiredTricks].reduce(combinations) { $0 + $1.combinations }
             desiredTricks += 1
         }
         return combinations
     }
     
+    // TODO: Same thing here -- this is double dummy odds.  Need real odds
     public func percentageMaking(_ numberOfTricks: Int) -> Double {
         return Double(combinationsMaking(numberOfTricks)) / Double(totalCombinations) * 100.0
+    }
+    
+    public func bestOddsCombinationsMaking(_ numberOfTricks: Int) -> Int {
+        let bestLeads = bestLeads(desiredTricks: numberOfTricks)
+        return bestLeads.first!.combinationsFor(desiredTricks: numberOfTricks)
+        
+    }
+    public func bestOddsPercentageMaking(_ numberOfTricks: Int) -> Double {
+        return Double(bestOddsCombinationsMaking(numberOfTricks)) / Double(totalCombinations) * 100.0
     }
     
     public func bestLeads(desiredTricks: Int) -> [LeadStatistics] {
@@ -172,27 +184,30 @@ public class LayoutAnalyzer {
         return LeadStatistics(leadPlan: leads[leadIndex], maxTrickCombinations: trickCombinations, layouts: leadLayouts, maxTricksThisLayout: thisLayoutMaxTricks[leadIndex], trickSequence: trickSequences[leadIndex])
     }
     
-    internal func findBestOddsLayouts(maxTricks: Int) -> [[LayoutCombinations]] {
-        var bestLayouts: [[LayoutCombinations]] = []
+    internal func findExactTrickLayouts(maxTricks: Int) -> [[LayoutCombinations]] {
+        var exactLayouts: [[LayoutCombinations]] = []
         var tricksNeeded = 0
         while tricksNeeded <= maxTricks {
-            var bestThisNeed = Array<LayoutCombinations>()
+            var thisCount = Array<LayoutCombinations>()
             if tricksNeeded > worstCaseTricks {
                 for y in layouts.indices {
                     var maxThisLayout = 0
                     for x in leads.indices {
                         maxThisLayout = max(maxThisLayout, self.maxTricks[x][y])
+                        if maxThisLayout > tricksNeeded { break }
+  
                     }
                     if maxThisLayout == tricksNeeded {
-                        bestThisNeed.append(self.layouts[y])
+
+                        thisCount.append(self.layouts[y])
                     }
                 }
             }
-            bestThisNeed.sort { $0.combinations > $1.combinations }
-            bestLayouts.append(bestThisNeed)
+            thisCount.sort { $0.combinations > $1.combinations }
+            exactLayouts.append(thisCount)
             tricksNeeded += 1
         }
-        return bestLayouts
+        return exactLayouts
     }
     
     internal func generateAnalysis() -> LayoutAnalysis {
@@ -206,7 +221,7 @@ public class LayoutAnalyzer {
         }
         let maxTricksThisLayout = leadStats.reduce(0) { max($0, $1.maxTricksThisLayout) }
         let maxTricksAllLayouts = leadStats.reduce(0) { max($0, $1.maxTricksAnyLayout) }
-        let bestOddsLayouts = findBestOddsLayouts(maxTricks: maxTricksAllLayouts)
-        return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats, bestOddsLayouts: bestOddsLayouts)
+        let exactTrickLayouts = findExactTrickLayouts(maxTricks: maxTricksAllLayouts)
+        return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats, exactTrickLayouts: exactTrickLayouts)
     }
 }

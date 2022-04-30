@@ -13,17 +13,17 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
     public let index: Int
     public var suit: Suit { return suitHolding.suit }
     public var pair: PairPosition
-    public let ranks: ClosedRange<Rank>
+    public let rangeRanks: ClosedRange<Rank>
     public let position: Position?
     public var count: Int
     public var positionRanks: Set<Rank>?
     private var playCardDestination: CountedCardRange?
 
-    init(suitHolding: SuitHolding, index: Int, pair: PairPosition, ranks: ClosedRange<Rank>, position: Position? = nil, playCardDestination: CountedCardRange? = nil, positionRanks: Set<Rank>? = []) {
+    init(suitHolding: SuitHolding, index: Int, pair: PairPosition, rangeRanks: ClosedRange<Rank>, position: Position? = nil, playCardDestination: CountedCardRange? = nil, positionRanks: Set<Rank>? = []) {
         self.suitHolding = suitHolding
         self.index = index
         self.pair = pair
-        self.ranks = ranks
+        self.rangeRanks = rangeRanks
         if let positionRanks = positionRanks {
             self.count = positionRanks.count
         } else {
@@ -39,7 +39,7 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
         self.suitHolding = suitHolding
         self.index = from.index
         self.pair = from.pair
-        self.ranks = from.ranks
+        self.rangeRanks = from.rangeRanks
         self.count = from.count
         self.position = from.position
         self.playCardDestination = playCardDestination
@@ -48,23 +48,23 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
     }
 
     public static func < (lhs: CountedCardRange, rhs: CountedCardRange) -> Bool {
-        return lhs.ranks.upperBound < rhs.ranks.lowerBound
+        return lhs.rangeRanks.upperBound < rhs.rangeRanks.lowerBound
     }
     
     public static func == (lhs: CountedCardRange, rhs: CountedCardRange) -> Bool {
-        return lhs.ranks == rhs.ranks
+        return lhs.rangeRanks == rhs.rangeRanks
     }
     
     public var description: String {
-        if ranks.lowerBound == ranks.upperBound { return ranks.lowerBound.shortDescription }
-        return "\(ranks.lowerBound.shortDescription)...\(ranks.upperBound.shortDescription)"
+        if rangeRanks.lowerBound == rangeRanks.upperBound { return rangeRanks.lowerBound.shortDescription }
+        return "\(rangeRanks.lowerBound.shortDescription)...\(rangeRanks.upperBound.shortDescription)"
     }
     
     public var promotedRange: ClosedRange<Rank> {
         if let position = position {
             return suitHolding.promotedRangeFor(position: position, index: index)
         }
-        return ranks
+        return rangeRanks
     }
     
     public func playCard(rank: Rank? = nil, play: Bool) {
@@ -76,7 +76,7 @@ internal class CountedCardRange: Comparable, CustomStringConvertible {
         if count < 0 || playTo.count < 0 { fatalError("Card count has gone negative") }
         assert((rank == nil && takeFrom.positionRanks == nil && moveTo.positionRanks == nil) || (rank != nil && takeFrom.positionRanks != nil && moveTo.positionRanks != nil))
         if let rank = rank {
-            assert(ranks.contains(rank))
+            assert(rangeRanks.contains(rank))
             assert(takeFrom.positionRanks!.contains(rank))
             assert(moveTo.positionRanks!.contains(rank) == false)
             takeFrom.positionRanks!.remove(rank)
