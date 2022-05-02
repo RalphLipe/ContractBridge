@@ -190,14 +190,14 @@ public class CardCombinationAnalyzer {
     private func thirdHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
         assert(trick.nextToAct.pairPosition == .ns)
         var cover: CountedCardRange? = nil
-        if let min = trick.leadPlan.minThirdHand {
-            if min > trick.winningRankRange {
-                cover = min
-            } else {
-                if let maxThirdHand = trick.leadPlan.maxThirdHand,
-                   maxThirdHand > trick.winningRankRange {
-                    cover = trick.winningRankRange
-                }
+        if let min = trick.leadPlan.minThirdHand,
+           min > trick.winningRankRange {
+            cover = min
+        }
+        if cover == nil && trick.winningPosition.pairPosition == .ew {
+            if let maxThirdHand = trick.leadPlan.maxThirdHand,
+               maxThirdHand > trick.winningRankRange {
+                cover = trick.winningRankRange
             }
         }
         return hand.lowest(cover: cover)
