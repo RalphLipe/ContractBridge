@@ -18,6 +18,36 @@ class CardCombinationAnalyzerTest: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+   /*
+
+    func testGenerateLayouts() throws {
+        var layoutIds = SuitLayout.generateLayouts()
+        // Now prune "trivial" layouts.  That is, ones that simply always make the same
+        // with a given lead and are 100% given that lead.
+        for id in layoutIds {
+            let layout = SuitLayout(suitLayoutId: id)
+            print(layout.description, terminator: "")
+            let analysis = CardCombinationAnalyzer.analyze(suitHolding: SuitHolding(suitLayout: layout))
+            let bestLeads = analysis.bestLeads()
+            if bestLeads.first!.combinationsFor(desiredTricks: analysis.maxTricksAllLayouts) == analysis.totalCombinations {
+                print(" - REMOVED - always makes \(analysis.maxTricksAllLayouts)")
+                layoutIds.remove(id)
+            } else if bestLeads.count == analysis.leads.count {
+                print(" - TRIVIAL - all leads make the same tricks!")
+            } else {
+                let maxTricks = bestLeads.first!.maxTricksAnyLayout
+                let percent = bestLeads.first!.percentageFor(desiredTricks: maxTricks)
+                print(" - Makes \(maxTricks) \(percent)% of the time")
+                
+            }
+        }
+        for id in layoutIds {
+            let layout = SuitLayout(suitLayoutId: id)
+            print(layout.description)
+        }
+        print("TOTAL LAYOUTS FOUND: \(layoutIds.count)")
+    }
+    */
     
     private func reportResults(analysis: LayoutAnalysis) -> Void {
         print("Total combinations considered: \(analysis.totalCombinations)")
@@ -65,7 +95,7 @@ class CardCombinationAnalyzerTest: XCTestCase {
     
     func testExample() throws {
         // Deal 412
-        let layout = SuitLayout(suit: .spades, north: [.ace, .ten, .nine, .two], south: [.queen, .eight, .three])
+        let layout = SuitLayout(suit: .spades, north: [.ace, .king, .ten, .nine, .five, .four, .three, .two], south: [.jack])
         let sh = SuitHolding(suitLayout: layout)
         let analysis = CardCombinationAnalyzer.analyze(suitHolding: sh)
         reportResults(analysis: analysis)

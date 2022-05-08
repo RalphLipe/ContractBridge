@@ -35,6 +35,7 @@ public struct Deal: Codable {
 
     public init(from: String) throws {
         self.init()
+        if from.count < 2 { throw DealError.invalidFirstPosition }
         let c0 = from.startIndex
         let c1 = from.index(c0, offsetBy: 1)
         guard let firstPosition = Position(from: String(from[c0..<c1])) else {

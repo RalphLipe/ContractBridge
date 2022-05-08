@@ -39,7 +39,7 @@ public struct LeadStatistics {
     }
     
     public func percentageFor(desiredTricks: Int) -> Double {
-        return Double(maxTrickCombinations[desiredTricks]) / Double(maxTrickCombinations[0]) * 100.0
+        return Double(combinationsFor(desiredTricks: desiredTricks)) / Double(maxTrickCombinations[0]) * 100.0
     }
 }
 
@@ -108,7 +108,7 @@ public class LayoutAnalyzer {
     internal init(suitHolding: SuitHolding, leads: [LeadPlan]) {
         self.suitHolding = suitHolding
         self.leads = leads
-        self.worstCaseTricks = LayoutAnalyzer.computeMinTricks(suitHolding: suitHolding)
+        self.worstCaseTricks = suitHolding.initialLayout.minimumTricksFor(.ns)
         self.layouts = []
         self.thisLayoutMaxTricks = []
         self.trickSequences = []
@@ -116,7 +116,7 @@ public class LayoutAnalyzer {
 
         self.combinations = 0
     }
-    
+  /*
     private class func computeMinTricks(suitHolding: SuitHolding) -> Int {
         let nRanks = suitHolding.initialLayout.ranksFor(position: .north)
         let sRanks = suitHolding.initialLayout.ranksFor(position: .south)
@@ -147,7 +147,7 @@ public class LayoutAnalyzer {
         }
         return minTricks + nsSorted.count
     }
-    
+    */
     
     internal func recordResults(_ results: [Int], layoutId: SuitLayoutIdentifier?, combinations: Int) -> Void {
         assert(results.count == self.leads.count)

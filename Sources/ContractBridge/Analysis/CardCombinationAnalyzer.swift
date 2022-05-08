@@ -84,6 +84,7 @@ public class CardCombinationAnalyzer {
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
         self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [])
         self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads())
+        assert(layoutAnalyzer.leads.count > 0)
 
     }
 
@@ -170,21 +171,32 @@ public class CardCombinationAnalyzer {
         if ourChoices.all.count == 1 {
             return hand.lowest(cover: nil)
         }
-        /*
-         OPTOPMIZE THIS LATER.  FOR NOW JUST DO ALL CHOICES
-        // Now if the rank in the a choice beats "mustBeat" then try all of them out
-         */
+        // TODO:  More optimizations?  Perhaps look at 3rd hand
+        var minConsiderRank = trick.leadPlan.rankRange.rangeRanks.upperBound
+        if let minThirdHand = trick.leadPlan.minThirdHand {
+            minConsiderRank = max(minConsiderRank, minThirdHand.rangeRanks.upperBound)
+        } else {
+            let thirdHand = suitHolding[position.next]
+            if thirdHand.count > 0 {
+                minConsiderRank = max(minConsiderRank, thirdHand.lowest().rangeRanks.upperBound)
+            }
+        }
         var lowestTrickRank: CountedCardRange? = nil
         var lowestTrickCount: Int = 13
         for choice in ourChoices.all {
-            let rankRange = choice.lowest(cover: nil)
-            let maxTricks = trick.play(rankRange, nextStep: self.playNextPosition)
-            if lowestTrickRank == nil || lowestTrickCount > maxTricks {
-                lowestTrickRank = rankRange
-                lowestTrickCount = maxTricks
+            // Only consider a high play if the rank is higher than the lead rank, and if
+            // there is a minimum 3rd hand value, if the high play would be higher than the
+            // minimum 3rd hand play (normally a finesse)
+            if choice.ranks.lowerBound > minConsiderRank {
+                let rankRange = choice.lowest(cover: nil)
+                let maxTricks = trick.play(rankRange, nextStep: self.playNextPosition)
+                if lowestTrickRank == nil || lowestTrickCount > maxTricks {
+                    lowestTrickRank = rankRange
+                    lowestTrickCount = maxTricks
+                }
             }
         }
-        return lowestTrickRank!
+        return lowestTrickRank == nil ? hand.lowest() : lowestTrickRank!
     }
     
     private func thirdHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
@@ -276,14 +288,20 @@ public class CardCombinationAnalyzer {
     private func generateRides(position: Position, leadRange: CompositeCardRange, partnerChoices: RangeChoices) -> [LeadPlan] {
         var leads: [LeadPlan] = []
         let leadRank = leadRange.lowest()
+        var didSomething = false
         for i in partnerChoices.all.indices {
             if leadRange.ranks.upperBound < partnerChoices.all[i].ranks.lowerBound {
                 let coverRanges = coverRanges(cover: leadRange, coverChoices: partnerChoices.all[i...])
                 for coverRange in coverRanges {
                     leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .ride, minThirdHand: nil, maxThirdHand: coverRange))
+                    didSomething = true
+                    
                 }
                 break
             }
+        }
+        if didSomething == false {
+            leads.append(LeadPlan(position: position, rankRange: leadRank, intent: .ride, minThirdHand: nil, maxThirdHand: nil))
         }
         return leads
     }
