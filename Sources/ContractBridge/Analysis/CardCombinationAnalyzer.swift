@@ -166,37 +166,40 @@ public class CardCombinationAnalyzer {
         if trick.leadPlan.intent == .cashWinner { return hand.lowest(cover: nil) }
         
         let position = trick.nextToAct
-        let ourChoices = suitHolding.choices(position)
         // Simplest case is that we have only one real choice of cards in this hand.  Just return a card now
-        if ourChoices.all.count == 1 {
-            return hand.lowest(cover: nil)
-        }
-        // TODO:  More optimizations?  Perhaps look at 3rd hand
-        var minConsiderRank = trick.leadPlan.rankRange.rangeRanks.upperBound
-        if let minThirdHand = trick.leadPlan.minThirdHand {
-            minConsiderRank = max(minConsiderRank, minThirdHand.rangeRanks.upperBound)
-        } else {
-            let thirdHand = suitHolding[position.next]
-            if thirdHand.count > 0 {
-                minConsiderRank = max(minConsiderRank, thirdHand.lowest().rangeRanks.upperBound)
+        var lowestTrickRank = hand.lowest()     // This is "2nd hand low" which we will always analyze as a choice
+        let ourChoices = suitHolding.choices(position)
+        if ourChoices.all.count > 1 {
+            var lowestTrickCount = trick.play(lowestTrickRank, nextStep: playNextPosition)
+            // We will only consider other, higher choices if they are:
+            //  Higher than 2nd hand's lowest card
+            //  Higher than the lead rank (the current winning rank)
+            //  Higher than any minimum play at 3rd hand (usually a finesse)
+            //  or if no required 3rd hand then at least higher than 3rd hand's lowest rank
+            var minConsiderRank = max(trick.leadPlan.rankRange, lowestTrickRank)
+            if let minThirdHand = trick.leadPlan.minThirdHand {
+                minConsiderRank = max(minConsiderRank, minThirdHand)
+            } else {
+                let thirdHand = suitHolding[position.next]
+                if thirdHand.count > 0 {
+                    minConsiderRank = max(minConsiderRank, thirdHand.lowest())
+                }
             }
-        }
-        var lowestTrickRank: CountedCardRange? = nil
-        var lowestTrickCount: Int = 13
-        for choice in ourChoices.all {
-            // Only consider a high play if the rank is higher than the lead rank, and if
-            // there is a minimum 3rd hand value, if the high play would be higher than the
-            // minimum 3rd hand play (normally a finesse)
-            if choice.ranks.lowerBound > minConsiderRank {
-                let rankRange = choice.lowest(cover: nil)
-                let maxTricks = trick.play(rankRange, nextStep: self.playNextPosition)
-                if lowestTrickRank == nil || lowestTrickCount > maxTricks {
-                    lowestTrickRank = rankRange
-                    lowestTrickCount = maxTricks
+            for choice in ourChoices.all {
+                // Only consider a high play if the rank is higher than the lead rank, and if
+                // there is a minimum 3rd hand value, if the high play would be higher than the
+                // minimum 3rd hand play (normally a finesse)
+                if choice.ranks.lowerBound > minConsiderRank.rangeRanks.upperBound {
+                    let rankRange = choice.lowest(cover: nil)
+                    let maxTricks = trick.play(rankRange, nextStep: playNextPosition)
+                    if lowestTrickCount > maxTricks {
+                        lowestTrickRank = rankRange
+                        lowestTrickCount = maxTricks
+                    }
                 }
             }
         }
-        return lowestTrickRank == nil ? hand.lowest() : lowestTrickRank!
+        return lowestTrickRank
     }
     
     private func thirdHand(trick: Trick, hand: CompositeCardRange) -> CountedCardRange {
