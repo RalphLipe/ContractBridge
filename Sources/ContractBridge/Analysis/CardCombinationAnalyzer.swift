@@ -203,7 +203,7 @@ public class CardCombinationAnalyzer {
         assert(trick.nextToAct.pairPosition == .ns)
         var cover: CountedCardRange? = nil
         if let min = trick.leadPlan.minThirdHand,
-           min > trick.winningRankRange {
+           trick.winningPosition.pairPosition == .ns || min > trick.winningRankRange {
             cover = min
         }
         if cover == nil && trick.winningPosition.pairPosition == .ew {
