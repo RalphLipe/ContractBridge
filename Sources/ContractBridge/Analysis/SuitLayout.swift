@@ -38,29 +38,9 @@ public struct SuitLayout {
     public init(from: SuitHolding) {
         self.suit = from.suit
         self.rankPositions = Array(repeating: .north, count: Rank.allCases.count)
-        if from.hasPositionRanks {
-            for position in Position.allCases {
-                for countedRange in from[position].cardRanges {
-                    for rank in countedRange.positionRanks! {
-                        self[rank] = position
-                    }
-                }
-            }
-        } else {
-            for pair in [PairPosition.ns, PairPosition.ew] {
-                let positions = pair.positions
-                let hand0 = from[positions.0]
-                let hand1 = from[positions.1]
-                assert(hand0.cardRanges.endIndex == hand0.cardRanges.endIndex)
-                for i in hand0.cardRanges.indices {
-                    let ranks = hand0.cardRanges[i].rangeRanks
-                    var remaining0 = hand0.cardRanges[i].count
-                    assert(remaining0 + hand1.cardRanges[i].count == ranks.count)
-                    for rank in ranks {
-                        self[rank] = remaining0 > 0 ? positions.0 : positions.1
-                        remaining0 -= 1
-                    }
-                }
+        for position in Position.allCases {
+            for rank in from[position].ranks {
+                self[rank] = position
             }
         }
     }
@@ -337,14 +317,7 @@ extension SuitLayout: CustomStringConvertible {
     public var description: String {
         var result = ""
         for position in Position.allCases {
-            let ranks = ranksFor(position: position)
-            var rankArray = Array<Rank>(ranks)
-            rankArray.sort()
-            rankArray.reverse()
-            result += "\(position.shortDescription): "
-            for rank in rankArray {
-                result += rank.shortDescription
-            }
+            result += "\(position.shortDescription): \(ranksFor(position: position).description)"
             if position != Position.west { result += " "}
         }
         return result

@@ -11,10 +11,10 @@ import Foundation
 
 public struct LeadPlan: CustomStringConvertible {
     public let position: Position
-    let rankRange: CountedCardRange
+    let rankRange: RankRange
     public let intent: Intent
-    let minThirdHand: CountedCardRange?
-    let maxThirdHand: CountedCardRange?
+    let minThirdHand: RankRange?
+    let maxThirdHand: RankRange?
     
     public enum Intent {
         case cashWinner, // May lead a winner rank, or lead low rank with minThirdHand set to winner rank
@@ -23,7 +23,7 @@ public struct LeadPlan: CustomStringConvertible {
              playLow    // Low card lead toward low card
     }
     
-    init(position: Position, rankRange: CountedCardRange, intent: Intent, minThirdHand: CountedCardRange? = nil, maxThirdHand: CountedCardRange? = nil) {
+    init(position: Position, rankRange: RankRange, intent: Intent, minThirdHand: RankRange? = nil, maxThirdHand: RankRange? = nil) {
         self.position = position
         self.rankRange = rankRange
         self.intent = intent

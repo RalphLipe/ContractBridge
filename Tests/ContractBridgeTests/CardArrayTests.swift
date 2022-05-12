@@ -160,4 +160,15 @@ class CardArrayTests: XCTestCase {
         XCTAssertNoThrow(try Array<Card>.fromSerialized("aaakkkqqq", allowDuplicates: true))
         XCTAssertThrowsError(try Array<Card>.fromSerialized("aakqj"))
     }
+    
+    // TODO: Move these to different files
+    func testSetRank() throws {
+        let s = Set<Rank>([.jack, .queen, .three, .ace])
+        XCTAssertEqual(s.description, "AQJ3")
+        
+        // MOVE THIS TOO
+        let cards = Set<Card>([.aceOfClubs, .jackOfClubs, .nineOfClubs, .queenOfHearts, .threeOfHearts, .fourOfSpades])
+        print("%#)%()#*)(%*#)(%*()#%*)#*%)#*()%*()#%*)(#*%)#*)%*#)%*#)%*)#*%)#*%)#*%)#*%)#*%)#*%)*%")
+        print(cards.description)
+    }
 }
