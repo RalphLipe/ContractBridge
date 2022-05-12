@@ -59,9 +59,15 @@ public class CompositeRankRange: Comparable {
         return cards
     }
 
-    func rangeFor(_ rank: Rank) -> RankRange {
+    func rankRangeFor(rank: Rank) -> RankRange {
         for child in self.cardRanges {
             if child.range.contains(rank) { return child }
+        }
+        fatalError()
+    }
+    func rankRangeFor(range: ClosedRange<Rank>) -> RankRange {
+        for child in self.cardRanges {
+            if child.range.contains(range.lowerBound) && child.count > 0 { return child }
         }
         fatalError()
     }

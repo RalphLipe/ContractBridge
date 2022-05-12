@@ -11,8 +11,11 @@ import Foundation
 
 public struct LeadPlan: CustomStringConvertible {
     public let position: Position
-    let rankRange: RankRange
     public let intent: Intent
+    public let leadRange: ClosedRange<Rank>
+    public let minThirdHandRange: ClosedRange<Rank>?
+    public let maxThirdHandRange: ClosedRange<Rank>?
+    let lead: RankRange
     let minThirdHand: RankRange?
     let maxThirdHand: RankRange?
     
@@ -23,25 +26,28 @@ public struct LeadPlan: CustomStringConvertible {
              playLow    // Low card lead toward low card
     }
     
-    init(position: Position, rankRange: RankRange, intent: Intent, minThirdHand: RankRange? = nil, maxThirdHand: RankRange? = nil) {
+    init(position: Position, lead: CompositeRankRange, intent: Intent, minThirdHand: CompositeRankRange? = nil, maxThirdHand: CompositeRankRange? = nil) {
         self.position = position
-        self.rankRange = rankRange
         self.intent = intent
-        self.minThirdHand = minThirdHand
-        self.maxThirdHand = maxThirdHand
+        self.lead = lead.lowest()
+        self.minThirdHand = minThirdHand?.lowest()
+        self.maxThirdHand = maxThirdHand?.lowest()
+        self.leadRange = lead.range
+        self.minThirdHandRange = minThirdHand?.range
+        self.maxThirdHandRange = maxThirdHand?.range
     }
     
     public var description: String {
         var desc: String = ""
         switch self.intent {
         case .cashWinner:
-            if let thirdHandWinner = minThirdHand {
-                desc = "lead \(rankRange) from \(position) cashing winner \(thirdHandWinner) "
+            if let thirdHandWinner = minThirdHandRange {
+                desc = "lead \(leadRange) from \(position) cashing winner \(thirdHandWinner) "
             } else {
-                desc = "cash winner \(rankRange) in \(position)"
+                desc = "cash winner \(leadRange) in \(position)"
             }
         case .finesse:
-            desc = "lead \(rankRange) from \(position) finessing \(minThirdHand!) "
+            desc = "lead \(leadRange) from \(position) finessing \(minThirdHandRange!) "
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
             } else {
@@ -49,14 +55,14 @@ public struct LeadPlan: CustomStringConvertible {
             }
                 
         case .ride:
-            desc = "ride \(rankRange) from \(position) "
+            desc = "ride \(leadRange) from \(position) "
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
             } else {
                 desc += "not covering"
             }
         case .playLow:
-            desc = "play low \(rankRange) from \(position)"
+            desc = "play low \(leadRange) from \(position)"
         }
         return desc
     }

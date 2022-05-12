@@ -48,8 +48,7 @@ internal class RankRange: Comparable, CustomStringConvertible {
     }
     
     public var description: String {
-        if range.lowerBound == range.upperBound { return range.lowerBound.shortDescription }
-        return "\(range.lowerBound.shortDescription)...\(range.upperBound.shortDescription)"
+        return range.description
     }
     
     public var promotedRange: ClosedRange<Rank> {
@@ -78,5 +77,12 @@ internal class RankRange: Comparable, CustomStringConvertible {
         assert(self.ranks.contains(rank) == false)
         removeFrom.ranks.remove(rank)
         self.ranks.insert(rank)
+    }
+}
+
+extension ClosedRange where Element == Rank {
+    var description: String {
+        if lowerBound == upperBound { return lowerBound.shortDescription }
+        return "\(lowerBound.shortDescription)...\(upperBound.shortDescription)"
     }
 }

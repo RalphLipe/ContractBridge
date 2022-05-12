@@ -18,8 +18,10 @@ public struct RangeChoices {
         self.position = position
         self.all = all
         var r = all
-        self.low = r.count > 0 && r.first!.isLow ? r.removeFirst() : nil
+        // It is important to look at the ranges in this order: Win, Low and then the rest
+        // because when the final range is 2...A the last AND first are both winners and low
         self.win = r.count > 0 && r.last!.isWinner ? r.removeLast() : nil
+        self.low = r.count > 0 && r.first!.isLow ? r.removeFirst() : nil
         self.mid = r.count > 0 ? r : nil
     }
 }
@@ -144,7 +146,7 @@ public class SuitHolding {
         for position in Position.allCases {
             if let played = _trick.cards[position] {
                 if played.suit == suit {
-                    let range = self[position].rangeFor(played.rank)
+                    let range = self[position].rankRangeFor(rank: played.rank)
                     _ = range.play(rank: played.rank)
                 }
             }
@@ -166,17 +168,17 @@ public class SuitHolding {
         }
     }
     
-    public func playCards(from _leadStats: LeadStatistics) {
-        var winningRank: Rank? = nil
-        let winningPosition = _leadStats.trickSequence.winningPosition
+    public func playCards(from _leadStats: LeadStatistics) -> [Position: Rank] {
+        var ranksPlayed: [Position:Rank] = [:]
         for position in Position.allCases {
             if let played = _leadStats.trickSequence.play[position] {
-                let range = self[position].rangeFor(played.lowerBound)
-                let rank = range.play()
-                if position == winningPosition { winningRank = rank }
+                let range = self[position].rankRangeFor(range: played)
+                ranksPlayed[position] = range.play()
             }
         }
-        updateKnownHoldings(winningRank: winningRank!, winningPosition: winningPosition)
+        let winningPosition = _leadStats.trickSequence.winningPosition
+        updateKnownHoldings(winningRank: ranksPlayed[winningPosition]!, winningPosition: winningPosition)
+        return ranksPlayed
     }
     
 
