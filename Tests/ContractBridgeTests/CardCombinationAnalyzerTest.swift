@@ -102,7 +102,7 @@ class CardCombinationAnalyzerTest: XCTestCase {
         
         let bestLeads = analysis.bestLeads()
         let layoutInfo = bestLeads[0].layoutsFor(analysis.maxTricksAllLayouts)
-        let bestLayout = SuitLayout(suitLayoutId: layoutInfo[0].layoutId!)
+        let bestLayout = SuitLayout(suitLayoutId: layoutInfo[0].layoutId)
         let bestHolding = SuitHolding(suitLayout: bestLayout)
         
         print("NOW FOR ONLY BEST HOLDING:")
@@ -111,7 +111,7 @@ class CardCombinationAnalyzerTest: XCTestCase {
             reportResults(analysis: a2)
             let chosenLead = a2.bestLeads()[0]
             print("CHOICE OF LEADS: \(chosenLead.leadPlan)")
-            bestHolding.playCards(from: chosenLead)
+            _ = bestHolding.playCards(from: chosenLead)
             print("**************************************************************")
             print("North has \(bestHolding[.north].count) cards.  South has \(bestHolding[.south].count)")
         }

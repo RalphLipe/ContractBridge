@@ -14,7 +14,7 @@ public struct TrickSequence {
 }
 
 public struct LayoutCombinations {
-    public let layoutId: SuitLayoutIdentifier?
+    public let layoutId: SuitLayoutIdentifier
     public let combinations: Int
 }
 
@@ -149,7 +149,7 @@ public class LayoutAnalyzer {
     }
     */
     
-    internal func recordResults(_ results: [Int], layoutId: SuitLayoutIdentifier?, combinations: Int) -> Void {
+    internal func recordResults(_ results: [Int], layoutId: SuitLayoutIdentifier, combinations: Int) -> Void {
         assert(results.count == self.leads.count)
         assert(self.maxTricks.count == results.count)
         assert(self.maxTricks[0].count == self.layouts.count)
