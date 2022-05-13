@@ -5,9 +5,6 @@
 //  Created by Ralph Lipe on 4/18/22.
 //
 
-import Foundation
-
-
 
 public class CardCombinationAnalyzer {
     var suitHolding: SuitHolding { return layoutAnalyzer.suitHolding }
@@ -16,9 +13,8 @@ public class CardCombinationAnalyzer {
     var showsOut: Set<Position> = []
     var layoutAnalyzer: LayoutAnalyzer
     var recordCombinationStatistics = true
-    let recordLayoutIds: Bool
     
-    
+
     class Trick {
         let leadPlan: LeadPlan
         var ranks: [Position:RankRange] = [:]
@@ -81,7 +77,6 @@ public class CardCombinationAnalyzer {
     
 
     private init(suitHolding: SuitHolding) {
-        recordLayoutIds = suitHolding.isFullHolding
         let nCount = suitHolding[.north].count
         let sCount = suitHolding[.south].count
         
@@ -369,13 +364,8 @@ public class CardCombinationAnalyzer {
         return leads.map { lead($0) }
     }
     
-    private func layoutId() -> SuitLayoutIdentifier? {
-        if recordLayoutIds {
-            let newLayout = SuitLayout(from: suitHolding)
-            return newLayout.id
-        } else {
-            return nil
-        }
+    private func layoutId() -> SuitLayoutIdentifier {
+        return SuitLayout(from: suitHolding).id
     }
 
 

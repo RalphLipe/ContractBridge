@@ -27,7 +27,6 @@ public struct RangeChoices {
 }
 
 public class SuitHolding {
-    public var suit: Suit { initialLayout.suit }
     public let initialLayout: SuitLayout
     private var playedRanges: [RankRange]
     private var hands: [CompositeRankRange]
@@ -141,7 +140,7 @@ public class SuitHolding {
     //      with king in 4th seat then 2nd seat must have the jack.
     //  These cards will not be moved from their existing ranges when considering odds since their placement is known in the
     //  current configuration
-    public func playCards(from _trick: Trick) {
+    public func playCards(from _trick: Trick, suit: Suit) {
         assert(_trick.isComplete)
         for position in Position.allCases {
             if let played = _trick.cards[position] {

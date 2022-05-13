@@ -11,8 +11,14 @@ import Foundation
 public typealias SuitLayoutIdentifier = Int
 
 public struct SuitLayout {
-    public let suit: Suit
-    internal var rankPositions: [Position]
+    internal var rankPositions: [Position?]
+    
+    public var isFullLayout: Bool {
+        for position in rankPositions {
+            if position == nil { return false }
+        }
+        return true
+    }
     
     public struct PairRange {
         let pair: PairPosition
@@ -20,24 +26,21 @@ public struct SuitLayout {
     }
     
     public var id: SuitLayoutIdentifier {
-        return (rankPositions.reversed().reduce(0) { return ($0 * 4) + $1.rawValue }) * 4 + suit.rawValue
+        return (rankPositions.reversed().reduce(0) { return ($0 * 5) + ($1 == nil ? 0 : 1 + $1!.rawValue) })
     }
     
 
-    private init(suit: Suit, rankPositions: [Position]) {
-        self.suit = suit
+    private init(rankPositions: [Position]) {
+        if rankPositions.count != Rank.allCases.count { fatalError() }
         self.rankPositions = rankPositions
-        assert(rankPositions.count == Rank.allCases.count)
     }
     
     public init(from: SuitLayout) {
-        self.suit = from.suit
         self.rankPositions = from.rankPositions
     }
 
     public init(from: SuitHolding) {
-        self.suit = from.suit
-        self.rankPositions = Array(repeating: .north, count: Rank.allCases.count)
+        self.rankPositions = Array(repeating: nil, count: Rank.allCases.count)
         for position in Position.allCases {
             for rank in from[position].ranks {
                 self[rank] = position
@@ -47,22 +50,23 @@ public struct SuitLayout {
 
     public init(suitLayoutId: SuitLayoutIdentifier) {
         var id = suitLayoutId
-        suit = Suit(rawValue: id % 4)!
         rankPositions = []
         for _ in Rank.allCases {
-            id /= 4     // Do this first to get rid of suit
-            rankPositions.append(Position(rawValue: id % 4)!)
+            let val = id % 5
+            var position: Position? = nil
+            if val > 0 { position = Position(rawValue: val - 1) }
+            rankPositions.append(position)
+            id /= 5
         }
     }
     
-    internal mutating func setRanks(_ ranks: Set<Rank>, position: Position) {
+    internal mutating func setRanks(_ ranks: Set<Rank>, position: Position?) {
         ranks.forEach { self[$0] = position }
     }
     
     public init(suit: Suit, north: Set<Rank>, south: Set<Rank>, east: Set<Rank>, west: Set<Rank>) {
         assert(north.union(south).union(east).union(west).count == Rank.allCases.count)
-        self.suit = suit
-        self.rankPositions = Array(repeating: .north, count: Rank.allCases.count)
+        self.rankPositions = Array(repeating: nil, count: Rank.allCases.count)
         setRanks(north, position: .north)
         setRanks(south, position: .south)
         setRanks(east, position: .east)
@@ -74,7 +78,7 @@ public struct SuitLayout {
         self.init(suit: suit, north: north, south: south, east: allRemaining, west: [])
     }
     
-    public func toDeal() -> Deal {
+    public func toDeal(suit: Suit) -> Deal {
         var deal = Deal()
         for position in Position.allCases {
             deal[position] = Set(ranksFor(position: position).map { Card($0, suit) })
@@ -82,7 +86,7 @@ public struct SuitLayout {
         return deal
     }
     
-    public subscript(rank: Rank) -> Position {
+    public subscript(rank: Rank) -> Position? {
         get { return rankPositions[rank.rawValue] }
         set { rankPositions[rank.rawValue] = newValue }
     }
@@ -123,9 +127,10 @@ public struct SuitLayout {
         var ranges = Array<PairRange>()
         var rangeLower = Rank.two
         var rangeUpper = Rank.two
-        var lastPair = self[.two].pairPosition
+        if isFullLayout == false { fatalError() }   // TODO: Think about this.  Make optional ranges?
+        var lastPair = self[.two]!.pairPosition
         for rank in Rank.three...Rank.ace {
-            let thisPair = self[rank].pairPosition
+            let thisPair = self[rank]!.pairPosition
             if thisPair == lastPair {
                 rangeUpper = rank
             } else {
@@ -202,34 +207,7 @@ public struct SuitLayout {
         return minTricks + pairSorted.count
     }
      
-  /*
-    private mutating func moveCardsAndRecordInteresting(_ results: inout [SuitLayout]) -> Void {
-        if ranksFor(position: .north).count > 1 {
-            if minimumTricksFor(.ns) < ranksFor(position: .north).count && minimumTricksFor(.ew) < ranksFor(position: .east).count {
-                results.append(SuitLayout(from: self))
-                print(self)
-            }
-            if ranksFor(position: .north).count > ranksFor(position: .south).count {
-                for rank in Rank.allCases {
-                    if self[rank] == .north {
-                        self[rank] = .south
-                        moveCardsAndRecordInteresting(&results)
-                        self[rank] = .east
-                        moveCardsAndRecordInteresting(&results)
-                        self[rank] = .north
-                    }
-                }
-            }
-            for rank in Rank.allCases {
-                if self[rank] == .south {
-                    self[rank] = .east
-                    moveCardsAndRecordInteresting(&results)
-                    self[rank] = .south
-                }
-            }
-        }
-    }
-    */
+
     
     private func allWinners(_ position: Position) -> Bool {
         var count = countFor(position: position)
@@ -289,7 +267,7 @@ public struct SuitLayout {
     
     
     public static func generateLayouts() -> Set<SuitLayoutIdentifier> {
-        var startingLayout = SuitLayout(suit: .spades, rankPositions: Array<Position>(repeating: .north, count: Rank.allCases.count))
+        var startingLayout = SuitLayout(rankPositions: Array<Position>(repeating: .north, count: Rank.allCases.count))
         var results: Set<SuitLayoutIdentifier> = []
         startingLayout.distributeLowCards(position: .north, startRank: Rank.two, results: &results)
         for id in results {
