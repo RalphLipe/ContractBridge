@@ -137,4 +137,9 @@ extension Set where Element == Card {
         }
         return s
     }
+    public func ranksFor(_ suit: Suit) -> Set<Rank> {
+        var ranks = Set<Rank>()
+        self.forEach { if $0.suit == suit { ranks.insert($0.rank) } }
+        return ranks
+    }
 }

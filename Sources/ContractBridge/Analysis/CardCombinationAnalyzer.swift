@@ -9,7 +9,6 @@
 public class CardCombinationAnalyzer {
     var suitHolding: SuitHolding { return layoutAnalyzer.suitHolding }
     var tricks: [Trick] = []
-    var shortSide: Position? = nil
     var showsOut: Set<Position> = []
     var layoutAnalyzer: LayoutAnalyzer
     var recordCombinationStatistics = true
@@ -77,11 +76,6 @@ public class CardCombinationAnalyzer {
     
 
     private init(suitHolding: SuitHolding) {
-        let nCount = suitHolding[.north].count
-        let sCount = suitHolding[.south].count
-        
-        self.shortSide = nCount < sCount ? .north : .south
-
         // Make the compiler happy by initializing these properties so "self" is valid before generating leads
         self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [])
         self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads())
@@ -365,7 +359,7 @@ public class CardCombinationAnalyzer {
     }
     
     private func layoutId() -> SuitLayoutIdentifier {
-        return SuitLayout(from: suitHolding).id
+        return SuitLayout(suitHolding: suitHolding).id
     }
 
 

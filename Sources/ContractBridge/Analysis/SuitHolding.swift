@@ -37,6 +37,7 @@ public class SuitHolding {
     
 
     public init(suitLayout: SuitLayout) {
+        if !suitLayout.isFullLayout { fatalError("SuitHolding must be created with a full layout") }
         self.initialLayout = suitLayout
         self.playedRanges = []
         self.hands = []
@@ -47,7 +48,7 @@ public class SuitHolding {
         let pairRanges = initialLayout.pairRanges()
         for i in pairRanges.indices {
             let pairRange = pairRanges[i]
-            playedRanges.append(RankRange(suitHolding: self, index: i, pair: pairRange.pair, range: pairRange.ranks))
+            playedRanges.append(RankRange(suitHolding: self, index: i, pair: pairRange.pair!, range: pairRange.ranks))
         }
        Position.allCases.forEach { createHand(for: $0) }
     }

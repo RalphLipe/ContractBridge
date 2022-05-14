@@ -11,7 +11,7 @@ import Foundation
 public typealias SuitLayoutIdentifier = Int
 
 public struct SuitLayout {
-    internal var rankPositions: [Position?]
+    private var rankPositions: [Position?]
     
     public var isFullLayout: Bool {
         for position in rankPositions {
@@ -21,7 +21,7 @@ public struct SuitLayout {
     }
     
     public struct PairRange {
-        let pair: PairPosition
+        let pair: PairPosition?
         let ranks: ClosedRange<Rank>
     }
     
@@ -29,55 +29,51 @@ public struct SuitLayout {
         return (rankPositions.reversed().reduce(0) { return ($0 * 5) + ($1 == nil ? 0 : 1 + $1!.rawValue) })
     }
     
-
-    private init(rankPositions: [Position]) {
-        if rankPositions.count != Rank.allCases.count { fatalError() }
-        self.rankPositions = rankPositions
+    public init() {
+        self.rankPositions = Array<Position?>(repeating: nil, count: Rank.allCases.count)
     }
-    
-    public init(from: SuitLayout) {
+
+    public init(_ from: SuitLayout) {
         self.rankPositions = from.rankPositions
     }
 
-    public init(from: SuitHolding) {
-        self.rankPositions = Array(repeating: nil, count: Rank.allCases.count)
+    public init(suitHolding: SuitHolding) {
+        self.init()
         for position in Position.allCases {
-            for rank in from[position].ranks {
+            for rank in suitHolding[position].ranks {
                 self[rank] = position
             }
         }
     }
 
     public init(suitLayoutId: SuitLayoutIdentifier) {
+        self.init()
         var id = suitLayoutId
-        rankPositions = []
-        for _ in Rank.allCases {
+        for rank in Rank.allCases {
             let val = id % 5
-            var position: Position? = nil
-            if val > 0 { position = Position(rawValue: val - 1) }
-            rankPositions.append(position)
+            self[rank] = val == 0 ? nil : Position(rawValue: val - 1)
             id /= 5
         }
     }
     
-    internal mutating func setRanks(_ ranks: Set<Rank>, position: Position?) {
+    public init(deal: Deal, suit: Suit) {
+        self.init()
+        for position in Position.allCases {
+            setRanks(deal[position].ranksFor(suit), position: position)
+        }
+    }
+    
+    public mutating func assignNilPositions(_ position: Position) {
+        for rank in Rank.allCases {
+            if self[rank] == nil { self[rank] = position }
+        }
+    }
+    
+    public mutating func setRanks(_ ranks: Set<Rank>, position: Position?) {
         ranks.forEach { self[$0] = position }
     }
     
-    public init(suit: Suit, north: Set<Rank>, south: Set<Rank>, east: Set<Rank>, west: Set<Rank>) {
-        assert(north.union(south).union(east).union(west).count == Rank.allCases.count)
-        self.rankPositions = Array(repeating: nil, count: Rank.allCases.count)
-        setRanks(north, position: .north)
-        setRanks(south, position: .south)
-        setRanks(east, position: .east)
-        setRanks(west, position: .west)
-    }
-    
-    public init(suit: Suit, north: Set<Rank>, south: Set<Rank>) {
-        let allRemaining = Set(Rank.allCases).subtracting(north.union(south))
-        self.init(suit: suit, north: north, south: south, east: allRemaining, west: [])
-    }
-    
+    /*  TODO: Is this used anywhere?  Seems kinda random. Put it back if useful
     public func toDeal(suit: Suit) -> Deal {
         var deal = Deal()
         for position in Position.allCases {
@@ -85,6 +81,7 @@ public struct SuitLayout {
         }
         return deal
     }
+     */
     
     public subscript(rank: Rank) -> Position? {
         get { return rankPositions[rank.rawValue] }
@@ -103,8 +100,9 @@ public struct SuitLayout {
     
     public mutating func reassignRanks(pairs: Set<PairPosition> = [.ns, .ew], random: Bool) {
         for range in pairRanges() {
-            if pairs.contains(range.pair) {
-                let positions = range.pair.positions
+            if let rangePair = range.pair,
+                pairs.contains(rangePair) {
+                let positions = rangePair.positions
                 var count0 = ranksFor(position: positions.0, in: range.ranks).count
                 var count1 = ranksFor(position: positions.1, in: range.ranks).count
                 var ranks = range.ranks.map { $0 }
@@ -127,10 +125,9 @@ public struct SuitLayout {
         var ranges = Array<PairRange>()
         var rangeLower = Rank.two
         var rangeUpper = Rank.two
-        if isFullLayout == false { fatalError() }   // TODO: Think about this.  Make optional ranges?
-        var lastPair = self[.two]!.pairPosition
+        var lastPair: PairPosition? = self[.two]?.pairPosition
         for rank in Rank.three...Rank.ace {
-            let thisPair = self[rank]!.pairPosition
+            let thisPair = self[rank]?.pairPosition
             if thisPair == lastPair {
                 rangeUpper = rank
             } else {
@@ -144,26 +141,7 @@ public struct SuitLayout {
         return ranges
     }
    
-    
-    /*
-    struct FUTURESTUFF {
-        var ranks0: [Rank]
-        var ranks1: [Rank]
-        let pair: PairPosition
-        init(_ suitLayout: SuitLayout, pair: PairPosition) {
-            self.pair = pair
-            let positions = pair.positions
-            self.ranks0 = Array(suitLayout.ranksFor(position: positions.0))
-            self.ranks1 = Array(suitLayout.ranksFor(position: positions.1))
-            self.ranks0.sort()
-            self.ranks0.reverse()
-            self.ranks1.sort()
-            self.ranks1.reverse()
-        }
-        var canPlay: Bool { return ranks0.count + ranks1.count > 0 }
-       // var
-    }
-    */
+    // TODO:  *************** EVERYTHING FROM HERE ON DOWN SEEMS LIKE IT SHOULD GO SOMEWHERE ELSE!
     
     // TODO: What is the roll of this function?  It it to provide a base for a particular
     // layout?  For worst case in all opponent configuration for opponents?    Does neither
@@ -235,7 +213,7 @@ public struct SuitLayout {
             let nCount = countFor(position: .north)
             let sCount = countFor(position: .south)
             if nCount >= sCount && sCount > 0 && minimumTricksFor(.ns) < nCount && minimumTricksFor(.ew) < countFor(position: .east) {
-                var layout = SuitLayout(from: self)
+                var layout = SuitLayout(self)
                 layout.reassignRanks(random: false)
                 if layout.allWinners(.south) == false {
                     results.insert(layout.id)
@@ -267,7 +245,8 @@ public struct SuitLayout {
     
     
     public static func generateLayouts() -> Set<SuitLayoutIdentifier> {
-        var startingLayout = SuitLayout(rankPositions: Array<Position>(repeating: .north, count: Rank.allCases.count))
+        var startingLayout = SuitLayout()
+        Rank.allCases.forEach { startingLayout[$0] = .north }
         var results: Set<SuitLayoutIdentifier> = []
         startingLayout.distributeLowCards(position: .north, startRank: Rank.two, results: &results)
         for id in results {
