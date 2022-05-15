@@ -8,11 +8,11 @@
 import Foundation
 
 public struct RangeChoices {
-    let position: Position
-    let all: [CompositeRankRange]
-    let win: CompositeRankRange?
-    let mid: [CompositeRankRange]?
-    let low: CompositeRankRange?
+    public let position: Position
+    public let all: [CompositeRankRange]
+    public let win: CompositeRankRange?
+    public let mid: [CompositeRankRange]?
+    public let low: CompositeRankRange?
     
     init(_ all: [CompositeRankRange], position: Position) {
         self.position = position
