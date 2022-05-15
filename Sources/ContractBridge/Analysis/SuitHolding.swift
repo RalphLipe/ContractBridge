@@ -99,7 +99,7 @@ public class SuitHolding {
         get { return hands[position.rawValue] }
     }
     
-    func choices(_ position: Position) -> RangeChoices {
+    public func choices(_ position: Position) -> RangeChoices {
         var group: [RankRange] = []
         var groupHasCards = false
         var allRanges: [CompositeRankRange] = []
