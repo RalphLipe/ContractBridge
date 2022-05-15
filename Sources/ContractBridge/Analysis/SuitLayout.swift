@@ -146,6 +146,7 @@ public struct SuitLayout {
     // TODO: What is the roll of this function?  It it to provide a base for a particular
     // layout?  For worst case in all opponent configuration for opponents?    Does neither
     // as far as I can tell...
+    /*
     public func minimumTricksFor(_ pair: PairPosition) -> Int {
         let winPositions = pair.positions
         let ranks0 = ranksFor(position: winPositions.0)
@@ -187,7 +188,7 @@ public struct SuitLayout {
      
 
     
-    private func allWinners(_ position: Position) -> Bool {
+    public func allWinners(_ position: Position) -> Bool {
         var count = countFor(position: position)
         var rank = Rank.ace
         while count > 0 {
@@ -197,76 +198,8 @@ public struct SuitLayout {
         }
         return true
     }
+  */
     
-    
-    private mutating func distributeHighCards(rank: Rank?, results: inout Set<SuitLayoutIdentifier>) {
-        if let rank = rank {
-            for position in [Position.north, Position.south, Position.east] {
-                self[rank] = position
-                distributeHighCards(rank: rank.nextHigher, results: &results)
-            }
-        } else {
-            // A layout is only interesting if:
-            // North has >= cards in south
-            // North/South can not trivially win all tricks
-            // East/West can not trivially win all tricks
-            let nCount = countFor(position: .north)
-            let sCount = countFor(position: .south)
-            if nCount >= sCount && sCount > 0 && minimumTricksFor(.ns) < nCount && minimumTricksFor(.ew) < countFor(position: .east) {
-                var layout = SuitLayout(self)
-                layout.reassignRanks(random: false)
-                if layout.allWinners(.south) == false {
-                    results.insert(layout.id)
-                }
-            }
-        }
-    }
-    
-    private mutating func distributeLowCards(position: Position, startRank: Rank, results: inout Set<SuitLayoutIdentifier>, endRank: Rank = Rank.eight) {
-        if startRank == endRank {
-            distributeHighCards(rank: startRank, results: &results)
-        } else {
-            for rank in startRank..<endRank {
-                self[rank] = position
-            }
-            if position == .east {
-                distributeHighCards(rank: endRank, results: &results)
-            } else {
-                var nextPosStart: Rank? = endRank
-                let nextPosition = position == .north ? Position.south : .east
-                while nextPosStart != nil && nextPosStart! >= startRank {
-                    distributeLowCards(position: nextPosition, startRank: nextPosStart!, results: &results)
-                    nextPosStart = nextPosStart?.nextLower
-                }
-            }
-        }
-       
-    }
-    
-    
-    public static func generateLayouts() -> Set<SuitLayoutIdentifier> {
-        var startingLayout = SuitLayout()
-        Rank.allCases.forEach { startingLayout[$0] = .north }
-        var results: Set<SuitLayoutIdentifier> = []
-        startingLayout.distributeLowCards(position: .north, startRank: Rank.two, results: &results)
-        for id in results {
-            var layout = SuitLayout(suitLayoutId: id)
-            if layout.countFor(position: .north) == layout.countFor(position: .south) {
-                for rank in Rank.allCases {
-                    if layout[rank] == .north {
-                        layout[rank] = .south
-                    } else if layout[rank] == .south {
-                        layout[rank] = .north
-                    }
-                }
-                if results.contains(layout.id) {
-                    print("removing \(id), same as \(layout.id)")
-                    results.remove(id)
-                }
-            }
-        }
-        return results
-    }
 }
 
 // TODO:  This is ugly.  Make is nicer...
