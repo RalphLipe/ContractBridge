@@ -21,7 +21,7 @@ class CardTest: XCTestCase {
     func testCard() throws {
         XCTAssertLessThan(Card(.ten, .spades), Card(.jack, .spades))
         XCTAssertEqual(Card(.jack, .diamonds).description, "jack of diamonds")
-        XCTAssertEqual(Card(.queen, .clubs).highCardPoints, 2)
+        XCTAssertEqual(Card(.queen, .clubs).rank.highCardPoints, 2)
         XCTAssertEqual(Card.twoOfClubs, Card(.two, .clubs))
     }
 }

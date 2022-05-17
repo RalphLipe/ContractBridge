@@ -34,16 +34,6 @@ public enum Card : Int, Comparable, CaseIterable, Hashable, CustomStringConverti
         return "\(rank.shortDescription)\(suit.shortDescription)"
     }
     
-    public var highCardPoints: Int {
-        switch self.rank {
-        case .ace:   return 4
-        case .king:  return 3
-        case .queen: return 2
-        case .jack:  return 1
-        default:     return 0
-        }
-    }
-    
     public static func < (lhs: Card, rhs: Card) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }

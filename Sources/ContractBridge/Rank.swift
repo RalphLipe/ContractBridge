@@ -30,6 +30,16 @@ public enum Rank: Int, CaseIterable, Comparable {
         }
     }
     
+    public var highCardPoints: Int {
+        switch self {
+        case .ace:   return 4
+        case .king:  return 3
+        case .queen: return 2
+        case .jack:  return 1
+        default:     return 0
+        }
+    }
+    
     public var nextLower: Rank? {
         return self == .two ? nil : Rank(rawValue: self.rawValue - 1)
     }
