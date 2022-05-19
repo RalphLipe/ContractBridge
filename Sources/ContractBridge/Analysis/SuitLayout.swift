@@ -21,8 +21,8 @@ public struct SuitLayout {
     }
     
     public struct PairRange {
-        let pair: PairPosition?
-        let ranks: ClosedRange<Rank>
+        let pair: Pair?
+        let range: ClosedRange<Rank>
     }
     
     public var id: SuitLayoutIdentifier {
@@ -98,14 +98,14 @@ public struct SuitLayout {
         return _range.reduce(0) { self[$1] == position ? $0 + 1 : $0}
     }
     
-    public mutating func reassignRanks(pairs: Set<PairPosition> = [.ns, .ew], random: Bool) {
-        for range in pairRanges() {
-            if let rangePair = range.pair,
+    public mutating func reassignRanks(pairs: Set<Pair> = [.ns, .ew], random: Bool) {
+        for pairRange in pairRanges() {
+            if let rangePair = pairRange.pair,
                 pairs.contains(rangePair) {
                 let positions = rangePair.positions
-                var count0 = ranksFor(position: positions.0, in: range.ranks).count
-                var count1 = ranksFor(position: positions.1, in: range.ranks).count
-                var ranks = range.ranks.map { $0 }
+                var count0 = ranksFor(position: positions.0, in: pairRange.range).count
+                var count1 = ranksFor(position: positions.1, in: pairRange.range).count
+                var ranks = pairRange.range.map { $0 }
                 assert(ranks.count == count0 + count1)
                 if random { ranks.shuffle() }
                 while count0 > 0 {
@@ -125,80 +125,21 @@ public struct SuitLayout {
         var ranges = Array<PairRange>()
         var rangeLower = Rank.two
         var rangeUpper = Rank.two
-        var lastPair: PairPosition? = self[.two]?.pairPosition
+        var lastPair: Pair? = self[.two]?.pair
         for rank in Rank.three...Rank.ace {
-            let thisPair = self[rank]?.pairPosition
+            let thisPair = self[rank]?.pair
             if thisPair == lastPair {
                 rangeUpper = rank
             } else {
-                ranges.append(PairRange(pair: lastPair, ranks: rangeLower...rangeUpper))
+                ranges.append(PairRange(pair: lastPair, range: rangeLower...rangeUpper))
                 rangeLower = rank
                 rangeUpper = rank
                 lastPair = thisPair
             }
         }
-        ranges.append(PairRange(pair: lastPair, ranks: rangeLower...rangeUpper))
+        ranges.append(PairRange(pair: lastPair, range: rangeLower...rangeUpper))
         return ranges
     }
-   
-    // TODO:  *************** EVERYTHING FROM HERE ON DOWN SEEMS LIKE IT SHOULD GO SOMEWHERE ELSE!
-    
-    // TODO: What is the roll of this function?  It it to provide a base for a particular
-    // layout?  For worst case in all opponent configuration for opponents?    Does neither
-    // as far as I can tell...
-    /*
-    public func minimumTricksFor(_ pair: PairPosition) -> Int {
-        let winPositions = pair.positions
-        let ranks0 = ranksFor(position: winPositions.0)
-        let ranks1 = ranksFor(position: winPositions.1)
-        let opponentPositions = pair.opponents.positions
-        let oppsRanks0 = ranksFor(position: opponentPositions.0)
-        let oppsRanks1 = ranksFor(position: opponentPositions.1)
-        
-        var pairSorted = Array(ranks0.union(ranks1))
-        pairSorted.sort()
-        pairSorted.reverse()
-        var opponentSorted = Array(oppsRanks0.union(oppsRanks1))
-        opponentSorted.sort()
-        opponentSorted.reverse()
-
-        // N/S can only win as any tricks as the length of the longest hand  Strip off low cards
-        let maxPossible = max(ranks0.count, ranks1.count)
-        while pairSorted.count > maxPossible {
-            _ = pairSorted.removeLast()
-        }
-        
-        let oppsMaxPossible = max(oppsRanks0.count, oppsRanks1.count)
-        while opponentSorted.count > oppsMaxPossible {
-            _ = opponentSorted.removeLast()
-        }
-        
-        var minTricks = 0
-        while opponentSorted.count > 0 && pairSorted.count > 0 {
-            let pairPlayed = pairSorted.removeFirst()
-            if pairPlayed > opponentSorted.first! {
-                minTricks += 1
-                _ = opponentSorted.removeLast()
-            } else {
-                _ = opponentSorted.removeFirst()
-            }
-        }
-        return minTricks + pairSorted.count
-    }
-     
-
-    
-    public func allWinners(_ position: Position) -> Bool {
-        var count = countFor(position: position)
-        var rank = Rank.ace
-        while count > 0 {
-            if self[rank] != position { return false }
-            rank = rank.nextLower!
-            count -= 1
-        }
-        return true
-    }
-  */
     
 }
 

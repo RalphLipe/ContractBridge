@@ -8,7 +8,7 @@
 import Foundation
 
 
-public enum PairPosition: Int, CaseIterable {
+public enum Pair: Int, CaseIterable {
     case ns = 0, ew
     public var positions: (Position, Position)  {
         switch self {
@@ -16,13 +16,13 @@ public enum PairPosition: Int, CaseIterable {
         case .ew: return (.east, .west)
         }
     }
-    public var opponents: PairPosition {
+    public var opponents: Pair {
         return self == .ns ? .ew : .ns
     }
     public var shortDescription: String {
         switch self {
         case .ns: return "N/S"
-        case .ew:   return "E/W"
+        case .ew: return "E/W"
         }
     }
 }

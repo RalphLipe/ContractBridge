@@ -18,31 +18,38 @@ public class CompositeRankRange: Comparable {
     }
     
     public let range: ClosedRange<Rank>
-    public let pair: PairPosition
-    let cardRanges: [RankRange]
+    public let pair: Pair
+    let children: [RankRange]
 
     public var count: Int {
-        return cardRanges.reduce(0) { $0 + $1.count }
+        return children.reduce(0) { $0 + $1.count }
+    }
+    
+    public var isEmpty: Bool {
+        for rankRange in children {
+            if rankRange.count > 0 { return false }
+        }
+        return true
     }
     
     public var ranks: Set<Rank> {
-        return cardRanges.reduce(Set<Rank>()) { $0.union($1.ranks) }
+        return children.reduce(Set<Rank>()) { $0.union($1.ranks) }
     }
     
     public var isLow: Bool { return range.lowerBound == .two }
     public var isWinner: Bool { return range.upperBound == .ace }
     
-    init(allRanges: [RankRange], pair: PairPosition) {
+    init(allRanges: [RankRange], pair: Pair) {
         self.pair = pair
         self.range = allRanges.first!.range.lowerBound...allRanges.last!.range.upperBound
-        self.cardRanges = allRanges.compactMap { return $0.pair == pair ? $0 : nil }
+        self.children = allRanges.compactMap { return $0.pair == pair ? $0 : nil }
     }
     
     // NOTE: This function assumes that child ranges are sorted in order from lowest to highest
     // Caller MUST be sure that remainingCount > 0 or a runtime error will occur
     internal func lowest(cover: RankRange? = nil) -> RankRange {
         var low: RankRange? = nil
-        for child in cardRanges {
+        for child in children {
             if child.count > 0 {
                 if cover == nil || child >= cover! { return child }
                 if low == nil { low = child }
@@ -60,13 +67,13 @@ public class CompositeRankRange: Comparable {
     }
 
     func rankRangeFor(rank: Rank) -> RankRange {
-        for child in self.cardRanges {
+        for child in children {
             if child.range.contains(rank) { return child }
         }
         fatalError()
     }
     func rankRangeFor(range: ClosedRange<Rank>) -> RankRange {
-        for child in self.cardRanges {
+        for child in children {
             if child.range.contains(range.lowerBound) && child.count > 0 { return child }
         }
         fatalError()

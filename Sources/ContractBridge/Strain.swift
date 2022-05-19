@@ -10,6 +10,14 @@ import Foundation
 public enum Strain: Int, Comparable, CaseIterable {
     case clubs = 0, diamonds, hearts, spades, noTrump
     
+    public init(suit: Suit?) {
+        if let suit = suit {
+            self.init(rawValue: suit.rawValue)!
+        } else {
+            self = .noTrump
+        }
+    }
+    
     public static func < (lhs: Strain, rhs: Strain) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }

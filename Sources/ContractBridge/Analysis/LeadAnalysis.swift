@@ -8,85 +8,6 @@
 import Foundation
 
 
-// TODO:  I am not sure this is correct.  In fact I think it is not.
-public struct WorstCaseAnalysis {
-    private let suitHolding: SuitHolding
-    private let maxTricks: Int
-    private let shortSide: Position
-    private let longSide: Position
-    
-    private init(suitLayout: SuitLayout, pair: PairPosition) {
-        suitHolding = SuitHolding(suitLayout: suitLayout)
-        let positions = pair.positions
-        let count0 = suitHolding[positions.0].count
-        let count1 = suitHolding[positions.1].count
-        if count0 < count1 {
-            shortSide = positions.0
-            longSide = positions.1
-            maxTricks = count1
-        } else {
-            shortSide = positions.1
-            longSide = positions.0
-            maxTricks = count0
-        }
-    }
-    
-    // Play the specified range from position and lowest possible from all other positions
-    private func play(range: CompositeRankRange, position: Position) {
-        _ = range.lowest().play()
-        var playPosition = position.next
-        while playPosition != position {
-            // TODO: Optimization is a "hasRanks" that bails out with "True" instead of computing count....
-            if suitHolding[playPosition].count > 0 {
-                _ = suitHolding[playPosition].lowest().play()
-            }
-            playPosition = playPosition.next
-        }
-    }
-    
-    private func minimumTricks() -> Int {
-        var numWinners = 0
-        // First analyze playing from short side first until we run out of cards
-        while suitHolding[shortSide].count > 0 {
-            let shortChoices = suitHolding.choices(shortSide)
-            if let winShortSide = shortChoices.win {
-                play(range: winShortSide, position: shortSide)
-                numWinners += 1
-            } else {
-                let longChoices = suitHolding.choices(longSide)
-                if let winLongSide = longChoices.win {
-                    play(range: winLongSide, position: longSide)
-                    numWinners += 1
-                } else {
-                    play(range: suitHolding[shortSide], position: shortSide)
-                }
-            }
-        }
-        while suitHolding[longSide].count > 0 && numWinners < maxTricks {
-            let choices = suitHolding.choices(longSide)
-            if let winners = choices.win {
-                if numWinners + winners.count == maxTricks {
-                    numWinners = maxTricks
-                } else {
-                    play(range: winners, position: longSide)
-                    numWinners += 1
-                }
-            } else {
-                play(range: choices.all.first!, position: longSide)
-            }
-        }
-        return numWinners
-    }
-    
-    public static func minimumTricks(suitLayout: SuitLayout, pair: PairPosition) -> Int {
-        return WorstCaseAnalysis(suitLayout: suitLayout, pair: pair).minimumTricks()
-    }
-    
-    public static func isAllWinners(suitLayout: SuitLayout, pair: PairPosition) -> Bool {
-        let analysis = WorstCaseAnalysis(suitLayout: suitLayout, pair: pair)
-        return analysis.minimumTricks() == analysis.maxTricks
-    }
-}
 
 
 
@@ -189,10 +110,8 @@ public class LayoutAnalyzer {
    
     internal init(suitHolding: SuitHolding, leads: [LeadPlan]) {
         self.suitHolding = suitHolding
-        self.leads = leads
-        // TODO:  This seems incorrect for subsequent analysis since initial layout is used here.  Seems
-        // like we need to get the "worstCase" really from the remaining cards.  
-        self.worstCaseTricks = WorstCaseAnalysis.minimumTricks(suitLayout: suitHolding.initialLayout, pair: .ns)
+        self.leads = leads 
+        self.worstCaseTricks = WorstCaseAnalysis.analyze(suitLayout: SuitLayout(suitHolding: suitHolding), declaringPair: .ns).tricksTaken
         self.layouts = []
         self.thisLayoutMaxTricks = []
         self.trickSequences = []
@@ -311,3 +230,4 @@ public class LayoutAnalyzer {
         return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats, exactTrickLayouts: exactTrickLayouts)
     }
 }
+

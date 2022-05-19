@@ -37,7 +37,7 @@ public enum Position: Int, CaseIterable {
     }
 
     
-    public var pairPosition: PairPosition {
+    public var pair: Pair {
         switch self {
         case .north, .south: return .ns
         case .east, .west:   return .ew

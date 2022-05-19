@@ -76,9 +76,7 @@ public class CardCombinationAnalyzer {
     
 
     private init(suitHolding: SuitHolding) {
-        // Make the compiler happy by initializing these properties so "self" is valid before generating leads
-        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: [])
-        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: generateLeads())
+        self.layoutAnalyzer = LayoutAnalyzer(suitHolding: suitHolding, leads: LeadGenerator.generateLeads(suitHolding: suitHolding, pair: .ns))
         assert(layoutAnalyzer.leads.count > 0)
 
     }
@@ -92,7 +90,7 @@ public class CardCombinationAnalyzer {
         cca.recordCombinationStatistics = false
         cca.recordLeadSequences()
         cca.recordCombinationStatistics = true
-        cca.suitHolding.forAllCombinations(pairPosition: .ew, cca.analyzeThisDeal)
+        cca.suitHolding.forAllCombinations(pair: .ew, cca.analyzeThisDeal)
         
         return cca.layoutAnalyzer.generateAnalysis()
     }
@@ -108,7 +106,7 @@ public class CardCombinationAnalyzer {
         let results = analyzeLeads(leads: self.layoutAnalyzer.leads)
         assert(layoutAnalyzer.leads.count == results.count)
         if recordCombinationStatistics {
-            layoutAnalyzer.recordResults(results, layoutId: self.layoutId(), combinations: combinations)
+            layoutAnalyzer.recordResults(results, layoutId: SuitLayout(suitHolding: suitHolding).id, combinations: combinations)
         }
     }
     
@@ -144,7 +142,7 @@ public class CardCombinationAnalyzer {
         if let rank = rank {
             maxTricks = trick.play(rank, nextStep: self.playNextPosition)
         } else {
-            if position.pairPosition == .ew {
+            if position.pair == .ew {
                 let hadShownOut = self.showsOut.contains(position)
                 self.showsOut.insert(position)
                 maxTricks = trick.play(nil, nextStep: self.playNextPosition)
@@ -198,13 +196,13 @@ public class CardCombinationAnalyzer {
     }
     
     private func thirdHand(trick: Trick, hand: CompositeRankRange) -> RankRange {
-        assert(trick.nextToAct.pairPosition == .ns)
+        assert(trick.nextToAct.pair == .ns)
         var cover: RankRange? = nil
         if let min = trick.leadPlan.minThirdHand,
-           trick.winningPosition.pairPosition == .ns || min > trick.winningRankRange {
+           trick.winningPosition.pair == .ns || min > trick.winningRankRange {
             cover = min
         }
-        if cover == nil && trick.winningPosition.pairPosition == .ew {
+        if cover == nil && trick.winningPosition.pair == .ew {
             if let maxThirdHand = trick.leadPlan.maxThirdHand,
                maxThirdHand > trick.winningRankRange {
                 cover = trick.winningRankRange
@@ -215,7 +213,7 @@ public class CardCombinationAnalyzer {
     
     
     private func fourthHand(trick: Trick, hand: CompositeRankRange) -> RankRange {
-        let rankToCover = trick.winningPosition.pairPosition == .ns ? trick.winningRankRange : nil
+        let rankToCover = trick.winningPosition.pair == .ns ? trick.winningRankRange : nil
         return hand.lowest(cover: rankToCover)
     }
     
@@ -241,126 +239,17 @@ public class CardCombinationAnalyzer {
     
     private func leadAgain() -> Int {
         if suitHolding[.north].count > 0 || suitHolding[.south].count > 0 {
-            return analyzeLeads(leads: generateLeads()).reduce(0) { $1 > $0 ? $1 : $0 }
+            return analyzeLeads(leads: LeadGenerator.generateLeads(suitHolding: suitHolding, pair: .ns)).reduce(0) { $1 > $0 ? $1 : $0 }
         } else {
-            return tricks.reduce(0) { return $1.winningPosition.pairPosition == .ns ? $0 + 1 : $0 }
+            return tricks.reduce(0) { return $1.winningPosition.pair == .ns ? $0 + 1 : $0 }
         }
     }
     
-    
-    private func coverRanges(cover: CompositeRankRange, coverChoices: ArraySlice<CompositeRankRange>) -> [CompositeRankRange?] {
-        var ranges = Array<CompositeRankRange?>()
-        var lastRange = cover
-        var mustCover: CompositeRankRange? = nil
-        // Starting with the first range and moving up, if the next range has a gap of one card
-        // then we will always cover it, so we don't want to generate an uncovered finesse.
-        for coverChoice in coverChoices {
-            if coverChoice.range.lowerBound.nextLower != lastRange.range.upperBound.nextHigher {
-                // Gap of > 1 card, so add this to the list (could be nil if first range has gap)
-                ranges.append(mustCover)
-            }
-            mustCover = coverChoice
-            lastRange = coverChoice
-        }
-        ranges.append(mustCover)
-        return ranges
-    }
-    
-    private func generateFinesses(position: Position, leadRange: CompositeRankRange, partnerChoices: RangeChoices) -> [LeadPlan] {
-        var leads: [LeadPlan] = []
-      //  let leadRank = leadRange.lowest()
-        for i in partnerChoices.all.indices {
-            let finesseRange = partnerChoices.all[i]
-            if leadRange < finesseRange &&
-                finesseRange.isWinner == false {
-                let coverRanges = i == partnerChoices.all.endIndex ? [nil] : coverRanges(cover: finesseRange, coverChoices: partnerChoices.all[(i + 1)...])
-              //  let finesseRank = finesseRange.lowest()
-                for coverRange in coverRanges {
-                    leads.append(LeadPlan(position: position, lead: leadRange, intent: .finesse, minThirdHand: finesseRange, maxThirdHand: coverRange))
-                }
-            }
-        }
-        return leads
-    }
-
-    private func generateRides(position: Position, leadRange: CompositeRankRange, partnerChoices: RangeChoices) -> [LeadPlan] {
-        var leads: [LeadPlan] = []
-    //    let leadRank = leadRange.lowest()
-        var didSomething = false
-        for i in partnerChoices.all.indices {
-            if leadRange < partnerChoices.all[i] {
-                let coverRanges = coverRanges(cover: leadRange, coverChoices: partnerChoices.all[i...])
-                for coverRange in coverRanges {
-                    leads.append(LeadPlan(position: position, lead: leadRange, intent: .ride, minThirdHand: nil, maxThirdHand: coverRange))
-                    didSomething = true
-                    
-                }
-                break
-            }
-        }
-        if didSomething == false {
-            leads.append(LeadPlan(position: position, lead: leadRange, intent: .ride, minThirdHand: nil, maxThirdHand: nil))
-        }
-        return leads
-    }
-    
-    
-
-    private func generateLeads(choices: RangeChoices, partnerChoices: RangeChoices) -> [LeadPlan] {
-        if choices.all.count == 0 {
-            return []
-        }
-        let position = choices.position
-        if partnerChoices.all.count == 0 {
-            if let winners = choices.win {
-                return [LeadPlan(position: position, lead: winners, intent: .cashWinner)]
-            }
-            if let low = choices.low {
-                return [LeadPlan(position: position, lead: low, intent: .playLow)]
-            }
-            return [LeadPlan(position: position, lead: choices.mid![0], intent: .ride)]
-        }
-        // TODO: Perhaps if next position shows out then we could avoid generating some of these leads.
-        var leads: [LeadPlan] = []
-        if let low = choices.low {
-            leads.append(contentsOf: generateFinesses(position: position, leadRange: low, partnerChoices: partnerChoices))
-            // TODO:  Both of the following are symetrica -- don't do it again.  Just replicate it
-        ///    let lowRank = low.lowest(cover: nil)
-            if partnerChoices.low != nil {
-                leads.append(LeadPlan(position: position, lead: low, intent: .playLow))
-            }
-            if let partnerWinner = partnerChoices.win {
-                leads.append(LeadPlan(position: position, lead: low, intent: .cashWinner, minThirdHand: partnerWinner))
-            }
-        }
-        if let midChoices = choices.mid {
-            for midChoice in midChoices {
-                leads.append(contentsOf: generateFinesses(position: position, leadRange: midChoice, partnerChoices: partnerChoices))
-                leads.append(contentsOf: generateRides(position: position, leadRange: midChoice, partnerChoices: partnerChoices))
-            }
-        }
-        if let win = choices.win {
-            leads.append(LeadPlan(position: position, lead: win, intent: .cashWinner))
-        }
-        return leads
-    }
-    
-    private func generateLeads() -> [LeadPlan] {
-        let northChoices = suitHolding.choices(.north)
-        let southChoices = suitHolding.choices(.south)
-        var leads = generateLeads(choices: northChoices, partnerChoices: southChoices)
-        leads.append(contentsOf: generateLeads(choices: southChoices, partnerChoices: northChoices))
-        return leads
-    }
-    
-
     private func analyzeLeads(leads: [LeadPlan]) -> [Int] {
         return leads.map { lead($0) }
     }
     
-    private func layoutId() -> SuitLayoutIdentifier {
-        return SuitLayout(suitHolding: suitHolding).id
-    }
+
 
 
 }

@@ -11,20 +11,20 @@ import Foundation
 internal class RankRange: Comparable, CustomStringConvertible {
     private let suitHolding: SuitHolding
     public let index: Int
-    public var pair: PairPosition
+    public var pair: Pair?
     public let position: Position?
     public let range: ClosedRange<Rank>
     public var count: Int { return ranks.count }
     public var ranks: Set<Rank>
     private var playCardDestination: RankRange?
 
-    init(suitHolding: SuitHolding, index: Int, pair: PairPosition, range: ClosedRange<Rank>, position: Position? = nil, playCardDestination: RankRange? = nil, ranks: Set<Rank> = []) {
+    init(suitHolding: SuitHolding, index: Int, pair: Pair?, range: ClosedRange<Rank>, position: Position? = nil, playCardDestination: RankRange? = nil, ranks: Set<Rank> = []) {
         self.suitHolding = suitHolding
         self.index = index
         self.pair = pair
         self.range = range
         self.position = position
-        assert(position == nil || position?.pairPosition == pair)
+        assert(position == nil || position?.pair == pair)
         self.ranks = ranks
         self.playCardDestination = playCardDestination
     }

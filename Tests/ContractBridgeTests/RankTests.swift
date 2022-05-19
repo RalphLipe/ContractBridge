@@ -46,7 +46,14 @@ class RankTests: XCTestCase {
         XCTAssertTrue(oneCardRange.contains(.king))
         XCTAssertFalse(oneCardRange.contains(.queen))
     }
-    
+    func testHighCardPoints() throws {
+        XCTAssertEqual(Rank.ace.highCardPoints, 4)
+        XCTAssertEqual(Rank.king.highCardPoints, 3)
+        XCTAssertEqual(Rank.queen.highCardPoints, 2)
+        XCTAssertEqual(Rank.jack.highCardPoints, 1)
+        XCTAssertEqual(Rank.ten.highCardPoints, 0)
+        XCTAssertEqual(Rank.five.highCardPoints, 0)
+    }
 
     
 }

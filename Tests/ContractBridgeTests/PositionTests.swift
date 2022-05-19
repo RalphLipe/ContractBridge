@@ -36,13 +36,7 @@ class PositionTests: XCTestCase {
         XCTAssertEqual(Position(from: "south")!.previous, Position.east)
         XCTAssertEqual(Position.west.previous, Position.south)
     }
-    
-    func testPairPosition() throws {
-        XCTAssertEqual(Position(from: "n")!.pairPosition, PairPosition.ns)
-        XCTAssertEqual(Position(from: "east")!.pairPosition, PairPosition.ew)
-        XCTAssertEqual(Position.south.pairPosition, PairPosition.ns)
-        XCTAssertEqual(Position(from: "W")!.pairPosition, PairPosition.ew)
-    }
+
 
     func testShortDescription() throws {
         var s = ""

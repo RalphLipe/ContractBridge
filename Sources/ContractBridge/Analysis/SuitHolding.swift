@@ -36,19 +36,23 @@ public class SuitHolding {
 
     
 
+
     public init(suitLayout: SuitLayout) {
-        if !suitLayout.isFullLayout { fatalError("SuitHolding must be created with a full layout") }
         self.initialLayout = suitLayout
         self.playedRanges = []
         self.hands = []
         self.handRanges = []
-        self.fixedPairRanges = Array<Set<ClosedRange<Rank>>>(repeating: [], count: PairPosition.allCases.count)
+        self.fixedPairRanges = Array<Set<ClosedRange<Rank>>>(repeating: [], count: Pair.allCases.count)
         // Now that "self" has all members intialized, really finish initializing
         // The createHand method will copy all of the ranges from the playedRanges
         let pairRanges = initialLayout.pairRanges()
         for i in pairRanges.indices {
             let pairRange = pairRanges[i]
-            playedRanges.append(RankRange(suitHolding: self, index: i, pair: pairRange.pair!, range: pairRange.ranks))
+            playedRanges.append(RankRange(suitHolding: self, index: i, pair: pairRange.pair, range: pairRange.range))
+            if pairRange.pair == nil {
+                // If no pair owns these cards then treat them as "played" by nobody.
+                pairRange.range.forEach { playedRanges.last!.ranks.insert($0) }
+            }
         }
        Position.allCases.forEach { createHand(for: $0) }
     }
@@ -66,14 +70,14 @@ public class SuitHolding {
     
     private func createHand(for _position: Position) {
         assert(_position.rawValue == hands.count)
-        let pair = _position.pairPosition
+        let pair = _position.pair
         var newRanges: [RankRange] = []
-        for playRange in playedRanges {
-            if playRange.pair == pair {
-                let positionRanks = initialLayout.ranksFor(position: _position, in: playRange.range)
-                newRanges.append(RankRange(suitHolding: self, index: playRange.index, pair: pair, range: playRange.range, position: _position, playCardDestination: playRange, ranks: positionRanks))
+        for playedRange in playedRanges {
+            if playedRange.pair == pair {
+                let positionRanks = initialLayout.ranksFor(position: _position, in: playedRange.range)
+                newRanges.append(RankRange(suitHolding: self, index: playedRange.index, pair: pair, range: playedRange.range, position: _position, playCardDestination: playedRange, ranks: positionRanks))
             } else {
-                newRanges.append(playRange)
+                newRanges.append(playedRange)
             }
         }
         handRanges.append(newRanges)
@@ -82,7 +86,7 @@ public class SuitHolding {
     
     private func copyHand(from: SuitHolding, for _position: Position) {
         assert(_position.rawValue == hands.count)
-        let pair = _position.pairPosition
+        let pair = _position.pair
         var newRanges: [RankRange] = []
         for i in playedRanges.indices {
             if playedRanges[i].pair == pair {
@@ -108,12 +112,12 @@ public class SuitHolding {
                 group.append(rankRange)
                 groupHasCards = groupHasCards || (rankRange.position == position && rankRange.count > 0)
             } else {
-                if groupHasCards { allRanges.append(CompositeRankRange(allRanges: group, pair: position.pairPosition))}
+                if groupHasCards { allRanges.append(CompositeRankRange(allRanges: group, pair: position.pair))}
                 group = []
                 groupHasCards = false
             }
         }
-        if groupHasCards { allRanges.append(CompositeRankRange(allRanges: group, pair: position.pairPosition))}
+        if groupHasCards { allRanges.append(CompositeRankRange(allRanges: group, pair: position.pair))}
         return RangeChoices(allRanges, position: position)
     }
   
@@ -159,10 +163,10 @@ public class SuitHolding {
     // TODO: Still need to update double finesse when 4th hand plays high rank but for now just north/south winning
     // TODO:  This should work for either pair having know cards. Right now just E/W
     private func updateKnownHoldings(winningRank: Rank, winningPosition: Position) {
-        if winningPosition.pairPosition == .ns {
+        if winningPosition.pair == .ns {
             for range in playedRanges {
                 if range.pair == .ew && range.range.lowerBound > winningRank {
-                    fixedPairRanges[PairPosition.ew.rawValue].insert(range.range)
+                    fixedPairRanges[Pair.ew.rawValue].insert(range.range)
                 }
             }
         }
@@ -185,26 +189,26 @@ public class SuitHolding {
 
     
     // NOTE:  Indices (saveIndex) is index into composite card range, NOT handRanges
-    private func saveAndShiftHoldings(pairPosition: PairPosition, saveIndex: Int, body: (_ combinations: Int) -> Void) -> Void {
-        let positions = pairPosition.positions
-        assert(self[positions.0].cardRanges.endIndex == self[positions.1].cardRanges.endIndex)
-        if saveIndex < self[positions.0].cardRanges.endIndex {
-            let range0 = self[positions.0].cardRanges[saveIndex]
+    private func saveAndShiftHoldings(pair: Pair, saveIndex: Int, body: (_ combinations: Int) -> Void) -> Void {
+        let positions = pair.positions
+        assert(self[positions.0].children.endIndex == self[positions.1].children.endIndex)
+        if saveIndex < self[positions.0].children.endIndex {
+            let range0 = self[positions.0].children[saveIndex]
             // TODO:  IMPORTANT!
-            if self.fixedPairRanges[pairPosition.rawValue].contains(range0.range) {
-                saveAndShiftHoldings(pairPosition: pairPosition, saveIndex: saveIndex + 1, body: body)
+            if self.fixedPairRanges[pair.rawValue].contains(range0.range) {
+                saveAndShiftHoldings(pair: pair, saveIndex: saveIndex + 1, body: body)
             } else {
-                let range1 = self[positions.1].cardRanges[saveIndex]
+                let range1 = self[positions.1].children[saveIndex]
                 let ranks0 = range0.ranks
                 let ranks1 = range1.ranks
                 range0.ranks.formUnion(ranks1)
                 range1.ranks = []
-                saveAndShiftHoldings(pairPosition: pairPosition, saveIndex: saveIndex + 1, body: body)
+                saveAndShiftHoldings(pair: pair, saveIndex: saveIndex + 1, body: body)
                 range0.ranks = ranks0
                 range1.ranks = ranks1
             }
         } else {
-            forAllCombinations(pairPosition: pairPosition, moveIndex: 0, combinations: 1, body: body)
+            forAllCombinations(pair: pair, moveIndex: 0, combinations: 1, body: body)
         }
     }
     
@@ -224,21 +228,21 @@ public class SuitHolding {
     
     
     // NOTE:  Indices (moveIndex) is index into composite card range, NOT handRanges
-    private func forAllCombinations(pairPosition: PairPosition, moveIndex: Int, combinations: Int, body: (_ combinations: Int) -> Void) -> Void {
-        let positions = pairPosition.positions
-        if moveIndex < self[positions.0].cardRanges.endIndex {
-            forAllCombinations(pairPosition: pairPosition, moveIndex: moveIndex + 1, combinations: combinations, body: body)
-            let range0 = self[positions.0].cardRanges[moveIndex]
+    private func forAllCombinations(pair: Pair, moveIndex: Int, combinations: Int, body: (_ combinations: Int) -> Void) -> Void {
+        let positions = pair.positions
+        if moveIndex < self[positions.0].children.endIndex {
+            forAllCombinations(pair: pair, moveIndex: moveIndex + 1, combinations: combinations, body: body)
+            let range0 = self[positions.0].children[moveIndex]
             // If the cards are "fixed" then we don't move them.  Their position is know based on previous play
-            if self.fixedPairRanges[pairPosition.rawValue].contains(range0.range) == false {
-                let range1 = self[positions.1].cardRanges[moveIndex]
+            if self.fixedPairRanges[pair.rawValue].contains(range0.range) == false {
+                let range1 = self[positions.1].children[moveIndex]
                 let numberOfCards = range0.count
                 let originalRanks = range0.ranks
                 while range0.count > 0 {
                     range1.ranks.insert(range0.ranks.remove(range0.ranks.min()!)!)
                     // You could compute this using either range for numberOfSlots...
                     let newCombinations = combinations * self.combinations(numberOfCards: numberOfCards, numberOfSlots: range0.count)
-                    forAllCombinations(pairPosition: pairPosition, moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
+                    forAllCombinations(pair: pair, moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
                 }
                 range0.ranks = originalRanks
                 range1.ranks = []
@@ -249,8 +253,8 @@ public class SuitHolding {
         
     }
     
-    public func forAllCombinations(pairPosition: PairPosition, _ body: (_ combinations: Int) -> Void) -> Void {
-        saveAndShiftHoldings(pairPosition: pairPosition, saveIndex: 0, body: body)
+    public func forAllCombinations(pair: Pair, _ body: (_ combinations: Int) -> Void) -> Void {
+        saveAndShiftHoldings(pair: pair, saveIndex: 0, body: body)
     }
     
     
