@@ -32,6 +32,15 @@ class WorstCaseAnalysisTest: XCTestCase {
         XCTAssertFalse(WorstCaseAnalysis.isAllWinners(suitLayout: suitLayout, declaringPair: .ns))
         suitLayout[.jack] = .south
         XCTAssertEqual(WorstCaseAnalysis.analyze(suitLayout: suitLayout, declaringPair: .ns).tricksTaken, 1)
+        
+        var sl2 = SuitLayout()
+        sl2[.ace] = .north
+        sl2[.jack] = .north
+        sl2[.ten] = .north
+        sl2[.queen] = .south
+        sl2[.two] = .south
+        sl2.assignNilPositions(.east)
+        XCTAssertEqual(WorstCaseAnalysis.analyze(suitLayout: sl2, declaringPair: .ns).tricksTaken, 2)
     }
 
 

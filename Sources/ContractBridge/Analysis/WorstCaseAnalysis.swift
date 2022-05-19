@@ -20,7 +20,7 @@ public struct WorstCaseAnalysis {
     public static func analyze(suitLayout: SuitLayout, declaringPair: Pair) -> (tricksTaken: Int, maxTricksPossible: Int) {
         let declarerPositions = declaringPair.positions
         let maxTricks = max(suitLayout.countFor(position: declarerPositions.0),
-                            suitLayout.countFor(position: declarerPositions.0))
+                            suitLayout.countFor(position: declarerPositions.1))
         var declarerHolding: Set<Rank> = suitLayout.ranksFor(position: declarerPositions.0).union(suitLayout.ranksFor(position: declarerPositions.1))
         while declarerHolding.count > maxTricks {
             let min = declarerHolding.min()!
@@ -36,7 +36,8 @@ public struct WorstCaseAnalysis {
                 // We will use this rank if it's the only one we've seen or if it wins and and lower than a current winnner or
                 // if there is not a winner and this rank is lower than the current defense play
                 if defensePlay == nil ||
-                    ((rank > declarerPlay || defensePlay! < declarerPlay) && rank < defensePlay!) {
+                    (rank > declarerPlay && (defensePlay! < declarerPlay || rank < defensePlay!)) ||
+                    (rank < defensePlay! && defensePlay! < declarerPlay)  {
                     defensePlay = rank
                 }
             }
