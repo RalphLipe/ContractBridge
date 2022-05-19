@@ -48,8 +48,8 @@ public struct Contract {
         case 3: return (strain == .noTrump) ? gameBonus : 50
         case 4: return (strain == .spades || strain == .hearts) ? gameBonus : 50
         case 5: return gameBonus
-        case 6: return vulnerable ? 750 : 500
-        case 7: return vulnerable ? 1500 : 1000
+        case 6: return vulnerable ? 750 + gameBonus : 500 + gameBonus
+        case 7: return vulnerable ? 1500 + gameBonus : 1000 + gameBonus
         default: return 0
         }
     }
