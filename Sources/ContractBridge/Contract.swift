@@ -31,27 +31,27 @@ public struct Contract {
         if isPassedOut { return 0 }
         let vulnerable = vulnerability.isVulnerable(declarer)
         if tricksTaken >= level + 6 {     // Contract was made
-            let makingScore = (strain.firstTrickScore + (strain.trickScore * (level - 1))) * penalty.makingTrickMultiplier
+            let contractScore = (strain.firstTrickScore + (strain.trickScore * (level - 1))) * penalty.makingTrickMultiplier
             let overTrickScore = (tricksTaken - level - 6) * penalty.overTrickScore(strain: strain, vulnerable: vulnerable)
-            let score = makingScore + overTrickScore + penalty.insultBonus + makingBonus(vulnerable: vulnerable)
+            let makingBonus = makingBonus(contractScore: contractScore, vulnerable: vulnerable)
+            let slamBonus = slamBonus(vulnerable: vulnerable)
+            let score = contractScore + overTrickScore + makingBonus + slamBonus + penalty.insultBonus
             return score
         } else {
             return penalty.penaltyScore(underTrickCount: -(tricksTaken - level - 6), vulnerable: vulnerable)
         }
     }
         
-    
-    private func makingBonus(vulnerable: Bool) -> Int {
-        let gameBonus = vulnerable ? 500 : 300
+    private func slamBonus(vulnerable: Bool) -> Int {
         switch level {
-        case 1, 2: return 50
-        case 3: return (strain == .noTrump) ? gameBonus : 50
-        case 4: return (strain == .spades || strain == .hearts) ? gameBonus : 50
-        case 5: return gameBonus
-        case 6: return vulnerable ? 750 + gameBonus : 500 + gameBonus
-        case 7: return vulnerable ? 1500 + gameBonus : 1000 + gameBonus
+        case 6: return vulnerable ? 750 : 500
+        case 7: return vulnerable ? 1500 : 1000
         default: return 0
         }
+    }
+    
+    private func makingBonus(contractScore: Int, vulnerable: Bool) -> Int {
+        return contractScore < 100 ? 50 : vulnerable ? 500 : 300
     }
     
     public var shortDescription: String {
