@@ -54,7 +54,7 @@ public class SuitHolding {
                 pairRange.range.forEach { playedRanges.last!.ranks.insert($0) }
             }
         }
-       Position.allCases.forEach { createHand(for: $0) }
+        Position.allCases.forEach { createHand(for: $0) }
     }
     
     internal init(from: SuitHolding) {

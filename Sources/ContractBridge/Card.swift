@@ -31,7 +31,7 @@ public enum Card : Int, Comparable, CaseIterable, Hashable, CustomStringConverti
     }
     
     public var shortDescription: String {
-        return "\(rank.shortDescription)\(suit.shortDescription)"
+        return "\(rank.shortDescription)\(suit, style: .symbol)"
     }
     
     public static func < (lhs: Card, rhs: Card) -> Bool {
@@ -39,7 +39,7 @@ public enum Card : Int, Comparable, CaseIterable, Hashable, CustomStringConverti
     }
     
     public var description: String {
-        return "\(rank) of \(suit)"
+        return "\(rank) of \(suit, style: .name)"
     }
 }
 

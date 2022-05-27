@@ -24,7 +24,7 @@ public enum Strain: Int, Comparable, CaseIterable {
     
     public var shortDescription : String {
         if let suit = self.suit {
-            return suit.shortDescription
+            return "\(suit)"
         } else {
             return "NT"
         }
@@ -48,5 +48,18 @@ public enum Strain: Int, Comparable, CaseIterable {
     
     public var firstTrickScore: Int {
         return (self == .noTrump) ? 40 : trickScore
+    }
+}
+
+extension String.StringInterpolation {
+    mutating func appendInterpolation(_ strain: Strain, style: Suit.StringStyle = .symbol) {
+        if let suit = strain.suit {
+            appendInterpolation(suit, style: style)
+        } else {
+            switch style {
+            case .character, .symbol: appendLiteral("NT")
+            case .name: appendLiteral("no trump")
+            }
+        }
     }
 }

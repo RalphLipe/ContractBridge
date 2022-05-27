@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Risk.swift
 //  
 //
 //  Created by Ralph Lipe on 3/9/22.
@@ -7,16 +7,18 @@
 
 import Foundation
 
-public enum Penalty: CaseIterable {
+public enum Risk: CaseIterable {
     case undoubled, doubled, redoubled
     
-    public var shortDescription: String {
-        switch self {
-        case .undoubled: return ""
-        case .doubled:   return "X"
-        case .redoubled: return "XX"
+    init?(from: String) {
+        switch from.lowercased() {
+        case "":   self = .undoubled
+        case "x":  self = .doubled
+        case "xx": self = .redoubled
+        default: return nil
         }
     }
+    
     var insultBonus: Int {
         switch self {
         case .undoubled: return 0
@@ -24,15 +26,17 @@ public enum Penalty: CaseIterable {
         case .redoubled: return 100
         }
     }
-    func overTrickScore(strain: Strain, vulnerable: Bool) -> Int {
+    
+    func overTrickScore(strain: Strain, isVulnerable: Bool) -> Int {
         var score = strain.trickScore
         if self != .undoubled {
             score = 100
-            if vulnerable { score *= 2 }
+            if isVulnerable { score *= 2 }
             if self == .redoubled { score *= 2 }
         }
         return score
     }
+    
     var makingTrickMultiplier: Int {
         switch self {
         case .undoubled: return 1
@@ -46,14 +50,14 @@ public enum Penalty: CaseIterable {
     static private var vulDoubledDown = [-200, -500, -800]
     static private var nonVulDoubleDown = [-100, -300, -500]
     
-    func penaltyScore(underTrickCount: Int, vulnerable: Bool) -> Int {
+    func penaltyScore(underTrickCount: Int, isVulnerable: Bool) -> Int {
         assert(underTrickCount > 0) // Functino expects a positive count of under tricks
         var score: Int
         if self == .undoubled {
-            score = vulnerable ? -100 : -50
+            score = isVulnerable ? -100 : -50
             score *= underTrickCount
         } else {
-            let downScores: [Int] = vulnerable ? Penalty.vulDoubledDown : Penalty.nonVulDoubleDown
+            let downScores: [Int] = isVulnerable ? Risk.vulDoubledDown : Risk.nonVulDoubleDown
             let i = min(3, underTrickCount) - 1
             score = downScores[i]
             if underTrickCount >= 4 {
@@ -65,3 +69,18 @@ public enum Penalty: CaseIterable {
     }
 }
 
+extension String.StringInterpolation {
+    mutating func appendInterpolation(_ risk: Risk, style: Suit.StringStyle = .symbol) {
+        if style == .name {
+            switch risk {
+            case .undoubled: appendLiteral("undoubled")
+            case .doubled:   appendLiteral("doubled")
+            case .redoubled: appendLiteral("redoubled")
+            }
+        } else if risk == .doubled {
+            appendLiteral("X")
+        } else if risk == .redoubled {
+            appendLiteral("XX")
+        }
+    }
+}

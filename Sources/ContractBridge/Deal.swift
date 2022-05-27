@@ -16,9 +16,7 @@ enum DealError: Error {
 }
 
 
-
 public struct Deal: Codable {
-  //  private var hands = Array<[Card]>(repeating: [], count: Position.allCases.count)
     private var hands = Array<Set<Card>>(repeating: [], count: Position.allCases.count)
     public init() {}
     
@@ -76,8 +74,7 @@ public struct Deal: Codable {
         return s as String
     }
     
-    // For this method we want to construct a pure array, instead of using the map method.
-    // This allows state bindings to use the array.  Map produces slices
+ 
     public func toCardArray(position: Position) -> [Card] {
         var cards: [Card] = []
         for card in self[position] {

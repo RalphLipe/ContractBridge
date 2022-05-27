@@ -31,12 +31,36 @@ public enum Suit: Int, Comparable, CaseIterable {
     public static func < (lhs: Suit, rhs: Suit) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
-    public var shortDescription : String {
-        switch self {
-        case .clubs:    return "\u{2663}"
-        case .diamonds: return "\u{2666}"
-        case .hearts:   return "\u{2665}"
-        case .spades:   return "\u{2660}"
+  
+    public enum StringStyle {
+        case symbol, character, name
+    }
+}
+
+extension String.StringInterpolation {
+    mutating func appendInterpolation(_ suit: Suit, style: Suit.StringStyle = .symbol) {
+        switch style {
+        case .symbol:
+            switch suit {
+            case .clubs:    appendLiteral("\u{2663}")
+            case .diamonds: appendLiteral("\u{2666}")
+            case .hearts:   appendLiteral("\u{2665}")
+            case .spades:   appendLiteral("\u{2660}")
+            }
+        case .character:
+            switch suit {
+            case .clubs:    appendLiteral("C")
+            case .diamonds: appendLiteral("D")
+            case .hearts:   appendLiteral("H")
+            case .spades:   appendLiteral("S")
+            }
+        case .name:
+            switch suit {
+            case .clubs:    appendLiteral("clubs")
+            case .diamonds: appendLiteral("diamonds")
+            case .hearts:   appendLiteral("hearts")
+            case .spades:   appendLiteral("spades")
+            }
         }
     }
 }

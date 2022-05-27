@@ -8,66 +8,84 @@
 public struct Contract {
     public let level: Int
     public let strain: Strain
-    public let penalty: Penalty
-    public let declarer: Position
+    public let risk: Risk
     
-    public init(level: Int, strain: Strain, penalty: Penalty, declarer: Position) {
+    public init(level: Int, strain: Strain, risk: Risk) {
         assert(level >= 0 && level <= 7)
         self.level = level
         self.strain = strain
-        self.penalty = penalty
-        self.declarer = declarer
+        self.risk = risk
     }
 
     // Create a passed-out contract
     public init() {
         self.level = 0
         self.strain = .noTrump
-        self.penalty = .undoubled
-        self.declarer = .north
+        self.risk = .undoubled
     }
     
-    public func score(vulnerability: Vulnerability, tricksTaken: Int) -> Int {
+    public init?(from: String) {
+        var s = from.lowercased()
+        if s == "pass" {
+            self.init()
+            return
+        }
+        if s.count < 2 { return nil }
+        guard let level = Int(String(s.first!)), level > 0 && level <= 7 else { return nil }
+        s.removeFirst()
+        var strain: Strain? = nil
+        if s.starts(with: "nt") {
+            strain = .noTrump
+            s.removeFirst(2)
+        } else {
+            guard let suit = Suit(from: String(s.first!)) else { return nil }
+            strain = Strain(suit: suit)
+            s.removeFirst()
+        }
+        guard let risk = Risk(from: s), let strain = strain else { return nil }
+        self.init(level: level, strain: strain, risk: risk)
+    }
+
+    
+    public func score(isVulnerable: Bool, tricksTaken: Int) -> Int {
         if isPassedOut { return 0 }
-        let vulnerable = vulnerability.isVulnerable(declarer)
         if tricksTaken >= level + 6 {     // Contract was made
-            let contractScore = (strain.firstTrickScore + (strain.trickScore * (level - 1))) * penalty.makingTrickMultiplier
-            let overTrickScore = (tricksTaken - level - 6) * penalty.overTrickScore(strain: strain, vulnerable: vulnerable)
-            let makingBonus = makingBonus(contractScore: contractScore, vulnerable: vulnerable)
-            let slamBonus = slamBonus(vulnerable: vulnerable)
-            let score = contractScore + overTrickScore + makingBonus + slamBonus + penalty.insultBonus
+            let contractScore = (strain.firstTrickScore + (strain.trickScore * (level - 1))) * risk.makingTrickMultiplier
+            let overTrickScore = (tricksTaken - level - 6) * risk.overTrickScore(strain: strain, isVulnerable: isVulnerable)
+            let makingBonus = makingBonus(contractScore: contractScore, isVulnerable: isVulnerable)
+            let slamBonus = slamBonus(isVulnerable: isVulnerable)
+            let score = contractScore + overTrickScore + makingBonus + slamBonus + risk.insultBonus
             return score
         } else {
-            return penalty.penaltyScore(underTrickCount: -(tricksTaken - level - 6), vulnerable: vulnerable)
+            return risk.penaltyScore(underTrickCount: -(tricksTaken - level - 6), isVulnerable: isVulnerable)
         }
     }
         
-    private func slamBonus(vulnerable: Bool) -> Int {
+    private func slamBonus(isVulnerable: Bool) -> Int {
         switch level {
-        case 6: return vulnerable ? 750 : 500
-        case 7: return vulnerable ? 1500 : 1000
+        case 6: return isVulnerable ? 750 : 500
+        case 7: return isVulnerable ? 1500 : 1000
         default: return 0
         }
     }
     
-    private func makingBonus(contractScore: Int, vulnerable: Bool) -> Int {
-        return contractScore < 100 ? 50 : vulnerable ? 500 : 300
-    }
-    
-    public var shortDescription: String {
-        get {
-            if isPassedOut {
-                return "passed out"
-            } else {
-                if penalty == .undoubled {
-                    return "\(level) \(strain.shortDescription) \(declarer.shortDescription)"
-                } else {
-                    return "\(level) \(strain.shortDescription) \(penalty.shortDescription) \(declarer.shortDescription)"
-                }
-            }
-        }
+    private func makingBonus(contractScore: Int, isVulnerable: Bool) -> Int {
+        return contractScore < 100 ? 50 : isVulnerable ? 500 : 300
     }
     
     public var isPassedOut: Bool { return level == 0 }
 }
 
+extension String.StringInterpolation {
+    mutating func appendInterpolation(_ contract: Contract, style: Suit.StringStyle = .symbol) {
+        if contract.isPassedOut {
+            appendLiteral("pass")
+        } else {
+            if style == .name {
+                appendLiteral("\(contract.level) \(contract.strain, style: style) \(contract.risk, style: style)")
+            } else {
+                appendLiteral("\(contract.level)\(contract.strain, style: style)\(contract.risk, style: style)")
+            }
+        }
+    }
+}

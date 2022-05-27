@@ -21,7 +21,7 @@ extension Set where Element == Card {
     public var description: String {
         var s = ""
         for suit in Suit.allCases.reversed() {
-            s.append(suit.shortDescription)
+            s += "\(suit)"
             let ranks = Set<Rank>(self.filter { $0.suit == suit }.map { $0.rank })
             if ranks.count == 0 {
                 s += "-"
