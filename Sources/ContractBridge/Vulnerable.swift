@@ -19,8 +19,8 @@ public extension Vulnerable {
     static let ns: Set<Pair> = [.ns]
     static let ew: Set<Pair> = [.ew]
     
-    init?(_ vulnerableText: String) {
-        switch (vulnerableText.lowercased()) {
+    init?(from: String) {
+        switch (from.lowercased()) {
         case "none", "love", "-":   self = Vulnerable.none
         case "ns", "n/s":           self = Vulnerable.ns
         case "ew", "e/w":           self = Vulnerable.ew

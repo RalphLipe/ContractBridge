@@ -60,7 +60,7 @@ extension Array where Element == Card {
 
     
     public mutating func sortBySuit() {
-        sort(by: { $0.suit < $1.suit || $0.rank < $1.rank} )
+        sort(by: { $0.suit < $1.suit || ($0.suit == $1.suit) && $0.rank < $1.rank} )
     }
     
     public mutating func sortHandOrder() {

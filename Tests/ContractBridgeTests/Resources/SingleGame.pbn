@@ -1,0 +1,80 @@
+% PBN 2.1
+% EXPORT
+%Content-type: text/x-pbn; charset=ISO-8859-1
+%Creator: BridgeComposer Version 5.43.2
+%Created: 11/05/21 17:41:08 SA Pacific Standard Time
+%BCOptions Center GutterH GutterV STBorder STShade
+%BidAndCardSpacing Thin
+%BoardsPerPage 18
+%CardTableColors #008000,#ffffff,#aaaaaa
+%EventSpacing 0
+%Font:CardTable "Arial",11,400,0
+%Font:Commentary "Times New Roman",12,400,0
+%Font:Diagram "Times New Roman",12,400,0
+%Font:Event "Times New Roman",12,400,0
+%Font:FixedPitch "Courier New",10,400,0
+%Font:HandRecord "Arial",11,400,0
+%GutterSize 500,500
+%HRTitleDate 0
+%HRTitleEvent "WED 01/26/2022 at Nite"
+%HRTitleSetID "CG-2021-1309-0743"
+%HRTitleSetIDPrefix "CG"
+%HRTitleSite "TheCommonGame.com at Nite"
+%HtmlClubs entity,"http://bridgecomposer.com/suitimg/c.gif"
+%HtmlDiamonds entity,"http://bridgecomposer.com/suitimg/d.gif"
+%HtmlHearts entity,"http://bridgecomposer.com/suitimg/h.gif"
+%HtmlNavBar 0.75,#cfe2f3
+%HtmlOptions NoHyperlinking
+%HtmlSpades entity,"http://bridgecomposer.com/suitimg/s.gif"
+%Margins 250,250,250,250
+%PaperSize 0,2159,2794
+%ParaIndent 0
+%PipColors #000000,#ff0000,#ff0000,#000000
+%PipFont "Symbol","Symbol",2,0xAA,0xA9,0xA8,0xA7
+%ScoreTableColors #e6e6e6,#000000
+%ShowBoardLabels 2
+%ShowCardTable 2
+[Event ""]
+[Site ""]
+[Date ""]
+[Board "1"]
+[West ""]
+[North ""]
+[East ""]
+[South ""]
+[Dealer "N"]
+[Vulnerable "None"]
+[Deal "N:42.K98.T6.AJ9762 63.Q54.J874.KQ54 KJT9.763.Q52.T83 AQ875.AJT2.AK93."]
+[Scoring ""]
+[Declarer "E"]
+[Contract "3NT"]
+[Result "10"]
+[BCFlags "1f"]
+[DoubleDummyTricks "3321534215a9bc8aabc8"]
+[Generator "Big Deal version 1.2"]
+[OptimumScore "EW 920"]
+[OptimumResultTable "Declarer;DenominationR;ResultR"]
+N NT  3
+N  S  3
+N  H  2
+N  D  1
+N  C  5
+S NT  3
+S  S  4
+S  H  2
+S  D  1
+S  C  5
+E NT 10
+E  S  9
+E  H 11
+E  D 12
+E  C  8
+W NT 10
+W  S 10
+W  H 11
+W  D 12
+W  C  8
+ 
+                                                                                                                                                                                                                                                                                                                                                                                                               
+                                                                                                                                                                 
+                                                                                                                                                                                                        

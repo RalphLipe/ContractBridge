@@ -48,10 +48,20 @@ class CardArrayTests: XCTestCase {
     }
   */
     func testSortHandOrder() throws {
-        var cc: [Card] = [.twoOfClubs, .threeOfClubs, .aceOfSpades]
+        var cc: [Card] = [.twoOfClubs, .threeOfClubs, .aceOfSpades, .twoOfSpades, .fiveOfHearts, .queenOfHearts, .eightOfHearts]
         cc.sortHandOrder()
+        // Should be S-A2 H-Q85 D-(none) C-32
         XCTAssertEqual(cc[0], .aceOfSpades)
-        XCTAssertEqual(cc[2], .twoOfClubs)
+        XCTAssertEqual(cc[1], .twoOfSpades)
+        XCTAssertEqual(cc[2], .queenOfHearts)
+        XCTAssertEqual(cc[3], .eightOfHearts)
+        XCTAssertEqual(cc[4], .fiveOfHearts)
+        XCTAssertEqual(cc[5], .threeOfClubs)
+        XCTAssertEqual(cc[6], .twoOfClubs)
+        
+        cc.sortBySuit()
+        XCTAssertEqual(cc[0], .twoOfClubs)
+        XCTAssertEqual(cc[6], .aceOfSpades)
     }
     
     func testSerialized() throws {

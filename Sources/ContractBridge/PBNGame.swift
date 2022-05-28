@@ -63,8 +63,41 @@ public struct PBNGame {
     public var contract: Contract? = nil
     public var result: Int? = nil
 
-    public var doubleDummy: Dictionary<Position, Dictionary<Strain, Int>>? = nil
+    public var doubleDummyMakes: DoubleDummyMakes? = nil
+ 
     
+    
+    internal mutating func parseKeyValue(_ key: String, _ value: String) {
+        switch key.lowercased() {
+        case "event":
+            event = value
+        case "site":
+            site = value
+        case "board":
+            board = Int(value)
+        case "north", "south", "east", "west":
+            players[Position(from: key)!] = value
+        case "dealer":
+            dealer = Position(from: value)
+        case "vulnerable":
+            vulnerable = Vulnerable(from: value)
+        case "deal":
+            deal = try! Deal(from: value)
+        case "scoring":
+            scoring = value
+        case "declarer":
+            declarer = Position(from: value)
+        case "contract":
+            contract = Contract(from: value)
+        case "result":
+            result = Int(value)
+
+        case "doubledummytricks":
+            doubleDummyMakes = DoubleDummyMakes(from: value)
+            
+        default: return
+        }
+    }
     // TODO: Need to escape quotes in string...
     /*
     private func export(_ tag: String, _ value: String?) -> String {
@@ -80,30 +113,33 @@ public struct PBNGame {
 }
 
 
-class PortableBridgeNotation {
-    static func load(pbnData: String) -> [PBNGame] {
+public class PortableBridgeNotation {
+    public static func load(pbnData: String) -> [PBNGame] {
         let trimBrackets = CharacterSet(charactersIn: "[]").union(.whitespaces)
         let trimQuotes = CharacterSet(charactersIn: " \"")
+        var parsedSomething = false
 
         
         var games: [PBNGame] = [PBNGame()]
         pbnData.enumerateLines() {
             line, stop in
-            if line.trimmingCharacters(in: .whitespaces).count == 0 {
+            if line.trimmingCharacters(in: .whitespaces).count == 0 && parsedSomething {
                 // TODO: Check for errors in previous game...
                 games.append(PBNGame())
+                parsedSomething = false
             }
             let gameIndex = games.count - 1
             if line.starts(with: "[") {
                 let trimmedLine = line.trimmingCharacters(in: trimBrackets)
                 if let firstSpace = trimmedLine.firstIndex(of: " ") {
+                    parsedSomething = true
                     let key = String(trimmedLine[..<firstSpace])
                     let value = String(trimmedLine[firstSpace...]).trimmingCharacters(in: trimQuotes)
                     games[gameIndex].parseKeyValue(key, value)
                 }
             }
         }
-        if games.last!.board == nil {
+        if !parsedSomething {
             games.removeLast()
         }
         return games
@@ -112,70 +148,3 @@ class PortableBridgeNotation {
 
 
  
-
-extension PBNGame {
-    /*
-    init?(pbnData: [String], i: inout Int) {
-        self.init()
-        let trimBrackets = CharacterSet(charactersIn: "[]").union(.whitespaces)
-        let trimQuotes = CharacterSet(charactersIn: " \"")
-        while i < pbnData.count && pbnData[i] != "" {
-            if pbnData[i].first == "[" {
-                let trimmedLine = pbnData[i].trimmingCharacters(in: trimBrackets)
-                if let firstSpace = trimmedLine.firstIndex(of: " ") {
-                    let key = String(trimmedLine[..<firstSpace])
-                    let value = String(trimmedLine[firstSpace...]).trimmingCharacters(in: trimQuotes)
-                    parseKeyValue(key, value)
-                }
-            }
-            i += 1
-        }
-        // Now skip all white space before returning
-        while i < pbnData.count && pbnData[i] == "" {
-            i += 1
-        }
-        if self.board == 0 { return nil }
-    }
-     */
-    
-    internal mutating func parseKeyValue(_ key: String, _ value: String) {
-        switch key.lowercased() {
-        case "board":
-            board = Int(value)
-        case "north", "south", "east", "west":
-            players[Position(from: key)!] = value
-        case "deal":
-            deal = try! Deal(from: value)
-        case "dealer":
-            dealer = Position(from: value)
-        case "vulnerable":
-            vulnerable = Vulnerable(value)
-        case "doubledummytricks":
-            parseDoubleDummy(value)
-        default: return
-        }
-    }
-    
-    private mutating func parseDoubleDummy(_ value: String) {
-        if value.count == Position.allCases.count * Strain.allCases.count {
-            var dd: Dictionary<Position, Dictionary<Strain, Int>> = [:]
-            Position.allCases.forEach { dd[$0] = Dictionary<Strain, Int>() }
-            var makes: [Int] = []
-            for char in value {
-                if let x = Int(String(char), radix: 16) {
-                    makes.append(x)
-                } else {
-                    makes.append(-1) //BUBBUG
-                }
-            }
-            var i = 0
-            for position: Position in [.north, .south, .east, .west] {
-                for strain: Strain in [.noTrump, .spades, .hearts, .diamonds, .clubs] {
-                    dd[position]![strain] = makes[i]
-                    i += 1
-                }
-            }
-            self.doubleDummy = dd
-        }
-    }
-}
