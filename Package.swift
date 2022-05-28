@@ -27,6 +27,6 @@ let package = Package(
         .testTarget(
             name: "ContractBridgeTests",
             dependencies: ["ContractBridge"],
-            resources: [ .copy("Resources/SingleGame.pbn"), .copy("Resources/MultiGame.pbn") ] ),
+            resources: [ .process("Resources") ] ),
     ]
 )
