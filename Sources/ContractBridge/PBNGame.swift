@@ -63,7 +63,7 @@ public struct PBNGame {
     public var contract: Contract? = nil
     public var result: Int? = nil
 
-    public var doubleDummyMakes: DoubleDummyMakes? = nil
+    public var doubleDummyTricks: DoubleDummyTricks? = nil
  
     
     
@@ -93,7 +93,7 @@ public struct PBNGame {
             result = Int(value)
 
         case "doubledummytricks":
-            doubleDummyMakes = DoubleDummyMakes(from: value)
+            doubleDummyTricks = DoubleDummyTricks(from: value)
             
         default: return
         }

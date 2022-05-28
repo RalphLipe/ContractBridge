@@ -71,8 +71,9 @@ class PBNGameTest: XCTestCase {
             } else {
                 XCTFail("Nil deal for board 5")
             }
-            if let dd = games[4].doubleDummyMakes {
+            if let dd = games[4].doubleDummyTricks {
                 XCTAssertEqual(dd[.north][.diamonds], 9)
+                XCTAssertNil(dd[.north][.spades])
                 XCTAssertEqual(dd[.south][.noTrump], 7)
                 XCTAssertEqual(dd[.west][.spades], 7)
             } else {
