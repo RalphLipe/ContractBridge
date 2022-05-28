@@ -18,6 +18,10 @@ extension Set where Element == Rank {
 }
 
 extension Set where Element == Card {
+    public var highCardPoints: Int {
+        return reduce(0) { $0 + $1.rank.highCardPoints }
+    }
+    
     public var description: String {
         var s = ""
         for suit in Suit.allCases.reversed() {
