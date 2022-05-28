@@ -65,7 +65,7 @@ public struct PBNGame {
 
     public var doubleDummyTricks: DoubleDummyTricks? = nil
  
-    
+    public init() {}
     
     internal mutating func parseKeyValue(_ key: String, _ value: String) {
         switch key.lowercased() {
