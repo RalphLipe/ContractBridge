@@ -37,7 +37,7 @@ public enum Suit: Int, Comparable, CaseIterable {
     }
 }
 
-extension String.StringInterpolation {
+public extension String.StringInterpolation {
     mutating func appendInterpolation(_ suit: Suit, style: Suit.StringStyle = .symbol) {
         switch style {
         case .symbol:
