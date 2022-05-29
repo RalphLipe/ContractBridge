@@ -46,9 +46,22 @@ extension String: Initializable {}
 
 
 public struct PBNGame {
+    public init(event: String? = nil, site: String? = nil, date: Date? = nil, board: Int? = nil, players: [Position : String] = [:], dealer: Position? = nil, vulnerable: Vulnerable? = nil, deal: Deal? = nil, scoring: String? = nil, declarer: Position? = nil, contract: Contract? = nil, result: Int? = nil, doubleDummyTricks: DoubleDummyTricks? = nil) {
+        self.event = event
+        self.site = site
+        self.date = date
+        self.board = board
+        self.players = players
+        self.dealer = dealer
+        self.vulnerable = vulnerable
+        self.deal = deal
+        self.scoring = scoring
+        self.declarer = declarer
+        self.contract = contract
+        self.result = result
+        self.doubleDummyTricks = doubleDummyTricks
+    }
     
-
-
     // Required tags
     public var event: String? = nil
     public var site: String? = nil
@@ -65,9 +78,8 @@ public struct PBNGame {
 
     public var doubleDummyTricks: DoubleDummyTricks? = nil
  
-    public init() {}
     
-    internal mutating func parseKeyValue(_ key: String, _ value: String) {
+    public mutating func parseKeyValue(_ key: String, _ value: String) {
         switch key.lowercased() {
         case "event":
             event = value
@@ -91,10 +103,8 @@ public struct PBNGame {
             contract = Contract(from: value)
         case "result":
             result = Int(value)
-
         case "doubledummytricks":
             doubleDummyTricks = DoubleDummyTricks(from: value)
-            
         default: return
         }
     }

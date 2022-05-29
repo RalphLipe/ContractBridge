@@ -39,6 +39,11 @@ class PBNGameTest: XCTestCase {
          */
     }
     
+    func testInit() throws {
+        var game = PBNGame()
+        game.event = "Has an event"
+    }
+    
     func testLoad() throws {
         if let data = Self.readFile("SingleGame", withExtension: "pbn") {
             let games = PortableBridgeNotation.load(pbnData: data)
