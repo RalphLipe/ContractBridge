@@ -76,7 +76,7 @@ public struct Contract {
     public var isPassedOut: Bool { return level == 0 }
 }
 
-extension String.StringInterpolation {
+public extension String.StringInterpolation {
     mutating func appendInterpolation(_ contract: Contract, style: Suit.StringStyle = .symbol) {
         if contract.isPassedOut {
             appendLiteral("pass")
