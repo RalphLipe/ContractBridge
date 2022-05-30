@@ -59,7 +59,7 @@ public struct SuitLayout {
     public init(deal: Deal, suit: Suit) {
         self.init()
         for position in Position.allCases {
-            setRanks(deal[position].ranksFor(suit), position: position)
+            setRanks(deal[position].ranks(for: suit), position: position)
         }
     }
     

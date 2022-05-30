@@ -17,12 +17,20 @@ extension Set where Element == Rank {
     }
 }
 
-extension Set where Element == Card {
-    public var highCardPoints: Int {
+public extension Set where Element == Card {
+    func sortedHandOrder(suit: Suit? = nil) -> [Card] {
+        if let suit = suit {
+            return self.filter { $0.suit == suit }.sortedHandOrder()
+        } else {
+            return Array(self).sortedHandOrder()
+        }
+    }
+
+    var highCardPoints: Int {
         return reduce(0) { $0 + $1.rank.highCardPoints }
     }
     
-    public var description: String {
+    var description: String {
         var s = ""
         for suit in Suit.allCases.reversed() {
             s += "\(suit)"
@@ -36,7 +44,8 @@ extension Set where Element == Card {
         }
         return s
     }
-    public func ranksFor(_ suit: Suit) -> Set<Rank> {
+    
+    func ranks(for suit: Suit) -> Set<Rank> {
         var ranks = Set<Rank>()
         self.forEach { if $0.suit == suit { ranks.insert($0.rank) } }
         return ranks
