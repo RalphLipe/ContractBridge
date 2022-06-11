@@ -43,7 +43,7 @@ public enum Strain: Int, Comparable, CaseIterable {
     }
 }
 
-extension String.StringInterpolation {
+public extension String.StringInterpolation {
     mutating func appendInterpolation(_ strain: Strain, style: ContractBridge.Style = .symbol) {
         var s: String
         if let suit = strain.suit {
