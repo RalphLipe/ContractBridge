@@ -45,13 +45,12 @@ public enum Strain: Int, Comparable, CaseIterable {
 
 extension String.StringInterpolation {
     mutating func appendInterpolation(_ strain: Strain, style: ContractBridge.Style = .symbol) {
+        var s: String
         if let suit = strain.suit {
-            appendInterpolation(suit, style: style)
+            s = "\(suit, style: style)"
         } else {
-            switch style {
-            case .character, .symbol: appendLiteral("NT")
-            case .name: appendLiteral("no trump")
-            }
+            s = style == .name ? "no trump" : "NT"
         }
+        appendLiteral(s)
     }
 }
