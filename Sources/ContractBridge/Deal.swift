@@ -12,6 +12,8 @@ import Foundation
 public struct Hands {
     private var hands = Array<Set<Card>>(repeating: [], count: Position.allCases.count)
     
+    public init() {}
+    
     public subscript(_ position: Position) -> Set<Card> {
         get { return hands[position.rawValue] }
         set { hands[position.rawValue] = newValue }
