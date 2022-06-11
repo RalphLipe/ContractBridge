@@ -96,8 +96,8 @@ class CardCombinationAnalyzerTest: XCTestCase {
     func testExample() throws {
         // Deal 412
         var layout = SuitLayout()
-        layout.setRanks([.ace, .nine, .three, .two], position: .north)
-        layout.setRanks([.king, .ten], position: .south)
+        layout.assign(ranks: [.ace, .nine, .three, .two], position: .north)
+        layout.assign(ranks: [.king, .ten], position: .south)
         layout.assignNilPositions(.east)
         let sh = SuitHolding(suitLayout: layout)
         let analysis = CardCombinationAnalyzer.analyze(suitHolding: sh)

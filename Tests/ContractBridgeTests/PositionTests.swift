@@ -38,10 +38,10 @@ class PositionTests: XCTestCase {
     }
 
 
-    func testShortDescription() throws {
+    func testStringInterpolation() throws {
         var s = ""
         for position in Position.allCases {
-            s += position.shortDescription
+            s += "\(position)"
         }
         XCTAssertEqual(s, "NESW")
     }

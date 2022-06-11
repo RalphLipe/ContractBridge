@@ -9,35 +9,13 @@ import Foundation
 
 
 public typealias SuitLayoutIdentifier = Int
+public typealias SuitLayout = Dictionary<Rank, Position>
 
-public struct SuitLayout {
-    private var rankPositions: [Position?]
-    
-    public var isFullLayout: Bool {
-        for position in rankPositions {
-            if position == nil { return false }
-        }
-        return true
-    }
-    
-    public struct PairRange {
-        let pair: Pair?
-        let range: ClosedRange<Rank>
-    }
-    
-    public var id: SuitLayoutIdentifier {
-        return (rankPositions.reversed().reduce(0) { return ($0 * 5) + ($1 == nil ? 0 : 1 + $1!.rawValue) })
-    }
-    
-    public init() {
-        self.rankPositions = Array<Position?>(repeating: nil, count: Rank.allCases.count)
-    }
 
-    public init(_ from: SuitLayout) {
-        self.rankPositions = from.rankPositions
-    }
 
-    public init(suitHolding: SuitHolding) {
+public extension Dictionary where Key == Rank, Value == Position {
+
+    init(suitHolding: SuitHolding) {
         self.init()
         for position in Position.allCases {
             for rank in suitHolding[position].ranks {
@@ -46,7 +24,7 @@ public struct SuitLayout {
         }
     }
 
-    public init(suitLayoutId: SuitLayoutIdentifier) {
+    init(suitLayoutId: SuitLayoutIdentifier) {
         self.init()
         var id = suitLayoutId
         for rank in Rank.allCases {
@@ -56,20 +34,38 @@ public struct SuitLayout {
         }
     }
     
-    public init(deal: Deal, suit: Suit) {
+    init(deal: Deal, suit: Suit) {
         self.init()
         for position in Position.allCases {
-            setRanks(deal[position].ranks(for: suit), position: position)
+            if let hand = deal.hands[position] {
+                assign(ranks: hand.ranks(for: suit), position: position)
+            }
         }
     }
+
+    var isFullLayout: Bool {
+        return count == Rank.allCases.count
+    }
     
-    public mutating func assignNilPositions(_ position: Position) {
+    var id: SuitLayoutIdentifier {
+        var id = 0
+        for rank in Rank.allCases.reversed() {
+            id *= 5
+            if let position = self[rank] {
+                id += position.rawValue + 1
+            }
+        }
+        return id
+    }
+
+    
+    mutating func assignNilPositions(_ position: Position) {
         for rank in Rank.allCases {
             if self[rank] == nil { self[rank] = position }
         }
     }
     
-    public mutating func setRanks(_ ranks: Set<Rank>, position: Position?) {
+    mutating func assign(ranks: Set<Rank>, position: Position?) {
         ranks.forEach { self[$0] = position }
     }
     
@@ -83,22 +79,18 @@ public struct SuitLayout {
     }
      */
     
-    public subscript(rank: Rank) -> Position? {
-        get { return rankPositions[rank.rawValue] }
-        set { rankPositions[rank.rawValue] = newValue }
-    }
     
-    public func ranksFor(position: Position, in _range: ClosedRange<Rank> = Rank.two...Rank.ace) -> Set<Rank> {
+    func ranksFor(position: Position, in _range: ClosedRange<Rank> = Rank.two...Rank.ace) -> Set<Rank> {
         var ranks = Set<Rank>()
         _range.forEach { if self[$0] == position { ranks.insert($0) } }
         return ranks
     }
     
-    public func countFor(position: Position, in _range: ClosedRange<Rank> = Rank.two...Rank.ace) -> Int {
+    func countFor(position: Position, in _range: ClosedRange<Rank> = Rank.two...Rank.ace) -> Int {
         return _range.reduce(0) { self[$1] == position ? $0 + 1 : $0}
     }
     
-    public mutating func reassignRanks(pairs: Set<Pair> = [.ns, .ew], random: Bool) {
+    mutating func reassignRanks(pairs: Set<Pair> = [.ns, .ew], random: Bool) {
         for pairRange in pairRanges() {
             if let rangePair = pairRange.pair,
                 pairs.contains(rangePair) {
@@ -121,7 +113,12 @@ public struct SuitLayout {
         }
     }
     
-    public func pairRanges() -> [PairRange] {
+    struct PairRange {
+        public let pair: Pair?
+        public let range: ClosedRange<Rank>
+    }
+    
+    func pairRanges() -> [PairRange] {
         var ranges = Array<PairRange>()
         var rangeLower = Rank.two
         var rangeUpper = Rank.two
@@ -140,17 +137,14 @@ public struct SuitLayout {
         ranges.append(PairRange(pair: lastPair, range: rangeLower...rangeUpper))
         return ranges
     }
+
     
 }
 
-// TODO:  This is ugly.  Make is nicer...
-extension SuitLayout: CustomStringConvertible {
-    public var description: String {
-        var result = ""
-        for position in Position.allCases {
-            result += "\(position.shortDescription): \(ranksFor(position: position).description)"
-            if position != Position.west { result += " "}
-        }
-        return result
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ suitLayout: SuitLayout, style: ContractBridge.Style = .symbol) {
+        appendLiteral(Position.allCases.map {
+            "\($0, style: style): \(suitLayout.ranksFor(position: $0), style: style)" }.joined(separator: " "))
+        
     }
 }

@@ -10,18 +10,13 @@ import ContractBridge
 
 class CardTest: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
+    
     func testCard() throws {
+        let js = Card.jackOfSpades
         XCTAssertLessThan(Card(.ten, .spades), Card(.jack, .spades))
-        XCTAssertEqual(Card(.jack, .diamonds).description, "jack of diamonds")
-        XCTAssertEqual(Card(.queen, .clubs).rank.highCardPoints, 2)
+        XCTAssertEqual("\(js, style: .name)", "jack of spades")
+        XCTAssertEqual("\(js, style: .character)", "JS")
+        XCTAssertEqual("\(js, style: .symbol)", "J♠")
         XCTAssertEqual(Card.twoOfClubs, Card(.two, .clubs))
     }
 }

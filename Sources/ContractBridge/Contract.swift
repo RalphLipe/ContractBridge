@@ -77,7 +77,7 @@ public struct Contract {
 }
 
 public extension String.StringInterpolation {
-    mutating func appendInterpolation(_ contract: Contract, style: Suit.StringStyle = .symbol) {
+    mutating func appendInterpolation(_ contract: Contract, style: ContractBridge.Style = .symbol) {
         if contract.isPassedOut {
             appendLiteral("pass")
         } else {

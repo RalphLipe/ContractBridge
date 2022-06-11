@@ -9,7 +9,7 @@ import Foundation
 
 
 
-public struct LeadPlan: CustomStringConvertible {
+public struct LeadPlan {
     public let position: Position
     public let intent: Intent
     public let leadRange: ClosedRange<Rank>
@@ -36,35 +36,56 @@ public struct LeadPlan: CustomStringConvertible {
         self.minThirdHandRange = minThirdHand?.range
         self.maxThirdHandRange = maxThirdHand?.range
     }
+}
+
+
+public extension String.StringInterpolation {
+    private func ranks(range: ClosedRange<Rank>?, position: Position, hands: [Position:Set<Card>]?, suit: Suit?, style: ContractBridge.Style) -> String? {
+        guard let range = range else { return nil }
+        guard let hands = hands,
+              let suit = suit,
+              let hand = hands[position] else {
+            return "\(range)"
+        }
+        return "\(hand.ranks(for: suit).intersection(range), style: style)"
+    }
     
-    public var description: String {
+    mutating func appendInterpolation(_ leadPlan: LeadPlan, hands: [Position:Set<Card>]? = nil, suit: Suit? = nil, style: ContractBridge.Style = .symbol) {
+        let position = leadPlan.position
+        let leadRanks = ranks(range: leadPlan.leadRange, position: leadPlan.position, hands: hands, suit: suit, style: style)!
+        let minThirdRanks = ranks(range: leadPlan.minThirdHandRange,position: position.partner, hands: hands, suit: suit, style: style)
+        let maxThirdRanks = ranks(range: leadPlan.maxThirdHandRange, position: position.partner, hands: hands, suit: suit, style: style)
+
         var desc: String = ""
-        switch self.intent {
+        switch leadPlan.intent {
         case .cashWinner:
-            if let thirdHandWinner = minThirdHandRange {
-                desc = "lead \(leadRange) from \(position) cashing winner \(thirdHandWinner) "
+            if let minThirdRanks = minThirdRanks {
+                desc = "lead \(leadRanks) from \(position) cashing winner \(minThirdRanks) "
             } else {
-                desc = "cash winner \(leadRange) in \(position)"
+                desc = "cash winner \(leadRanks) in \(position)"
             }
         case .finesse:
-            desc = "lead \(leadRange) from \(position) finessing \(minThirdHandRange!) "
+            desc = "lead \(leadRanks) from \(position) finessing \(minThirdRanks!) "
+            /*
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
             } else {
                 desc += "not covering"
             }
+             */ // TODO: Should we do this cover/not cover tingine
                 
         case .ride:
-            desc = "ride \(leadRange) from \(position) "
-            if let maxCover = self.maxThirdHand {
-                desc += "covering with \(maxCover)"
+            desc = "ride \(leadRanks) from \(position) "
+            if let maxThirdRanks = maxThirdRanks {
+                desc += "covering with \(maxThirdRanks)"
             } else {
                 desc += "not covering"
             }
+            
         case .playLow:
-            desc = "play low \(leadRange) from \(position)"
+            desc = "play low \(leadRanks) from \(position)"
         }
-        return desc
+        appendLiteral(desc)
     }
     
 }

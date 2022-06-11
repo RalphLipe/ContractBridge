@@ -40,7 +40,7 @@ public extension Vulnerable {
 }
 
 public extension String.StringInterpolation {
-    mutating func appendInterpolation(_ vulnerable: Vulnerable, style: Suit.StringStyle = .symbol) {
+    mutating func appendInterpolation(_ vulnerable: Vulnerable, style: ContractBridge.Style = .symbol) {
         if style == .name {
             appendLiteral(vulnerable.description)
         } else {

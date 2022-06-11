@@ -8,7 +8,7 @@
 import XCTest
 import ContractBridge
 
-class PBNGameTest: XCTestCase {
+class PBNGameTests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -68,7 +68,7 @@ class PBNGameTest: XCTestCase {
                 XCTFail("Vulnerable is nil for board 5")
             }
             if let deal = games[4].deal {
-                var cards = Array<Card>(deal[.west])
+                var cards = Array<Card>(deal.hands[.west]!)
                 cards.sortHandOrder()
                 XCTAssertEqual(cards[0], .kingOfSpades)
                 XCTAssertEqual(cards[1], .fourOfSpades)

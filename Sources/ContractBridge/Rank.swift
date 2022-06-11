@@ -8,7 +8,7 @@
 import Foundation
 
 
-public enum Rank: Int, CaseIterable, Comparable {
+public enum Rank: Int, CaseIterable, Comparable, Strideable {
     case two, three, four, five, six, seven, eight, nine, ten, jack, queen, king, ace
     
     public init?(from rankText: String) {
@@ -41,37 +41,17 @@ public enum Rank: Int, CaseIterable, Comparable {
     }
     
     public var nextLower: Rank? {
-        return self == .two ? nil : Rank(rawValue: self.rawValue - 1)
+        return Rank(rawValue: rawValue - 1)
     }
     
     public var nextHigher: Rank? {
-        return self == .ace ? nil : Rank(rawValue: self.rawValue + 1)
+        return Rank(rawValue: rawValue + 1)
     }
     
     public static func < (lhs: Rank, rhs: Rank) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
-    
-    public var shortDescription: String {
-        switch self {
-        case .two:   return "2"
-        case .three: return "3"
-        case .four:  return "4"
-        case .five:  return "5"
-        case .six:   return "6"
-        case .seven: return "7"
-        case .eight: return "8"
-        case .nine:  return "9"
-        case .ten:   return "T"
-        case .jack:  return "J"
-        case .queen: return "Q"
-        case .king:  return "K"
-        case .ace:   return "A"
-        }
-    }
-}
 
-extension Rank: Strideable {
     public func advanced(by n: Int) -> Rank {
         return Rank(rawValue: self.rawValue + n)!
     }
@@ -80,3 +60,46 @@ extension Rank: Strideable {
         return other.rawValue - self.rawValue
     }
 }
+
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ rank: Rank, style: ContractBridge.Style = .symbol) {
+        
+        var s: String
+        switch style {
+        case .symbol, .character:
+            switch rank {
+            case .two:   s = "2"
+            case .three: s = "3"
+            case .four:  s = "4"
+            case .five:  s = "5"
+            case .six:   s = "6"
+            case .seven: s = "7"
+            case .eight: s = "8"
+            case .nine:  s = "9"
+            case .ten:   s = "T"
+            case .jack:  s = "J"
+            case .queen: s = "Q"
+            case .king:  s = "K"
+            case .ace:   s = "A"
+            }
+        case .name:
+            switch rank {
+            case .two:   s = "two"
+            case .three: s = "three"
+            case .four:  s = "four"
+            case .five:  s = "five"
+            case .six:   s = "six"
+            case .seven: s = "seven"
+            case .eight: s = "eight"
+            case .nine:  s = "nine"
+            case .ten:   s = "ten"
+            case .jack:  s = "jack"
+            case .queen: s = "queen"
+            case .king:  s = "king"
+            case .ace:   s = "ace"
+            }
+        }
+        appendLiteral(s)
+    }
+}
+

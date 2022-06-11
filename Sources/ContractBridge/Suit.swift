@@ -31,36 +31,35 @@ public enum Suit: Int, Comparable, CaseIterable {
     public static func < (lhs: Suit, rhs: Suit) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
-  
-    public enum StringStyle {
-        case symbol, character, name
-    }
+
 }
 
 public extension String.StringInterpolation {
-    mutating func appendInterpolation(_ suit: Suit, style: Suit.StringStyle = .symbol) {
+    mutating func appendInterpolation(_ suit: Suit, style: ContractBridge.Style = .symbol) {
+        var s: String
         switch style {
         case .symbol:
             switch suit {
-            case .clubs:    appendLiteral("\u{2663}")
-            case .diamonds: appendLiteral("\u{2666}")
-            case .hearts:   appendLiteral("\u{2665}")
-            case .spades:   appendLiteral("\u{2660}")
+            case .clubs:    s = "\u{2663}"
+            case .diamonds: s = "\u{2666}"
+            case .hearts:   s = "\u{2665}"
+            case .spades:   s = "\u{2660}"
             }
         case .character:
             switch suit {
-            case .clubs:    appendLiteral("C")
-            case .diamonds: appendLiteral("D")
-            case .hearts:   appendLiteral("H")
-            case .spades:   appendLiteral("S")
+            case .clubs:    s = "C"
+            case .diamonds: s = "D"
+            case .hearts:   s = "H"
+            case .spades:   s = "S"
             }
         case .name:
             switch suit {
-            case .clubs:    appendLiteral("clubs")
-            case .diamonds: appendLiteral("diamonds")
-            case .hearts:   appendLiteral("hearts")
-            case .spades:   appendLiteral("spades")
+            case .clubs:    s = "clubs"
+            case .diamonds: s = "diamonds"
+            case .hearts:   s = "hearts"
+            case .spades:   s = "spades"
             }
         }
+        appendLiteral(s)
     }
 }

@@ -8,7 +8,7 @@
 import Foundation
 
 
-internal class RankRange: Comparable, CustomStringConvertible {
+internal class RankRange: Comparable {
     private let suitHolding: SuitHolding
     public let index: Int
     public var pair: Pair?
@@ -47,9 +47,6 @@ internal class RankRange: Comparable, CustomStringConvertible {
         return lhs.range == rhs.range
     }
     
-    public var description: String {
-        return range.description
-    }
     
     public var promotedRange: ClosedRange<Rank> {
         if let position = position {
@@ -80,9 +77,17 @@ internal class RankRange: Comparable, CustomStringConvertible {
     }
 }
 
-extension ClosedRange where Element == Rank {
-    var description: String {
-        if lowerBound == upperBound { return lowerBound.shortDescription }
-        return "\(lowerBound.shortDescription)...\(upperBound.shortDescription)"
-    }
+// RankRanges are simply shown as the range they represent
+// TODO: Is this appropriate to be internal?
+internal extension String.StringInterpolation {
+    mutating func appendInterpolation(_ rankRange: RankRange, style: ContractBridge.Style = .symbol) {
+        appendLiteral("\(rankRange.range, style: style)")
+        }
+}
+
+// TODO:  Is this in the right place?
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ ranks: ClosedRange<Rank>, style: ContractBridge.Style = .symbol) {
+        appendLiteral(ranks.lowerBound == ranks.upperBound ? "\(ranks.lowerBound, style: style)" : "\(ranks.lowerBound, style: style)...\(ranks.upperBound, style: style)")
+        }
 }

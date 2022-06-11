@@ -8,7 +8,7 @@
 import XCTest
 import ContractBridge
 
-class PairTest: XCTestCase {
+class PairTests: XCTestCase {
 
     
     func testPair() throws {
@@ -22,6 +22,16 @@ class PairTest: XCTestCase {
         XCTAssertEqual(Position.north.pair.positions.1, .south)
         XCTAssertEqual(Position.east.pair.positions.0, .east)
         XCTAssertEqual(Position.east.pair.positions.1, .west)
+    }
+    
+    func testStringInterpolation() throws {
+        let ns = Pair.ns
+        let ew = Pair.ew
+        XCTAssertEqual("\(ns)", "N/S")
+        XCTAssertEqual("\(ew)", "E/W")
+        XCTAssertEqual("\(ns, style: .name)", "north/south")
+        XCTAssertEqual("\(ew, style: .name)", "east/west")
+
     }
 
 }

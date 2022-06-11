@@ -43,13 +43,28 @@ public enum Position: Int, CaseIterable {
         case .east, .west:   return .ew
         }
     }
-    
-    public var shortDescription: String {
-        switch (self) {
-        case .north: return "N"
-        case .east:  return "E"
-        case .south: return "S"
-        case .west:  return "W"
+}
+
+
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ position: Position, style: ContractBridge.Style = .symbol) {
+        var s: String
+        switch style {
+        case .symbol, .character:
+            switch position {
+            case .north: s = "N"
+            case .east:  s = "E"
+            case .south: s = "S"
+            case .west:  s = "W"
+            }
+        case .name:
+            switch position {
+            case .north: s = "north"
+            case .east:  s = "east"
+            case .south: s = "south"
+            case .west:  s = "west"           
+            }
         }
+        appendLiteral(s)
     }
 }

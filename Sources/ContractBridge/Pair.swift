@@ -19,11 +19,11 @@ public enum Pair: Int, CaseIterable {
     public var opponents: Pair {
         return self == .ns ? .ew : .ns
     }
-    public var shortDescription: String {
-        switch self {
-        case .ns: return "N/S"
-        case .ew: return "E/W"
-        }
-    }
 }
  
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ pair: Pair, style: ContractBridge.Style = .symbol) {
+        let positions = pair.positions
+        appendLiteral("\(positions.0, style: style)/\(positions.1, style: style)")
+    }
+}

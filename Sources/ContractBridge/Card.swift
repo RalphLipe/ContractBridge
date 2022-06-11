@@ -8,7 +8,7 @@
 import Foundation
 
 
-public enum Card : Int, Comparable, CaseIterable, Hashable, CustomStringConvertible {
+public enum Card : Int, Comparable, CaseIterable, Hashable {
     case twoOfClubs = 0, twoOfDiamonds,    twoOfHearts,  twoOfSpades
     case threeOfClubs,   threeOfDiamonds, threeOfHearts, threeOfSpades
     case fourOfClubs,    fourOfDiamonds,  fourOfHearts,  fourOfSpades
@@ -30,16 +30,21 @@ public enum Card : Int, Comparable, CaseIterable, Hashable, CustomStringConverti
         self.init(rawValue: (rank.rawValue * 4) + suit.rawValue)!
     }
     
-    public var shortDescription: String {
-        return "\(rank.shortDescription)\(suit, style: .symbol)"
-    }
     
     public static func < (lhs: Card, rhs: Card) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
     
-    public var description: String {
-        return "\(rank) of \(suit, style: .name)"
-    }
+  
 }
 
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ card: Card, style: ContractBridge.Style = .symbol) {
+        switch style {
+        case .symbol, .character:
+            appendLiteral("\(card.rank, style: style)\(card.suit, style: style)")
+        case .name:
+            appendLiteral("\(card.rank, style: style) of \(card.suit, style: style)")
+        }
+    }
+}

@@ -70,7 +70,7 @@ public enum Risk: CaseIterable {
 }
 
 extension String.StringInterpolation {
-    mutating func appendInterpolation(_ risk: Risk, style: Suit.StringStyle = .symbol) {
+    mutating func appendInterpolation(_ risk: Risk, style: ContractBridge.Style = .symbol) {
         if style == .name {
             switch risk {
             case .undoubled: appendLiteral("undoubled")

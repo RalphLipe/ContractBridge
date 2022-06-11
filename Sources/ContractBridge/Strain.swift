@@ -21,14 +21,6 @@ public enum Strain: Int, Comparable, CaseIterable {
     public static func < (lhs: Strain, rhs: Strain) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
-    
-    public var shortDescription : String {
-        if let suit = self.suit {
-            return "\(suit)"
-        } else {
-            return "NT"
-        }
-    }
 
     public var suit: Suit? {
         assert(Suit.clubs.rawValue == Strain.clubs.rawValue)
@@ -52,7 +44,7 @@ public enum Strain: Int, Comparable, CaseIterable {
 }
 
 extension String.StringInterpolation {
-    mutating func appendInterpolation(_ strain: Strain, style: Suit.StringStyle = .symbol) {
+    mutating func appendInterpolation(_ strain: Strain, style: ContractBridge.Style = .symbol) {
         if let suit = strain.suit {
             appendInterpolation(suit, style: style)
         } else {
