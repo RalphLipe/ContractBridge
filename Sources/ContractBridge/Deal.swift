@@ -7,6 +7,8 @@
 
 import Foundation
 
+public typealias Hands = Dictionary<Position, Set<Card>>
+
 enum DealError: Error {
     case invalidFirstPosition
     case invalidNumberOfHands(_ numberOfHands: Int)
@@ -17,7 +19,7 @@ enum DealError: Error {
 
 
 public struct Deal: Codable {
-    public var hands: [Position: Set<Card>] = [:]
+    public var hands: Hands = [:]
     
     public init() {}
     

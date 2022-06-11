@@ -40,7 +40,7 @@ public struct LeadPlan {
 
 
 public extension String.StringInterpolation {
-    private func ranks(range: ClosedRange<Rank>?, position: Position, hands: [Position:Set<Card>]?, suit: Suit?, style: ContractBridge.Style) -> String? {
+    private func ranks(range: ClosedRange<Rank>?, position: Position, hands: Hands?, suit: Suit?, style: ContractBridge.Style) -> String? {
         guard let range = range else { return nil }
         guard let hands = hands,
               let suit = suit,
@@ -50,7 +50,7 @@ public extension String.StringInterpolation {
         return "\(hand.ranks(for: suit).intersection(range), style: style)"
     }
     
-    mutating func appendInterpolation(_ leadPlan: LeadPlan, hands: [Position:Set<Card>]? = nil, suit: Suit? = nil, style: ContractBridge.Style = .symbol) {
+    mutating func appendInterpolation(_ leadPlan: LeadPlan, hands: Hands? = nil, suit: Suit? = nil, style: ContractBridge.Style = .symbol) {
         let position = leadPlan.position
         let leadRanks = ranks(range: leadPlan.leadRange, position: leadPlan.position, hands: hands, suit: suit, style: style)!
         let minThirdRanks = ranks(range: leadPlan.minThirdHandRange,position: position.partner, hands: hands, suit: suit, style: style)
