@@ -68,7 +68,7 @@ class PBNGameTests: XCTestCase {
                 XCTFail("Vulnerable is nil for board 5")
             }
             if let deal = games[4].deal {
-                var cards = Array<Card>(deal.hands[.west]!)
+                var cards = Array<Card>(deal.hands[.west])
                 cards.sortHandOrder()
                 XCTAssertEqual(cards[0], .kingOfSpades)
                 XCTAssertEqual(cards[1], .fourOfSpades)

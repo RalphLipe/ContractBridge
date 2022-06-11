@@ -37,9 +37,7 @@ public extension Dictionary where Key == Rank, Value == Position {
     init(deal: Deal, suit: Suit) {
         self.init()
         for position in Position.allCases {
-            if let hand = deal.hands[position] {
-                assign(ranks: hand.ranks(for: suit), position: position)
-            }
+            assign(ranks: deal.hands[position].ranks(for: suit), position: position)
         }
     }
 

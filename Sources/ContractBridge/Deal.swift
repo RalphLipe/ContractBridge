@@ -7,19 +7,27 @@
 
 import Foundation
 
-public typealias Hands = Dictionary<Position, Set<Card>>
+//public typealias Hands = Dictionary<Position, Set<Card>>
+
+public struct Hands {
+    private var hands = Array<Set<Card>>(repeating: [], count: Position.allCases.count)
+    
+    public subscript(_ position: Position) -> Set<Card> {
+        get { return hands[position.rawValue] }
+        set { hands[position.rawValue] = newValue }
+    }
+}
 
 enum DealError: Error {
     case invalidFirstPosition
     case invalidNumberOfHands(_ numberOfHands: Int)
     case notFullHand(position: Position, numberOfCards: Int)
-    case nilHand(position: Position)
     case duplicateCard(_ card: Card)
 }
 
 
 public struct Deal: Codable {
-    public var hands: Hands = [:]
+    public var hands = Hands()
     
     public init() {}
     
@@ -46,7 +54,9 @@ public struct Deal: Codable {
             throw DealError.invalidNumberOfHands(serHands.count)
         }
         for serHand in serHands {
-            hands[position] = serHand == "-" ? nil : try Set<Card>(from: serHand)
+            // TODO: What to do with undefinde hands?
+            // How do we serialize them?
+            hands[position] = serHand == "-" ? [] : try Set<Card>(from: serHand)
             position = position.next
         }
     }
@@ -60,7 +70,7 @@ public struct Deal: Codable {
         var serHands = Array<String>()
         var position = startPosition
         repeat {
-            serHands.append(hands[position] == nil ? "-" : hands[position]!.serialized)
+            serHands.append(hands[position].serialized)
             position = position.next
         } while position != startPosition
         return "\(startPosition, style: .character):" + serHands.joined(separator: " ")
@@ -69,19 +79,18 @@ public struct Deal: Codable {
     public func validate(fullDeal: Bool = true) throws -> Void {
         if fullDeal {
             for position in Position.allCases {
-                guard let hand = hands[position] else { throw DealError.nilHand(position: position) }
-                if hand.count != 13 {
-                    throw DealError.notFullHand(position: position, numberOfCards: hand.count)
+                if hands[position].count != 13 {
+                    throw DealError.notFullHand(position: position, numberOfCards: hands[position].count)
                 }
             }
         }
         var seenCards = Set<Card>()
-        for hand in self.hands.values {
-            let dup = seenCards.intersection(hand)
+        for position in Position.allCases {
+            let dup = seenCards.intersection(hands[position])
             if dup.count > 0 {
                 throw DealError.duplicateCard(dup.first!)
             }
-            seenCards.formUnion(hand)
+            seenCards.formUnion(hands[position])
         }
     }
 }
