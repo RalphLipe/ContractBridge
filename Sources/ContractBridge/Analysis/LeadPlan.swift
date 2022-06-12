@@ -59,12 +59,12 @@ public extension String.StringInterpolation {
         switch leadPlan.intent {
         case .cashWinner:
             if let minThirdRanks = minThirdRanks {
-                desc = "lead \(leadRanks) from \(position) cashing winner \(minThirdRanks) "
+                desc = "lead \(leadRanks) from \(position, style: style) cashing winner \(minThirdRanks) "
             } else {
-                desc = "cash winner \(leadRanks) in \(position)"
+                desc = "cash winner \(leadRanks) in \(position, style: style)"
             }
         case .finesse:
-            desc = "lead \(leadRanks) from \(position) finessing \(minThirdRanks!) "
+            desc = "lead \(leadRanks) from \(position, style: style) finessing \(minThirdRanks!) "
             /*
             if let maxCover = self.maxThirdHand {
                 desc += "covering with \(maxCover)"
@@ -74,7 +74,7 @@ public extension String.StringInterpolation {
              */ // TODO: Should we do this cover/not cover tingine
                 
         case .ride:
-            desc = "ride \(leadRanks) from \(position) "
+            desc = "ride \(leadRanks) from \(position, style: style) "
             if let maxThirdRanks = maxThirdRanks {
                 desc += "covering with \(maxThirdRanks)"
             } else {
@@ -82,7 +82,7 @@ public extension String.StringInterpolation {
             }
             
         case .playLow:
-            desc = "play low \(leadRanks) from \(position)"
+            desc = "play low \(leadRanks) from \(position, style: style)"
         }
         appendLiteral(desc)
     }

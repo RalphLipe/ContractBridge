@@ -23,4 +23,12 @@ class RankSetTests: XCTestCase {
         
     }
     
+    func testStringInterpolation() throws {
+        let s = try Set<Rank>(from: "AT29Q")
+        XCTAssertEqual("\(s, style: .symbol)", "AQT92")
+        XCTAssertEqual("\(s, style: .character)", "A, Q, T, 9, 2")
+        XCTAssertEqual("\(s, style: .name)", "ace, queen, ten, nine, two")
+
+    }
+    
 }

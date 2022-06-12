@@ -45,10 +45,10 @@ extension Set where Element == Rank  {
 public extension String.StringInterpolation {
     mutating func appendInterpolation(_ ranks: Set<Rank>, style: ContractBridge.Style = .symbol) {
         switch style {
-        case .symbol, .character:
+        case .symbol:
             appendLiteral(ranks.serialized)
-        case .name:
-            appendLiteral(ranks.sortedHandOrder.map { "\($0, style: .name)" }.joined(separator: ", "))
+        case .character, .name:
+            appendLiteral(ranks.sortedHandOrder.map { "\($0, style: style)" }.joined(separator: ", "))
         }
     }
 }
