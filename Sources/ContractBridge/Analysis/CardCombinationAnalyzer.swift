@@ -248,10 +248,6 @@ public class CardCombinationAnalyzer {
     private func analyzeLeads(leads: [LeadPlan]) -> [Int] {
         return leads.map { lead($0) }
     }
-    
-
-
-
 }
 
 

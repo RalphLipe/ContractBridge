@@ -15,6 +15,7 @@ internal class RankRange: Comparable {
     public let position: Position?
     public let range: ClosedRange<Rank>
     public var count: Int { return ranks.count }
+    public var isEmpty: Bool { return ranks.isEmpty }
     public var ranks: Set<Rank>
     private var playCardDestination: RankRange?
 
@@ -46,7 +47,7 @@ internal class RankRange: Comparable {
     public static func == (lhs: RankRange, rhs: RankRange) -> Bool {
         return lhs.range == rhs.range
     }
-    
+
     
     public var promotedRange: ClosedRange<Rank> {
         if let position = position {

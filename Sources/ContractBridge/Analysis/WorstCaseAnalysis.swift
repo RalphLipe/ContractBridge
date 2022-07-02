@@ -7,49 +7,91 @@
 
 import Foundation
 
-// This evaluates a card combination and assumes the worst case for opponents - that is that
-// all the ranks will be in one hand.  Regardless of the suit layout provided, all of the
-// opponent's ranks will be placed in a single hand for evaluation.  Any nil ranks will not be
-// considered.
-
+// Declarer plays all cards from highest to lowest.  Defenders
 public struct WorstCaseAnalysis {
+    private var suitHolding: SuitHolding
+    private let declaring: (Position, Position)
+    private let defending: (Position, Position)
     
-    // NOTE:  In this analysis, the declaing side is limited to the number of ranks in the longest hand.  For the defense
-    // the worst case of all ranks being in a single hand is assumed.  This function could be modified easily to limit
-    // defense to the maximum of the longest side if desired, but as of now there is no need for this functionality.
-    public static func analyze(suitLayout: SuitLayout, declaringPair: Pair) -> (tricksTaken: Int, maxTricksPossible: Int) {
-        let declarerPositions = declaringPair.positions
-        let maxTricks = max(suitLayout.countFor(position: declarerPositions.0),
-                            suitLayout.countFor(position: declarerPositions.1))
-        var declarerHolding: Set<Rank> = suitLayout.ranksFor(position: declarerPositions.0).union(suitLayout.ranksFor(position: declarerPositions.1))
-        while declarerHolding.count > maxTricks {
-            let min = declarerHolding.min()!
-            declarerHolding.remove(min)
-        }
-        let defensePositions = declaringPair.opponents.positions
-        var defenseHolding: Set<Rank> = suitLayout.ranksFor(position: defensePositions.0).union(suitLayout.ranksFor(position: defensePositions.1))
-        var numTricks = 0
-        while declarerHolding.count > 0 && defenseHolding.count > 0 {
-            let declarerPlay = declarerHolding.max()!
-            var defensePlay: Rank? = nil
-            for rank in defenseHolding {
-                // We will use this rank if it's the only one we've seen or if it wins and and lower than a current winnner or
-                // if there is not a winner and this rank is lower than the current defense play
-                if defensePlay == nil ||
-                    (rank > declarerPlay && (defensePlay! < declarerPlay || rank < defensePlay!)) ||
-                    (rank < defensePlay! && defensePlay! < declarerPlay)  {
-                    defensePlay = rank
-                }
-            }
-            if declarerPlay > defensePlay! { numTricks += 1 }
-            declarerHolding.remove(declarerPlay)
-            defenseHolding.remove(defensePlay!)
-        }
-        return (tricksTaken: numTricks + declarerHolding.count, maxTricksPossible: maxTricks)
+    public static func analyze(suitLayout: SuitLayout, declaringPair: Pair) -> Int {
+        return WorstCaseAnalysis(suitLayout: suitLayout, declaringPair: declaringPair).bestLead()
     }
     
     public static func isAllWinners(suitLayout: SuitLayout, declaringPair: Pair) -> Bool {
-        let result = WorstCaseAnalysis.analyze(suitLayout: suitLayout, declaringPair: declaringPair)
-        return result.maxTricksPossible == result.tricksTaken
+        let analyzer = WorstCaseAnalysis(suitLayout: suitLayout, declaringPair: declaringPair)
+        return analyzer.bestLead() == analyzer.remainingDeclarerTricks
+    }
+    
+    private init(suitLayout: SuitLayout, declaringPair: Pair) {
+        self.suitHolding = SuitHolding(suitLayout: suitLayout)
+        self.declaring = declaringPair.positions
+        self.defending = declaringPair.opponents.positions
+    }
+    
+    internal var remainingDeclarerTricks: Int {
+        return max(suitHolding[declaring.0].count, suitHolding[declaring.1].count)
+    }
+    
+    private func followLowDefense(position: Position, declarerPlay: RankRange, defensePlay: RankRange) -> Int {
+        var numTricks = 0
+        var defenseHighest = defensePlay
+        if suitHolding[position].isEmpty {
+            numTricks = bestLead()
+        } else {
+            let lowRankRange = suitHolding[position].lowest()
+            let lowestRank = lowRankRange.play()
+            numTricks = bestLead()
+            lowRankRange.undoPlay(rank: lowestRank)
+            if lowRankRange > defenseHighest { defenseHighest = lowRankRange }
+        }
+        if defenseHighest < declarerPlay { numTricks += 1 }
+        return numTricks
+    }
+    
+    
+    private func defendHigh(from position: Position, played: RankRange) -> Int {
+        if suitHolding[position].isEmpty {
+            return remainingDeclarerTricks + 1  // Declarer will win this trick plus all others
+        } else {
+            let winnerRange = suitHolding[position].lowest(cover: played)
+            let winnerRank = winnerRange.play()
+            let numTricks = followLowDefense(position: position.partner, declarerPlay: played, defensePlay: winnerRange)
+            winnerRange.undoPlay(rank: winnerRank)
+            return numTricks
+        }
+    }
+    
+    private func defendAgainst(played: RankRange) -> Int {
+        return min(defendHigh(from: defending.0, played: played), defendHigh(from: defending.1, played: played))
+    }
+    
+  
+    private func bestLead() -> Int {
+        var leadFrom: Position = declaring.0
+        if suitHolding[leadFrom].isEmpty {
+            if suitHolding[declaring.1].isEmpty { return 0 }
+            leadFrom = declaring.1
+        } else if !suitHolding[declaring.1].isEmpty {
+            let max0 = suitHolding[declaring.0].highest().promotedRange
+            let max1 = suitHolding[declaring.1].highest().promotedRange
+            assert(leadFrom == declaring.0)
+            // Lead from the high side.  If equally high cards then lead from the short side
+            if max0.upperBound < max1.upperBound || (max0 == max1 && suitHolding[declaring.0].count > suitHolding[declaring.1].count) {
+                leadFrom = declaring.1
+            }
+        }
+        let playRankRange = suitHolding[leadFrom].highest()
+        let playRank = playRankRange.play()
+        let numTricks: Int
+        if suitHolding[leadFrom.partner].isEmpty {
+            numTricks = defendAgainst(played: playRankRange)
+        } else {
+            let lowRankRange = suitHolding[leadFrom.partner].lowest()
+            let lowestRank = lowRankRange.play()
+            numTricks = defendAgainst(played: playRankRange)
+            lowRankRange.undoPlay(rank: lowestRank)
+        }
+        playRankRange.undoPlay(rank: playRank)
+        return numTricks
     }
 }

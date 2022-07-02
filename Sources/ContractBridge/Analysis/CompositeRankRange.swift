@@ -46,16 +46,25 @@ public class CompositeRankRange: Comparable {
     }
     
     // NOTE: This function assumes that child ranges are sorted in order from lowest to highest
-    // Caller MUST be sure that remainingCount > 0 or a runtime error will occur
+    // Caller MUST be sure that count > 0 or a runtime error will occur
     internal func lowest(cover: RankRange? = nil) -> RankRange {
         var low: RankRange? = nil
         for child in children {
-            if child.count > 0 {
+            if !child.isEmpty {
                 if cover == nil || child >= cover! { return child }
                 if low == nil { low = child }
             }
         }
         return low!
+    }
+    
+    // As with lowest() this method requires that the caller ensure that the composite range is not empty
+    internal func highest() -> RankRange {
+        var high: RankRange? = nil
+        for child in children {
+            if !child.isEmpty { high = child }
+        }
+        return high!
     }
     
     func toCards(suit: Suit) -> [Card] {

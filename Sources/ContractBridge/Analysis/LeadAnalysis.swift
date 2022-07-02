@@ -111,7 +111,7 @@ public class LayoutAnalyzer {
     internal init(suitHolding: SuitHolding, leads: [LeadPlan]) {
         self.suitHolding = suitHolding
         self.leads = leads 
-        self.worstCaseTricks = WorstCaseAnalysis.analyze(suitLayout: SuitLayout(suitHolding: suitHolding), declaringPair: .ns).tricksTaken
+        self.worstCaseTricks = WorstCaseAnalysis.analyze(suitLayout: SuitLayout(suitHolding: suitHolding), declaringPair: .ns)
         self.layouts = []
         self.thisLayoutMaxTricks = []
         self.trickSequences = []
@@ -231,3 +231,28 @@ public class LayoutAnalyzer {
     }
 }
 
+
+/// What we want:
+///
+/// Worst Case Analysis Partial Layout
+///
+/// Worst case analysis specific layout
+///
+/// Double Dummy Specific layout:
+///   Uses the current layout and analyzes all leads and subsequent plays for the best line of play:
+///         Max tricks
+///         Leads - Sorted hightest to lowest num tricks
+///             Lead Plan
+///             Num tricks
+///             Trick sqeuence
+///
+/// BestLeadsFor(desiredTricks:Int, partialLayout)
+///     Total combinations
+///     array of lyaouts not making
+///     Leads - Sorted from highest to lowest combinations making...
+///         Lead Plan
+///         combinations making
+///         set of layouts making
+///
+///
+///
