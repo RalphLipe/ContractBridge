@@ -63,7 +63,7 @@ public extension Dictionary where Key == Rank, Value == Position {
         }
     }
     
-    mutating func assign(ranks: Set<Rank>, position: Position?) {
+    mutating func assign(ranks: RankSet, position: Position?) {
         ranks.forEach { self[$0] = position }
     }
     
@@ -78,8 +78,8 @@ public extension Dictionary where Key == Rank, Value == Position {
      */
     
     
-    func ranksFor(position: Position, in _range: ClosedRange<Rank> = Rank.two...Rank.ace) -> Set<Rank> {
-        var ranks = Set<Rank>()
+    func ranksFor(position: Position, in _range: ClosedRange<Rank> = Rank.two...Rank.ace) -> RankSet {
+        var ranks = RankSet()
         _range.forEach { if self[$0] == position { ranks.insert($0) } }
         return ranks
     }

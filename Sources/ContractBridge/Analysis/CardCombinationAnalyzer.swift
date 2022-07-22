@@ -9,7 +9,6 @@
 public class CardCombinationAnalyzer {
     var suitHolding: SuitHolding { return layoutAnalyzer.suitHolding }
     var tricks: [Trick] = []
-    var showsOut: Set<Position> = []
     var layoutAnalyzer: LayoutAnalyzer
     var recordCombinationStatistics = true
     
@@ -34,15 +33,13 @@ public class CardCombinationAnalyzer {
             self.recordFinalPlay = recordFinalPlay
         }
         
-        func play(_ rankRange: RankRange?, nextStep: (Trick) -> Int) -> Int {
+        func play(_ rankRange: RankRange, nextStep: (Trick) -> Int) -> Int {
             let currentPosition = nextToAct
             let currentWinningPosition = winningPosition
             positionsPlayed += 1
             ranks[currentPosition] = rankRange
             self.nextToAct = self.nextToAct.next
-            if let rankRange = rankRange {
-                if rankRange > self.winningRankRange { self.winningPosition = currentPosition }
-            }
+            if rankRange > self.winningRankRange { self.winningPosition = currentPosition }
             var playedRanks: [Position:Rank]? = nil
             if positionsPlayed == 4 {
                 playedRanks = [:]
@@ -62,7 +59,9 @@ public class CardCombinationAnalyzer {
                 // Make sure the final play is recoreded AFTER the cards have been "un-played" since
                 // the TrickSequence logic will attempt to find ranges of equal cards...
                 if recordFinalPlay {
-                    finalPlay = TrickSequence(winningPosition: winningPosition, play: ranks.mapValues { $0.promotedRange })
+                    var play: [Position: ClosedRange<Rank>] = [:]
+                    ranks.forEach { play[$0] = $1.promotedRange }
+                    finalPlay = TrickSequence(winningPosition: winningPosition, play: play)
                 }
             }
             self.ranks[currentPosition] = nil
@@ -122,10 +121,10 @@ public class CardCombinationAnalyzer {
         let position = trick.nextToAct
         let hand = suitHolding[position]
         let numCards = hand.count
-        var rank: RankRange? = nil
-        if numCards == 1 {
+        let rank: RankRange
+        if numCards <= 1 {
             rank = hand.lowest(cover: nil)
-        } else if numCards > 1 {
+        } else {
             switch trick.positionsPlayed {
             case 1:
                 rank = secondHand(trick: trick, hand: hand)
@@ -138,6 +137,8 @@ public class CardCombinationAnalyzer {
             }
         }
         
+        return trick.play(rank, nextStep: playNextPosition)
+        /*
         let maxTricks: Int
         if let rank = rank {
             maxTricks = trick.play(rank, nextStep: self.playNextPosition)
@@ -152,6 +153,7 @@ public class CardCombinationAnalyzer {
             }
         }
         return maxTricks
+         */
     }
 
     // This function will only be called if there are two or more cards
@@ -182,7 +184,7 @@ public class CardCombinationAnalyzer {
                 // Only consider a high play if the rank is higher than the lead rank, and if
                 // there is a minimum 3rd hand value, if the high play would be higher than the
                 // minimum 3rd hand play (normally a finesse)
-                if choice.range.lowerBound > minConsiderRank.range.upperBound {
+                if choice.range.lowerBound > minConsiderRank.range!.upperBound {
                     let rankRange = choice.lowest(cover: nil)
                     let maxTricks = trick.play(rankRange, nextStep: playNextPosition)
                     if lowestTrickCount > maxTricks {

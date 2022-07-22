@@ -46,7 +46,11 @@ public extension String.StringInterpolation {
               let suit = suit else {
             return "\(range)"
         }
-        return "\(hands[position].ranks(for: suit).intersection(range), style: style)"
+        // TODO: This is a kludge...
+        var r = hands[position].ranks(for: suit)
+        let rg = RankSet(range)
+        r.formIntersection(rg)
+        return "\(r, style: style)"
     }
     
     mutating func appendInterpolation(_ leadPlan: LeadPlan, hands: Hands? = nil, suit: Suit? = nil, style: ContractBridge.Style = .symbol) {

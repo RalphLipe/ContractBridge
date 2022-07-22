@@ -72,8 +72,8 @@ public struct WorstCaseAnalysis {
             if suitHolding[declaring.1].isEmpty { return 0 }
             leadFrom = declaring.1
         } else if !suitHolding[declaring.1].isEmpty {
-            let max0 = suitHolding[declaring.0].highest().promotedRange
-            let max1 = suitHolding[declaring.1].highest().promotedRange
+            let max0 = suitHolding[declaring.0].highest().promotedRange!
+            let max1 = suitHolding[declaring.1].highest().promotedRange!
             assert(leadFrom == declaring.0)
             // Lead from the high side.  If equally high cards then lead from the short side
             if max0.upperBound < max1.upperBound || (max0 == max1 && suitHolding[declaring.0].count > suitHolding[declaring.1].count) {

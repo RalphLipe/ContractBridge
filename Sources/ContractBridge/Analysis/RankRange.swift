@@ -8,20 +8,21 @@
 import Foundation
 
 
+
 internal class RankRange: Comparable {
     private let suitHolding: SuitHolding
-    public let index: Int
+    public let xxindex: Int
     public var pair: Pair?
     public let position: Position?
-    public let range: ClosedRange<Rank>
+    public let range: ClosedRange<Rank>?
     public var count: Int { return ranks.count }
     public var isEmpty: Bool { return ranks.isEmpty }
-    public var ranks: Set<Rank>
+    public var ranks: RankSet
     private var playCardDestination: RankRange?
 
-    init(suitHolding: SuitHolding, index: Int, pair: Pair?, range: ClosedRange<Rank>, position: Position? = nil, playCardDestination: RankRange? = nil, ranks: Set<Rank> = []) {
+    init(suitHolding: SuitHolding, index: Int, pair: Pair?, range: ClosedRange<Rank>, position: Position? = nil, playCardDestination: RankRange? = nil, ranks: RankSet = RankSet()) {
         self.suitHolding = suitHolding
-        self.index = index
+        self.xxindex = index
         self.pair = pair
         self.range = range
         self.position = position
@@ -30,9 +31,20 @@ internal class RankRange: Comparable {
         self.playCardDestination = playCardDestination
     }
     
+    // This initialializer is only used to create the "showOutRange" special case that returns nil for played cards
+    init(suitHolding: SuitHolding, position: Position) {
+        self.suitHolding = suitHolding
+        self.xxindex = -1     // Set to invalid index
+        self.pair = position.pair
+        self.position = position
+        self.range = nil
+        self.ranks = RankSet()
+        self.playCardDestination = nil
+    }
+    
     init(from: RankRange, suitHolding: SuitHolding, playCardDestination: RankRange? = nil) {
         self.suitHolding = suitHolding
-        self.index = from.index
+        self.xxindex = from.xxindex
         self.pair = from.pair
         self.range = from.range
         self.position = from.position
@@ -41,7 +53,10 @@ internal class RankRange: Comparable {
     }
 
     public static func < (lhs: RankRange, rhs: RankRange) -> Bool {
-        return lhs.range.upperBound < rhs.range.lowerBound
+        if lhs.range == nil && rhs.range == nil { return false }
+        guard let lhsRange = lhs.range else { return true }
+        guard let rhsRange = rhs.range else { return false }
+        return lhsRange.upperBound < rhsRange.lowerBound
     }
     
     public static func == (lhs: RankRange, rhs: RankRange) -> Bool {
@@ -49,14 +64,19 @@ internal class RankRange: Comparable {
     }
 
     
-    public var promotedRange: ClosedRange<Rank> {
-        if let position = position {
-            return suitHolding.promotedRangeFor(position: position, index: index)
-        }
-        return range
+    public var promotedRange: ClosedRange<Rank>? {
+        guard let range = range else { return nil }
+        guard let position = position else { return range }
+        // TODO: This is the only place where "index" is used?  Can I get rid of it...?
+        return suitHolding.promotedRangeFor(position: position, index: xxindex)
     }
     
-    public func play(rank: Rank? = nil) -> Rank {
+    public func play(rank: Rank? = nil) -> Rank? {
+        if range == nil {
+            if rank != nil { fatalError("Can't specify a rank when playing to shows-out range") }
+            suitHolding.playShowsOut(position: position!)
+            return nil
+        }
         guard let playTo = playCardDestination else { fatalError("Can not play card from this range") }
        // assert((rank == nil) == false || play == true)
         let playRank = rank == nil ? self.ranks.min() : rank
@@ -69,7 +89,12 @@ internal class RankRange: Comparable {
         return playRank
     }
     
-    public func undoPlay(rank: Rank) -> Void {
+    public func undoPlay(rank: Rank?) -> Void {
+        guard let rank = rank else {
+            // TODO: Error checking here.
+            suitHolding.undoPlayShowsOut(position: position!)
+            return
+        }
         guard let removeFrom = playCardDestination else { fatalError("Can not undo play from this range") }
         assert(removeFrom.ranks.contains(rank))
         assert(self.ranks.contains(rank) == false)
@@ -82,13 +107,18 @@ internal class RankRange: Comparable {
 // TODO: Is this appropriate to be internal?
 internal extension String.StringInterpolation {
     mutating func appendInterpolation(_ rankRange: RankRange, style: ContractBridge.Style = .symbol) {
-        appendLiteral("\(rankRange.range, style: style)")
+        if let range = rankRange.range {
+            appendLiteral("\(range, style: style)")
+        } else {
+            appendLiteral("shows out")
         }
+    }
 }
 
 // TODO:  Is this in the right place?
 public extension String.StringInterpolation {
     mutating func appendInterpolation(_ ranks: ClosedRange<Rank>, style: ContractBridge.Style = .symbol) {
         appendLiteral(ranks.lowerBound == ranks.upperBound ? "\(ranks.lowerBound, style: style)" : "\(ranks.lowerBound, style: style)...\(ranks.upperBound, style: style)")
-        }
+    }
 }
+

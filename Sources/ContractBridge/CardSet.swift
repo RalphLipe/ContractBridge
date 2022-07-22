@@ -19,7 +19,7 @@ public extension Set where Element == Card {
         if rankStrings.count > Suit.allCases.count {
             throw CardSetError.tooManySuits(rankStrings.count)
         }
-        let rankSets = try rankStrings.map { try Set<Rank>(from: $0) }
+        let rankSets = try rankStrings.map { try RankSet(from: $0) }
         let suits: [Suit] = Suit.allCases.reversed()
         for i in rankSets.indices {
             for rank in rankSets[i] {
@@ -40,14 +40,14 @@ public extension Set where Element == Card {
         return reduce(0) { $0 + $1.rank.highCardPoints }
     }
 
-    func ranks(for suit: Suit) -> Set<Rank> {
-        var ranks = Set<Rank>()
+    func ranks(for suit: Suit) -> RankSet {
+        var ranks = RankSet()
         self.forEach { if $0.suit == suit { ranks.insert($0.rank) } }
         return ranks
     }
     
     var serialized: String {
-        return Suit.allCases.reversed().map { ranks(for: $0).serialized }.joined(separator: ".")
+        return Suit.allCases.reversed().map { ranks(for: $0).serialized() }.joined(separator: ".")
     }
     
 }

@@ -7,6 +7,8 @@
 
 import Foundation
 
+
+
 public struct RangeChoices {
     public let position: Position
     public let all: [CompositeRankRange]
@@ -32,10 +34,22 @@ public class SuitHolding {
     private var hands: [CompositeRankRange]
     private var handRanges: [[RankRange]]
     private var fixedPairRanges: [Set<ClosedRange<Rank>>]
+    private var showOutCount: [Int]
  
 
+    internal func playShowsOut(position: Position) {
+        showOutCount[position.rawValue] += 1
+    }
     
+    internal func undoPlayShowsOut(position: Position) {
+        showOutCount[position.rawValue] -= 1
+        assert(showOutCount[position.rawValue] >= 0)
+    }
 
+    
+    public func hasShownOut(position: Position) -> Bool {
+        return showOutCount[position.rawValue] > 0
+    }
 
     public init(suitLayout: SuitLayout) {
         self.initialLayout = suitLayout
@@ -43,6 +57,7 @@ public class SuitHolding {
         self.hands = []
         self.handRanges = []
         self.fixedPairRanges = Array<Set<ClosedRange<Rank>>>(repeating: [], count: Pair.allCases.count)
+        self.showOutCount = Array<Int>(repeating: 0, count: Position.allCases.count)
         // Now that "self" has all members intialized, really finish initializing
         // The createHand method will copy all of the ranges from the playedRanges
         let pairRanges = initialLayout.pairRanges()
@@ -63,7 +78,7 @@ public class SuitHolding {
         self.hands = []
         self.handRanges = []
         self.fixedPairRanges = from.fixedPairRanges
-        
+        self.showOutCount = from.showOutCount
         self.playedRanges = from.playedRanges.map { RankRange(from: $0, suitHolding: self) }
         Position.allCases.forEach { copyHand(from: from, for: $0) }
     }
@@ -74,14 +89,14 @@ public class SuitHolding {
         var newRanges: [RankRange] = []
         for playedRange in playedRanges {
             if playedRange.pair == pair {
-                let positionRanks = initialLayout.ranksFor(position: _position, in: playedRange.range)
-                newRanges.append(RankRange(suitHolding: self, index: playedRange.index, pair: pair, range: playedRange.range, position: _position, playCardDestination: playedRange, ranks: positionRanks))
+                let positionRanks = initialLayout.ranksFor(position: _position, in: playedRange.range!)
+                newRanges.append(RankRange(suitHolding: self, index: playedRange.xxindex, pair: pair, range: playedRange.range!, position: _position, playCardDestination: playedRange, ranks: positionRanks))
             } else {
                 newRanges.append(playedRange)
             }
         }
         handRanges.append(newRanges)
-        hands.append(CompositeRankRange(allRanges: newRanges, pair: pair))
+        hands.append(CompositeRankRange(allRanges: newRanges, showsOutRange: RankRange(suitHolding: self, position: _position), pair: pair))
     }
     
     private func copyHand(from: SuitHolding, for _position: Position) {
@@ -96,7 +111,8 @@ public class SuitHolding {
             }
         }
         handRanges.append(newRanges)
-        hands.append(CompositeRankRange(allRanges: newRanges, pair: pair))
+
+        hands.append(CompositeRankRange(allRanges: newRanges, showsOutRange: RankRange(suitHolding: self, position: _position), pair: pair))
     }
     
     public subscript(position: Position) -> CompositeRankRange {
@@ -108,7 +124,7 @@ public class SuitHolding {
         var groupHasCards = false
         var allRanges: [CompositeRankRange] = []
         for rankRange in handRanges[position.rawValue] {
-            if rankRange.position == position || rankRange.count == rankRange.range.count {
+            if rankRange.position == position || rankRange.count == rankRange.range!.count {
                 group.append(rankRange)
                 groupHasCards = groupHasCards || (rankRange.position == position && rankRange.count > 0)
             } else {
@@ -123,13 +139,13 @@ public class SuitHolding {
   
   
     internal func promotedRangeFor(position: Position, index: Int) -> ClosedRange<Rank> {
-        let startRange = handRanges[position.rawValue][index].range
+        let startRange = handRanges[position.rawValue][index].range!
         var upperBound = startRange.upperBound
         var i = index + 1
         while i < handRanges[position.rawValue].endIndex {
             let range = handRanges[position.rawValue][i]
-            if range.position == position || range.count == range.range.count {
-                upperBound = range.range.upperBound
+            if range.position == position || range.count == range.range!.count {
+                upperBound = range.range!.upperBound
                 i += 1
             } else {
                 break
@@ -165,8 +181,8 @@ public class SuitHolding {
     private func updateKnownHoldings(winningRank: Rank, winningPosition: Position) {
         if winningPosition.pair == .ns {
             for range in playedRanges {
-                if range.pair == .ew && range.range.lowerBound > winningRank {
-                    fixedPairRanges[Pair.ew.rawValue].insert(range.range)
+                if range.pair == .ew && range.range!.lowerBound > winningRank {
+                    fixedPairRanges[Pair.ew.rawValue].insert(range.range!)
                 }
             }
         }
@@ -195,14 +211,14 @@ public class SuitHolding {
         if saveIndex < self[positions.0].children.endIndex {
             let range0 = self[positions.0].children[saveIndex]
             // TODO:  IMPORTANT!
-            if self.fixedPairRanges[pair.rawValue].contains(range0.range) {
+            if self.fixedPairRanges[pair.rawValue].contains(range0.range!) {
                 saveAndShiftHoldings(pair: pair, saveIndex: saveIndex + 1, body: body)
             } else {
                 let range1 = self[positions.1].children[saveIndex]
                 let ranks0 = range0.ranks
                 let ranks1 = range1.ranks
                 range0.ranks.formUnion(ranks1)
-                range1.ranks = []
+                range1.ranks.removeAll()
                 saveAndShiftHoldings(pair: pair, saveIndex: saveIndex + 1, body: body)
                 range0.ranks = ranks0
                 range1.ranks = ranks1
@@ -234,7 +250,7 @@ public class SuitHolding {
             forAllCombinations(pair: pair, moveIndex: moveIndex + 1, combinations: combinations, body: body)
             let range0 = self[positions.0].children[moveIndex]
             // If the cards are "fixed" then we don't move them.  Their position is know based on previous play
-            if self.fixedPairRanges[pair.rawValue].contains(range0.range) == false {
+            if self.fixedPairRanges[pair.rawValue].contains(range0.range!) == false {
                 let range1 = self[positions.1].children[moveIndex]
                 let numberOfCards = range0.count
                 let originalRanks = range0.ranks
@@ -245,7 +261,7 @@ public class SuitHolding {
                     forAllCombinations(pair: pair, moveIndex: moveIndex + 1, combinations: newCombinations, body: body)
                 }
                 range0.ranks = originalRanks
-                range1.ranks = []
+                range1.ranks.removeAll()
             }
         } else {
             body(combinations)
