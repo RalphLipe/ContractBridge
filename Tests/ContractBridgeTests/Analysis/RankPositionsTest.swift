@@ -12,7 +12,7 @@ class RankPositionsTest: XCTestCase {
 
 
 
-    func basicTests() throws {
+    func testBasics() throws {
         var rp = RankPositions()
         XCTAssertTrue(rp.isEmpty)
         XCTAssertFalse(rp.isFull)
@@ -42,6 +42,71 @@ class RankPositionsTest: XCTestCase {
         XCTAssertFalse(rpFull.isEmpty)
     }
 
+    public func testPositionSubscript() throws {
+        var rp = RankPositions()
+        XCTAssertTrue(rp[nil].isFull)
+        
+        rp[.south] = [.five, .eight, .ten]
+        XCTAssertEqual(rp.count(for: .south), 3)
+        XCTAssertEqual(rp[.eight], .south)
+        
+        rp[.nine] = .south
+        let southRanks = Array<Rank>(rp[.south])
+        XCTAssertEqual(southRanks, [.five, .eight, .nine, .ten])
+        
+        rp.reassignRanks(from: nil, to: .east)
+        let eastRanks = Array<Rank>(rp[.east])
+        XCTAssertEqual(eastRanks, [.two, .three, .four, .six, .seven, .jack, .queen, .king, .ace])
+        
+        rp[.north] = [.jack, .queen, .ace]
+        XCTAssertTrue(rp.isFull)
+        XCTAssertEqual(rp[.north].count, rp.count(for: .north))
+        
+    }
+    
+    public func testNormalized() throws {
+        var rp = RankPositions()
+        rp[.north] = [.ace, .queen, .six]
+        rp[.south] = [.king, .eight, .seven, .two]
+        rp[.east] = [.jack, .nine, .three]
+        rp[.west] = [.ten, .five, .four]
+        XCTAssertTrue(rp.isFull)
+        let rpNorm = rp.normalized()
+        let northRanks = Array<Rank>(rpNorm[.north])
+        let southRanks = Array<Rank>(rpNorm[.south])
+        let eastRanks = Array<Rank>(rpNorm[.east])
+        let westRanks = Array<Rank>(rpNorm[.west])
+        XCTAssertEqual(northRanks, [.eight, .king, .ace])
+        XCTAssertEqual(southRanks, [.two, .six, .seven, .queen])
+        XCTAssertEqual(eastRanks, [.five, .ten, .jack])
+        XCTAssertEqual(westRanks, [.three, .four, .nine])
+    }
+    
+    public func testRandomized() throws {
+        var rp = RankPositions()
+        rp[.north] = [.ace, .queen, .eight]
+        rp[.south] = [.king, .seven, .six, .two]
+        rp[.east] = [.jack, .nine, .three]
+        rp[.west] = [.ten, .five, .four]
+        XCTAssertTrue(rp.isFull)
+        var numNonEqual = 0
+        let numIterations = 100
+        for _ in 1...numIterations {
+            let rpShuffled = rp.equalRanksShuffled()
+            // We will assume that the ranks will sometimes be equal to the original assignment, so it's not
+            // an error if they are equal, but if less than half are diffrent, we have a problem
+            for position in Position.allCases {
+                XCTAssertEqual(rp.count(for: position), rpShuffled.count(for: position))
+                XCTAssertEqual(rp.playableRanges(for: position), rpShuffled.playableRanges(for: position))
+                if (rp[position] != rpShuffled[position]) { numNonEqual += 1 }
+            }
+        }
+        // NOTE:  In a degenerate case this could fail, even though it worked.
+        // There have been numItterations and each position is checked on each time through the loop so there
+        // could be as many as 4*numIterrations non-equal ranks.  We will be happy with 1/2 of that
+        XCTAssert(numNonEqual > numIterations * 4 / 2)
+    }
+    
     public struct PosRanges {
         var north = [ClosedRange<Rank>]()
         var south = [ClosedRange<Rank>]()

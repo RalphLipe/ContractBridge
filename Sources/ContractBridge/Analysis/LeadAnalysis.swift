@@ -8,251 +8,241 @@
 import Foundation
 
 
-
-
-
-public struct TrickSequence {
-    public let winningPosition: Position
-    public let play: [Position: ClosedRange<Rank>]
-}
-
-public struct LayoutCombinations {
-    public let layoutId: SuitLayoutIdentifier
-    public let combinations: Int
-}
-
-public struct LeadStatistics {
+public struct LeadAnalysis {
+    public let holding: RankPositions
+    public let requiredTricks: Int
     public let leadPlan: LeadPlan
-    public let maxTrickCombinations: [Int]
-    public let layouts: [[LayoutCombinations]]
-    public let maxTricksThisLayout: Int
-    public let trickSequence: TrickSequence
-    
-    public var maxTricksAnyLayout: Int { return maxTrickCombinations.count - 1 }
+    public internal(set) var winner: Position
+    public internal(set) var playedRanges = Array<RankRange?>(repeating: nil, count: Position.allCases.count)
+    public internal(set) var tricksTaken = 0
 
-    public func combinationsFor(desiredTricks: Int) -> Int {
-        return maxTrickCombinations.count > desiredTricks ? maxTrickCombinations[desiredTricks] : 0
-    }
-    public func layoutsFor(_ desiredTricks: Int, mostCommonFirst: Bool = true) -> [LayoutCombinations] {
-        var layouts = desiredTricks > layouts.count ? [] : layouts[desiredTricks]
-        if mostCommonFirst {
-            layouts.sort(by: { $0.combinations > $1.combinations })
+    // These values are only used during analysis and are not used later.
+    // TODO: Should we have another struct thta tdoes thte analysis and return the result?
+    private var nextToAct: Position
+    public let marked: RankSet? // This only makes sense for non-double dummy...  Maybe this class can do both though
+    private var positionsPlayed = 0
+    private var inSecondHandDD = false
+    private let leadOption: LeadOption
+
+    
+    public var winningRankRange: RankRange { return self[winner]! }
+    private var statisticalAnalysis: Bool { return marked != nil }
+    
+    public private(set) subscript(position: Position) -> RankRange? {
+        get {
+            return playedRanges[position.rawValue]
         }
-        return layouts
-    }
-    
-    public func percentageFor(desiredTricks: Int) -> Double {
-        return Double(combinationsFor(desiredTricks: desiredTricks)) / Double(maxTrickCombinations[0]) * 100.0
-    }
-}
-
-
-public struct LayoutAnalysis {
-    public let suitLayoutId: SuitLayoutIdentifier
-    public let totalCombinations: Int
-    public let worstCaseTricks: Int
-    public let maxTricksThisLayout: Int
-    public let maxTricksAllLayouts: Int
-    public let leads: [LeadStatistics]
-    public let exactTrickLayouts: [[LayoutCombinations]]
-    
-    
-    public func bestLeads() -> [LeadStatistics] {
-        return bestLeads(desiredTricks: maxTricksAllLayouts)
-    }
-    
-    // NOTE: This returns the double-dummy making statistics.  Maybe a bool for only best leads???
-    // TODO:  Figure out non-double dummy stuf
-    public func combinationsMaking(_ numberOfTricks: Int) -> Int {
-        var desiredTricks = numberOfTricks
-        var combinations = 0
-        while desiredTricks <= maxTricksAllLayouts {
-            combinations = exactTrickLayouts[desiredTricks].reduce(combinations) { $0 + $1.combinations }
-            desiredTricks += 1
+        set {
+            playedRanges[position.rawValue] = newValue
         }
-        return combinations
     }
     
-    // TODO: Same thing here -- this is double dummy odds.  Need real odds
-    public func percentageMaking(_ numberOfTricks: Int) -> Double {
-        return Double(combinationsMaking(numberOfTricks)) / Double(totalCombinations) * 100.0
+    public init(holding: RankPositions, leadPlan: LeadPlan, leadOption: LeadOption) {
+        self.init(holding: holding, leadPlan: leadPlan, optionalMarked: nil, requiredTricks: 0, leadOption: leadOption)
     }
     
-    public func bestOddsCombinationsMaking(_ numberOfTricks: Int) -> Int {
-        let bestLeads = bestLeads(desiredTricks: numberOfTricks)
-        return bestLeads.first!.combinationsFor(desiredTricks: numberOfTricks)
-        
-    }
-    public func bestOddsPercentageMaking(_ numberOfTricks: Int) -> Double {
-        return Double(bestOddsCombinationsMaking(numberOfTricks)) / Double(totalCombinations) * 100.0
+    public init(holding: RankPositions, leadPlan: LeadPlan, marked: RankSet, requiredTricks: Int, leadOption: LeadOption) {
+        self.init(holding: holding, leadPlan: leadPlan, optionalMarked: marked, requiredTricks: requiredTricks, leadOption: leadOption)
     }
     
-    public func bestLeads(desiredTricks: Int) -> [LeadStatistics] {
-        let bestCombinationCount = leads.reduce(0) { max($0, $1.combinationsFor(desiredTricks: desiredTricks))}
-        return leads.filter { $0.combinationsFor(desiredTricks: desiredTricks) == bestCombinationCount}
-    }
-}
-
-
-public class LayoutAnalyzer {
-    public let suitHolding: SuitHolding
-    public let worstCaseTricks: Int
-    public internal(set) var combinations: Int
+    private init(holding: RankPositions, leadPlan: LeadPlan, optionalMarked: RankSet?, requiredTricks: Int, leadOption: LeadOption) {
+        self.holding = holding
+        self.leadPlan = leadPlan
+        self.marked = optionalMarked
+        self.requiredTricks = requiredTricks
+        self.leadOption = leadOption
+        self.winner = leadPlan.position
+        self.playedRanges[winner.rawValue] = leadPlan.lead
+        self.positionsPlayed = 1
+        self.nextToAct = leadPlan.position.next
+        tricksTaken = playNextPosition()
+        // At this point, winner will always be equal to the lead position (since it has been unwound)
+        // compute the appropriate winner...
+        // TODO: This is not really accurate...  The real "winner" will be in the same pair, but the one with
+        // the higher minimum rank is the actual winner.  This may confuse clients.  One solution is to make
+        // winner a private variable and possibly expose a property that returns the appropriate winner...
+        var winningRank = leadPlan.lead
+        var winningPos = leadPlan.position
+        var pos = winningPos.next
+        while pos != leadPlan.position {
+            if let play = self[pos] {
+                if play.upperBound > winningRank.upperBound {
+                    winningRank = play
+                    winningPos = pos
+                }
     
-    internal let leads: [LeadPlan]
-    private var trickSequences: [TrickSequence]
-    private var layouts: [LayoutCombinations]
-    // This array contains the max number of tricks with the x-axis is the lead, and the y is the deal
-    // info.  maxTricks = maxTricks[leadIndex][layoutIndex]
-    private var maxTricks: [[Int]]
-    private var thisLayoutMaxTricks: [Int]
-
-   
-    internal init(suitHolding: SuitHolding, leads: [LeadPlan]) {
-        self.suitHolding = suitHolding
-        self.leads = leads 
-        self.worstCaseTricks = WorstCaseAnalysis.analyze(suitLayout: SuitLayout(suitHolding: suitHolding), declaringPair: .ns)
-        self.layouts = []
-        self.thisLayoutMaxTricks = []
-        self.trickSequences = []
-        self.maxTricks = Array<[Int]>(repeating: [], count: leads.count)
-
-        self.combinations = 0
-    }
-  /*
-    private class func computeMinTricks(suitHolding: SuitHolding) -> Int {
-        let nRanks = suitHolding.initialLayout.ranksFor(position: .north)
-        let sRanks = suitHolding.initialLayout.ranksFor(position: .south)
-        let ewRanks = suitHolding.initialLayout.ranksFor(position: .east).union(suitHolding.initialLayout.ranksFor(position: .west))
-        
-        var nsSorted = Array(nRanks.union(sRanks))
-        nsSorted.sort()
-        nsSorted.reverse()
-        var ewSorted = Array(ewRanks)
-        ewSorted.sort()
-        ewSorted.reverse()
-
-        // N/S can only win as any tricks as the length of the longest hand  Strip off low cards
-        let maxPossible = max(nRanks.count, sRanks.count)
-        while nsSorted.count > maxPossible {
-            _ = nsSorted.removeLast()
+            }
+            pos = pos.next
+            
         }
-        
-        var minTricks = 0
-        while ewSorted.count > 0 && nsSorted.count > 0 {
-            let nsPlayed = nsSorted.removeFirst()
-            if nsPlayed > ewSorted.first! {
-                minTricks += 1
-                _ = ewSorted.removeLast()
-            } else {
-                _ = ewSorted.removeFirst()
+        winner = pos
+    }
+    
+    mutating func play(_ playedRange: RankRange?) -> Int {
+        let currentPosition = nextToAct
+        let currentWinner = winner
+        positionsPlayed += 1
+        self[currentPosition] = playedRange
+        self.nextToAct = self.nextToAct.next
+        if playedRange != nil && playedRange!.upperBound > self.winningRankRange.upperBound {
+            winner = currentPosition
+        }
+        let maxTricks = (positionsPlayed == 4) ? analyzeNextHolding() : playNextPosition()
+        nextToAct = currentPosition
+        winner = currentWinner
+        positionsPlayed -= 1
+        return maxTricks
+    }
+    
+    internal func analyzeNextHolding() -> Int {
+        var nextHolding = holding
+        var playedRanks = [Position: Rank]()        // TODO: This is stupid.  Get rid of it but used by hodling.mark
+        for position in Position.allCases {
+            if let rankRange = self[position] {
+                playedRanks[position] = nextHolding.play(rankRange, from: position)
             }
         }
-        return minTricks + nsSorted.count
-    }
-    */
-    
-    internal func recordResults(_ results: [Int], layoutId: SuitLayoutIdentifier, combinations: Int) -> Void {
-        assert(results.count == self.leads.count)
-        assert(self.maxTricks.count == results.count)
-        assert(self.maxTricks[0].count == self.layouts.count)
-        
-        self.combinations += combinations
-        layouts.append(LayoutCombinations(layoutId: layoutId, combinations: combinations))
-        for i in results.indices {
-            self.maxTricks[i].append(results[i])
-        }
-    }
-    
-    internal func recordTrickSequence(_ trickSequence: TrickSequence, maxTricks: Int) {
-        thisLayoutMaxTricks.append(maxTricks)
-        trickSequences.append(trickSequence)
-    }
-    
-    private func statsFor(leadIndex: Int) -> LeadStatistics {
-        let maxTricks = self.maxTricks[leadIndex].reduce(0) { max($0, $1) }
-        var trickCombinations = Array<Int>(repeating: 0, count: maxTricks + 1)
-        var leadLayouts = Array<[LayoutCombinations]>(repeating: [], count: maxTricks + 1)
-        assert(self.layouts.count == self.maxTricks[leadIndex].count)
-        for l in layouts.indices {
-            var m = self.maxTricks[leadIndex][l]
-            leadLayouts[m].append(layouts[l])
-            while m >= 0 {
-                trickCombinations[m] += self.layouts[l].combinations
-                m -= 1
+        var tricksWon = winner.pair == .ns ? 1 : 0
+        if nextHolding.hasRanks(leadPlan.position.pair) {
+            if handleTrivialCases(nextHolding: holding, tricksWon: &tricksWon) == false {
+                if statisticalAnalysis && !inSecondHandDD {
+                    let nextRequiredTricks = max(0, requiredTricks - tricksWon)
+                  //  let nextMarked = holding.mark(knownMarked: marked!, leadFrom: leadPlan.position, play: playedRanks)
+                    let nextMarked = marked!     // TODO: Remove this - it's bogus.
+                    let nextSA = StatisticalAnalysis(holding: nextHolding, leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, marked: nextMarked, leadOption: leadOption)
+                    let bestLead = nextSA.leadsStatistics.last!.leadPlan
+                    let leadAnalysis = nextSA.leadAnalysis(for: bestLead, holding: nextHolding)
+                    tricksWon += leadAnalysis.tricksTaken
+                } else {
+                    let nextDDAZ = DoubleDummyAnalysis(holding: nextHolding, leadPair: leadPlan.position.pair)
+                    tricksWon += nextDDAZ.leadAnalyses.last!.tricksTaken
+                }
             }
-
         }
-   
-        return LeadStatistics(leadPlan: leads[leadIndex], maxTrickCombinations: trickCombinations, layouts: leadLayouts, maxTricksThisLayout: thisLayoutMaxTricks[leadIndex], trickSequence: trickSequences[leadIndex])
+        return tricksWon
     }
-    
-    internal func findExactTrickLayouts(maxTricks: Int) -> [[LayoutCombinations]] {
-        var exactLayouts: [[LayoutCombinations]] = []
-        var tricksNeeded = 0
-        while tricksNeeded <= maxTricks {
-            var thisCount = Array<LayoutCombinations>()
-       //     if tricksNeeded > worstCaseTricks {
-                for y in layouts.indices {
-                    var maxThisLayout = 0
-                    for x in leads.indices {
-                        maxThisLayout = max(maxThisLayout, self.maxTricks[x][y])
-                        if maxThisLayout > tricksNeeded { break }
-  
+
+    // TODO: Work on this --- There are bugs
+    func handleTrivialCases(nextHolding: RankPositions, tricksWon: inout Int) -> Bool {
+        /*
+        let leadPair = leadPlan.position.pair
+        let positions = leadPair.positions
+        let remainingTricks = max(nextHolding.count(for: positions.0), nextHolding.count(for: positions.1))
+        assert(remainingTricks > 0)
+        var neededTricks = remainingTricks
+        var winningPair: Pair? = nil
+        for rank in Rank.allCases.reversed() {
+            if let rankPos = nextHolding[rank] {
+                if rankPos.pair == leadPair {   // lead pair wins this one
+                    if winningPair == nil || winningPair! == leadPair {
+                        winningPair = leadPair
+                        neededTricks -= 1
+                    } else {
+                        return false
                     }
-                    if maxThisLayout == tricksNeeded {
-
-                        thisCount.append(self.layouts[y])
+                } else {
+                    assert(rankPos.pair == leadPair.opponents)
+                    if winningPair == nil || winningPair! == leadPair.opponents {
+                        winningPair = leadPair.opponents
+                        neededTricks -= 1
+                    } else {
+                        return false
                     }
                 }
-        //    }
-            thisCount.sort { $0.combinations > $1.combinations }
-            exactLayouts.append(thisCount)
-            tricksNeeded += 1
+                if neededTricks == 0 {
+                    if winningPair! == leadPair { tricksWon += remainingTricks }
+                    return true
+                }
+            }
         }
-        return exactLayouts
+        // TODO: Any possible way to get here???
+         */
+        return false
     }
     
-    internal func generateAnalysis() -> LayoutAnalysis {
-        if leads.count != trickSequences.count || leads.count != maxTricks.count || maxTricks[0].count != layouts.count {
-            fatalError("Something incorrect with LayoutAnalyzer state")
+    mutating func playNextPosition() -> Int {
+        assert(positionsPlayed < 4)
+        let hand = holding.playableRanges(for: nextToAct)
+        var rank: RankRange? = nil
+        if hand.count <= 1 {
+            rank = hand.lowest()
+        } else {
+            switch positionsPlayed {
+            case 1:
+                inSecondHandDD = true
+                rank = secondHand(hand: hand)
+                inSecondHandDD = false
+            case 2:
+                rank = thirdHand(hand: hand)
+            case 3:
+                rank = fourthHand(hand: hand)
+            default:
+                fatalError()
+            }
         }
-        var leadStats: [LeadStatistics] = []
-        for i in self.leads.indices {
-            leadStats.append(self.statsFor(leadIndex: i))
-            assert(leadStats.last?.maxTrickCombinations[0] == combinations)
-        }
-        let maxTricksThisLayout = leadStats.reduce(0) { max($0, $1.maxTricksThisLayout) }
-        let maxTricksAllLayouts = leadStats.reduce(0) { max($0, $1.maxTricksAnyLayout) }
-        let exactTrickLayouts = findExactTrickLayouts(maxTricks: maxTricksAllLayouts)
-        // TODO: Maks worst case tricks = first exactTrickLayouts that is non-zero.  But maybe not...
         
-        return LayoutAnalysis(suitLayoutId: suitHolding.initialLayout.id, totalCombinations: combinations, worstCaseTricks: worstCaseTricks, maxTricksThisLayout: maxTricksThisLayout, maxTricksAllLayouts: maxTricksAllLayouts, leads: leadStats, exactTrickLayouts: exactTrickLayouts)
+        return play(rank)
+    }
+
+    private func higher(_ a: RankRange, _ b: RankRange) -> RankRange {
+        return a.upperBound > b.upperBound ? a : b
+    }
+    
+    // This function will only be called if there are two or more cards
+    private mutating func secondHand(hand: [RankRange]) -> RankRange {
+        assert(hand.count > 1)
+        if leadPlan.intent == .cashWinner { return hand[0] }
+        var lowestTrickRank = hand[0]   // This is "2nd hand low" which we will always analyze as a choice
+        var lowestTrickCount = play(lowestTrickRank)
+        // We will only consider other, higher choices if they are:
+        //  Higher than 2nd hand's lowest card
+        //  Higher than the lead rank (the current winning rank)
+        //  Higher than any minimum play at 3rd hand (usually a finesse)
+        //  or if no required 3rd hand then at least higher than 3rd hand's lowest rank
+        var minConsiderRank = higher(leadPlan.lead, lowestTrickRank)
+        if let minThirdHand = leadPlan.minThirdHand {
+            // TODO: Need to reqork this stuff...
+            minConsiderRank = higher(minConsiderRank, minThirdHand)
+        } else {
+            let thirdHand = holding.playableRanges(for: nextToAct.next)
+            if thirdHand.count > 0 {
+                minConsiderRank = higher(minConsiderRank, thirdHand.lowest()!)
+            }
+        }
+        for choice in hand {
+            // Only consider a high play if the rank is higher than the lead rank, and if
+            // there is a minimum 3rd hand value, if the high play would be higher than the
+            // minimum 3rd hand play (normally a finesse)
+            if choice.upperBound >= minConsiderRank.upperBound {
+                let maxTricks = play(choice)
+                if lowestTrickCount > maxTricks {
+                    lowestTrickRank = choice
+                    lowestTrickCount = maxTricks
+                }
+            }
+        }
+        return lowestTrickRank
+    }
+    
+    private func thirdHand(hand: [RankRange]) -> RankRange {
+        assert(nextToAct.pair == .ns)
+        var cover: RankRange? = nil
+        if let min = leadPlan.minThirdHand,
+            winner.pair == .ns || min.upperBound > winningRankRange.upperBound {
+            cover = min
+        }
+        if cover == nil && winner.pair == .ew {
+            if let maxThirdHand = leadPlan.maxThirdHand,
+               maxThirdHand.upperBound > winningRankRange.upperBound {
+                cover = winningRankRange
+            }
+        }
+        return hand.lowest(coverIfPossible: cover)!
+    }
+    
+    private func fourthHand(hand: [RankRange]) -> RankRange {
+        let rankToCover = winner.pair == .ns ? winningRankRange : nil
+        return hand.lowest(coverIfPossible: rankToCover)!
     }
 }
 
-
-/// What we want:
-///
-/// Worst Case Analysis Partial Layout
-///
-/// Worst case analysis specific layout
-///
-/// Double Dummy Specific layout:
-///   Uses the current layout and analyzes all leads and subsequent plays for the best line of play:
-///         Max tricks
-///         Leads - Sorted hightest to lowest num tricks
-///             Lead Plan
-///             Num tricks
-///             Trick sqeuence
-///
-/// BestLeadsFor(desiredTricks:Int, partialLayout)
-///     Total combinations
-///     array of lyaouts not making
-///     Leads - Sorted from highest to lowest combinations making...
-///         Lead Plan
-///         combinations making
-///         set of layouts making
-///
-///
-///

@@ -18,6 +18,7 @@ class RankSetTests: XCTestCase {
         
         let s2 = try! RankSet(from: "jK4729")
         XCTAssertEqual(s2.serialized(), "KJ9742")
+        XCTAssertEqual(s2, [.king, .jack, .nine, .seven, .four, .two])
         
         XCTAssertThrowsError(try RankSet(from: "$(%"))
         

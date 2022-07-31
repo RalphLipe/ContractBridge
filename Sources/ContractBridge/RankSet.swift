@@ -39,7 +39,7 @@ public struct RankSetIterator: IteratorProtocol {
 /// Structure that efficently represents a set of ranks.  This strucure contains a subest of Set<Rank> and adds a few methods.
 /// The idea is to be efficient at basic operations and require small amounts of storage.
 /// This set implementation is *sorted*
-public struct RankSet: Sequence, ExpressibleByArrayLiteral {
+public struct RankSet: Sequence, Equatable, ExpressibleByArrayLiteral {
     var ranks: UInt16
     
     public init() {

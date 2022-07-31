@@ -9,6 +9,11 @@ import Foundation
 import XCTest
 
 
+public struct LC { //LayoutCombinations??
+    public let holding: RankPositions
+    public let combinationsRepresented: Int
+}
+
 public typealias RankPositionsId = UInt64
 
 /// Contains an optional position for every rank.
@@ -27,15 +32,16 @@ public struct RankPositions : Equatable {
         positions = Self.empty
     }
     
-    /*
+    
     /// Creates a new instance with positions for all ranks assigned initially by the RankPositionsId
     /// - Parameters:
     ///     - id:  A RankPositionsId describing the layout of ranks
     ///
     public init(id: RankPositionsId) {
+        // TODO: Validation...
         positions = id
     }
-     */
+     
     
     
     /// Copies the contents of a dictionary into a RankPositions structure.
@@ -62,6 +68,26 @@ public struct RankPositions : Equatable {
         }
     }
     
+    //TODO: DOcument and test
+    public subscript(position: Position?) -> RankSet {
+        get {
+            var ranks = RankSet()
+            Rank.allCases.forEach { if self[$0] == position { ranks.insert($0) } }
+            return ranks
+        }
+        set {
+            newValue.forEach { self[$0] = position }
+        }
+    }
+    
+    
+    public mutating func reassignRanks(from: Position?, to: Position?) {
+        for rank in Rank.allCases {
+            if self[rank] == from {
+                self[rank] = to
+            }
+        }
+    }
     
     /// A boolean that indicates if every rank has a non-nil posiition
     public var isFull: Bool {
@@ -74,13 +100,48 @@ public struct RankPositions : Equatable {
         return positions == Self.empty
     }
     
-    /*
+    
     /// An identifier that can be used to efficently save rank positions.
     public var id: RankPositionsId {
         return positions
     }
-    */
-
+    
+    private mutating func moveEqualRanks(pair: Pair, random: Bool = false) {
+        let positions = pair.positions
+        let ranks0 = self[positions.0]
+        let ranks1 = self[positions.1]
+        var ranges = Set<RankRange>(playableRanges(for: positions.0))
+        ranges.formIntersection(playableRanges(for: positions.1))
+        for range in ranges {
+            let rangeSet = RankSet(range)
+            let subset0 = ranks0.intersection(rangeSet)
+            let subset1 = ranks1.intersection(rangeSet)
+            assert(subset0.isEmpty == false && subset1.isEmpty == false)
+            var allRanks = Array<Rank>(subset0.union(subset1))
+            if random { allRanks.shuffle() }
+            for i in allRanks.indices {
+                // To make this the same as "normalized" all low positions are moved to either south or west
+                // and high ranks are left in north or east
+                self[allRanks[i]] = i < subset1.count ? positions.1 : positions.0
+            }
+            
+        }
+    }
+    
+    // TODO: Write tests for this
+    public func normalized() -> RankPositions {
+        var norm = self
+        norm.moveEqualRanks(pair: .ns)
+        norm.moveEqualRanks(pair: .ew)
+        return norm
+    }
+    
+    public func equalRanksShuffled() -> RankPositions {
+        var shuffled = self
+        shuffled.moveEqualRanks(pair: .ns, random: true)
+        shuffled.moveEqualRanks(pair: .ew, random: true)
+        return shuffled
+    }
     
     /// Returns an orderd array  of closed ranges that contain ranks for the specified position.
     ///
@@ -146,7 +207,43 @@ public struct RankPositions : Equatable {
         return rank
     }
         
-  
+    
+    public func count(for position: Position) -> Int {
+        // TODO: Improve this...
+        var c = 0
+        for rank in Rank.allCases {
+            if self[rank] == position { c += 1 }
+        }
+        return c
+    }
+    
+    // TODO:  Document and test
+    public func hasRanks(_ position: Position) -> Bool {
+        for rank in Rank.allCases {
+            if self[rank] == position { return true }
+        }
+        return false
+    }
+    
+    // TODO:  Document and test
+    public func hasRanks(_ pair: Pair) -> Bool {
+        let positions = pair.positions
+        return hasRanks(positions.0) || hasRanks(positions.1)
+    }
+    
+    // TODO: Should this return optional?  Or require caller to know there are
+    /*
+    public func lowest(for position: Position, covering: Rank? = nil) -> RankRange? {
+        let playable = playableRanges(for: position)
+        if playable.count == 0 { return nil }
+        if let covering = covering {
+            for i in playable.indices {
+                if playable[i].upperBound > covering { return playable[i] }
+            }
+        }
+        return playable.first
+    }
+     */
     
     // Standard math factorial
     private static func factorial(_ n: Int) -> Int {
@@ -160,16 +257,17 @@ public struct RankPositions : Equatable {
         return (r == 0 || r == n) ? 1 : factorial(n) / (factorial(r) * factorial(n - r))
     }
     
+    // TODO: Make sure this follows "normalized" which is LOW cards moved first.  Can cnage this but need to change
+    // normalized implementation...
     // TODO: Should callback include marked ranks?  Perhaps...
-    internal mutating func shiftPairHoldings(pair: Pair, start: Rank?, marked: RankSet, combinations: Int, _ body: (RankPositions, _ combinations: Int) -> Void) -> Int {
+    internal mutating func shiftPairHoldings(pair: Pair, start: Rank?, marked: RankSet, combinations: Int, lca: inout [LC]) -> Void {
         var rank: Rank? = start
         // Skip any opponent and undefined ranks until we hit one for this pair or we run off the end
-        while rank != nil && self[rank!]?.pair != pair && !marked.contains(rank!) {
+        while rank != nil && (self[rank!]?.pair != pair || marked.contains(rank!)) {
             rank = rank!.nextHigher
         }
         if rank == nil {
-            body(self, combinations)
-            return combinations
+            lca.append(LC(holding: self, combinationsRepresented: combinations))
         } else {
             let pairPositions = pair.positions
             var ranks = RankSet()
@@ -192,20 +290,21 @@ public struct RankPositions : Equatable {
             // to be considered (either an opponent has that rank or it is nil).  Either way, this is the value to
             // pass to the recursion to this function
             let n = ranks.count
-            var combinationsConsidered = shiftPairHoldings(pair: pair, start: rank, marked: marked, combinations: combinations, body)
+            shiftPairHoldings(pair: pair, start: rank, marked: marked, combinations: combinations, lca: &lca)
             while !ranks.isEmpty {
                 self[ranks.removeFirst()] = pairPositions.1
                 // You could compute this using either range for r...
-                let newCombinations = combinations * Self.combinations(n: n, r: ranks.count)
-                combinationsConsidered += shiftPairHoldings(pair: pair, start: rank, marked: marked, combinations: newCombinations, body)
+                shiftPairHoldings(pair: pair, start: rank, marked: marked, combinations: combinations * Self.combinations(n: n, r: ranks.count), lca: &lca)
             }
-            return combinationsConsidered
         }
     }
     
-    public func forAllCombinations(pair: Pair, marked: RankSet, _ body: (RankPositions, _ combinations: Int) -> Void) -> Int {
+    public func allPossibleLayouts(pair: Pair, marked: RankSet) -> [LC] {
         var rp = self
-        return rp.shiftPairHoldings(pair: pair, start: .two, marked: marked, combinations: 1, body)
+  //      print("NOW ALL COMBOS OFF OF THIS POS: \(rp)")
+        var lca = [LC]()
+        rp.shiftPairHoldings(pair: pair, start: .two, marked: marked, combinations: 1, lca: &lca)
+        return lca
     }
     
     public func mark(knownMarked: RankSet, leadFrom: Position, play: [Position: Rank]) -> RankSet {
@@ -271,7 +370,29 @@ public struct RankPositions : Equatable {
 }
 
 
+public extension Array where Element == RankRange {
+    func lowest(coverIfPossible: Rank? = nil) -> RankRange? {
+        if let coverIfPossible = coverIfPossible {
+            if let coverRange = cover(coverIfPossible) {
+                return coverRange
+            }
+        }
+        return self.first
+    }
+    func lowest(coverIfPossible: RankRange?) -> RankRange? {
+        let rank = coverIfPossible?.upperBound
+        return lowest(coverIfPossible: rank)
+    }
+    
+    func cover(_ rank: Rank) -> RankRange? {
+        for rankRange in self {
+            if rankRange.upperBound >= rank { return rankRange }
+        }
+        return nil
+    }
+    
 
+}
 
 /* -- Some of this code may be useful somehwere else
 var ranks: [Position: Rank] = [:]
@@ -318,4 +439,11 @@ for position in Position.allCases {
 }
  */
 
-    
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ rankPositions: RankPositions, style: ContractBridge.Style = .symbol) {
+        appendLiteral(Position.allCases.map {
+            "\($0, style: style): \(rankPositions[$0], style: style)" }.joined(separator: " "))
+        
+    }
+}
+

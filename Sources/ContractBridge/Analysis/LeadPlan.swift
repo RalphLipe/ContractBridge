@@ -9,12 +9,9 @@ import Foundation
 
 
 
-public struct LeadPlan {
+public struct LeadPlan: Equatable {
     public let position: Position
     public let intent: Intent
-    public let leadRange: ClosedRange<Rank>
-    public let minThirdHandRange: ClosedRange<Rank>?
-    public let maxThirdHandRange: ClosedRange<Rank>?
     let lead: RankRange
     let minThirdHand: RankRange?
     let maxThirdHand: RankRange?
@@ -26,15 +23,12 @@ public struct LeadPlan {
              playLow    // Low card lead toward low card
     }
     
-    init(position: Position, lead: CompositeRankRange, intent: Intent, minThirdHand: CompositeRankRange? = nil, maxThirdHand: CompositeRankRange? = nil) {
+    init(position: Position, lead: RankRange, intent: Intent, minThirdHand: RankRange? = nil, maxThirdHand: RankRange? = nil) {
         self.position = position
         self.intent = intent
-        self.lead = lead.lowest()
-        self.minThirdHand = minThirdHand?.lowest()
-        self.maxThirdHand = maxThirdHand?.lowest()
-        self.leadRange = lead.range
-        self.minThirdHandRange = minThirdHand?.range
-        self.maxThirdHandRange = maxThirdHand?.range
+        self.lead = lead
+        self.minThirdHand = minThirdHand
+        self.maxThirdHand = maxThirdHand
     }
 }
 
@@ -55,9 +49,9 @@ public extension String.StringInterpolation {
     
     mutating func appendInterpolation(_ leadPlan: LeadPlan, hands: Hands? = nil, suit: Suit? = nil, style: ContractBridge.Style = .symbol) {
         let position = leadPlan.position
-        let leadRanks = ranks(range: leadPlan.leadRange, position: leadPlan.position, hands: hands, suit: suit, style: style)!
-        let minThirdRanks = ranks(range: leadPlan.minThirdHandRange,position: position.partner, hands: hands, suit: suit, style: style)
-        let maxThirdRanks = ranks(range: leadPlan.maxThirdHandRange, position: position.partner, hands: hands, suit: suit, style: style)
+        let leadRanks = ranks(range: leadPlan.lead, position: leadPlan.position, hands: hands, suit: suit, style: style)!
+        let minThirdRanks = ranks(range: leadPlan.minThirdHand,position: position.partner, hands: hands, suit: suit, style: style)
+        let maxThirdRanks = ranks(range: leadPlan.maxThirdHand, position: position.partner, hands: hands, suit: suit, style: style)
 
         var desc: String = ""
         switch leadPlan.intent {
