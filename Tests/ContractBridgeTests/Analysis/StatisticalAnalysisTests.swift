@@ -50,9 +50,9 @@ class StatisticalAnalysisTests: XCTestCase {
          //  analyze(north: [.king, .ten, .six, .five], south: [.queen, .four, .three, .two], tricksRequired: 2)
 
            // Combo 440
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 2)
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 3)
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 4)
+      //     analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 2)
+       //    analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 3)
+       //    analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 4)
            
            analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 0, leadOption: .leadHigh)
 

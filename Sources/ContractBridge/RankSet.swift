@@ -114,6 +114,11 @@ public struct RankSet: Sequence, Equatable, ExpressibleByArrayLiteral {
         return Rank(rawValue: ranks.trailingZeroBitCount)
     }
     
+    public func max() -> Rank? {
+        if ranks == 0 { return nil }
+        return Rank(rawValue: 15 - ranks.leadingZeroBitCount)
+    }
+    
     public func union(_ other: RankSet) -> RankSet {
         return RankSet(ranks | other.ranks)
     }

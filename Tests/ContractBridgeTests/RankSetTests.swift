@@ -68,6 +68,25 @@ class RankSetTests: XCTestCase {
         XCTAssertEqual(s.count, 0)
     }
     
+    func testMinMax() throws {
+        var s: RankSet = [.four, .king, .jack, .three, .eight]
+        XCTAssertEqual(s.min(), .three)
+        XCTAssertEqual(s.max(), .king)
+        s.remove(.king)
+        s.remove(.three)
+        XCTAssertEqual(s.max(), .jack)
+        XCTAssertEqual(s.min(), .four)
+        s.remove(.four)
+        s.remove(.jack)
+        XCTAssertEqual(s.min(), s.max())
+        XCTAssertEqual(s.max(), .eight)
+        s.remove(.eight)
+        XCTAssert(s.isEmpty)
+        XCTAssertNil(s.max())
+        XCTAssertNil(s.min())
+        
+    }
+    
     func testUnion() throws {
         let s1: RankSet = [.four, .five, .queen]
         var s2: RankSet = [.eight, .five, .ace]
