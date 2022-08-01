@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import AppKit
 
 public struct RangeChoices {
     // TODO: Is this "position" a good idea?
