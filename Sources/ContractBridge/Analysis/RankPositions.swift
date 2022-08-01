@@ -23,7 +23,7 @@ public typealias RankPositionsId = UInt64
 /// It also provies the ability to
 /// shift rank holdings for a particular pair to consider all possible layout
 /// combinations.
-public struct RankPositions : Equatable {
+public struct RankPositions : Equatable, Hashable {
     private var positions: UInt64
     private static let empty: UInt64 = 0x4444444444444
     
