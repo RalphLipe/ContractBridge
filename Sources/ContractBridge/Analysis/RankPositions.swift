@@ -217,6 +217,12 @@ public struct RankPositions : Equatable, Hashable {
         return c
     }
     
+    
+    public func count(for pair: Pair) -> Int {
+        let positions = pair.positions
+        return count(for: positions.0) + count(for: positions.1)
+    }
+    
     // TODO:  Document and test
     public func hasRanks(_ position: Position) -> Bool {
         for rank in Rank.allCases {

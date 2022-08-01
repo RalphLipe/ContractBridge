@@ -320,4 +320,24 @@ class RankPositionsTest: XCTestCase {
         XCTAssertEqual(p, .ace)
         XCTAssertTrue(rp.isEmpty)
     }
+    
+    func testCount() {
+        var rp = RankPositions()
+        XCTAssertEqual(rp.count(for: .north), 0)
+        XCTAssertEqual(rp.count(for: .ew), 0)
+        
+        rp[.north] = [.ace, .king, .queen]
+        rp[.south] = [.two, .three]
+        rp[.east] = [.four, .five]
+        rp[.west] = [.six]
+
+        XCTAssertEqual(rp.count(for: .north), 3)
+        XCTAssertEqual(rp.count(for: .south), 2)
+        XCTAssertEqual(rp.count(for: .ns), 5)
+
+        XCTAssertEqual(rp.count(for: .east), 2)
+        XCTAssertEqual(rp.count(for: .west), 1)
+        XCTAssertEqual(rp.count(for: .ew), 3)
+        
+    }
 }
