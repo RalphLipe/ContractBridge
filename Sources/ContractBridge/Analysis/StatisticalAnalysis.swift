@@ -15,7 +15,7 @@ public struct LayoutResult {
 }
 
 // Statitistical lead report.  This is the interesting result computed at the end...
-public struct LeadStatistics {
+public struct LeadStatistics: Comparable {
     public let totalCombinations: Int
     public let leadPlan: LeadPlan
     public let combinationsMaking: Int
@@ -23,6 +23,11 @@ public struct LeadStatistics {
     
     public var averageTricks: Double { return Double(totalTricks) / Double(totalCombinations) }
     public var percentMaking: Double { return Double(combinationsMaking) / Double(totalCombinations) * 100.0 }
+    
+    // A "better" lead has the highest percentage making AND the most total tricks
+    public static func < (lhs: LeadStatistics, rhs: LeadStatistics) -> Bool {
+        return lhs.combinationsMaking < rhs.combinationsMaking || (lhs.combinationsMaking == rhs.combinationsMaking && lhs.totalTricks < rhs.totalTricks)
+    }
 }
 
 
@@ -63,8 +68,8 @@ public struct StatisticalAnalysis {
  //       layouts.forEach { print("\($0.holding)") }
         for layout in layouts {
             var leadAnalyses: [LeadAnalysis] = []
+            leadAnalyses.reserveCapacity(leadPlans.count)
             for leadPlan in leadPlans {
-  //              print("\(layout.holding)")
                 leadAnalyses.append(LeadAnalysis(holding: layout.holding, leadPlan: leadPlan, marked: marked, requiredTricks: requiredTricks, leadOption: leadOption))
             }
             self.layoutResults.append(LayoutResult(holding: layout.holding.normalized(), representsCombinations: layout.combinationsRepresented, leadAnalyses: leadAnalyses))
@@ -83,7 +88,7 @@ public struct StatisticalAnalysis {
             }
             leadsStatistics.append(LeadStatistics(totalCombinations: totalComb, leadPlan: leadPlans[i], combinationsMaking: combMaking, totalTricks:  totalTricks))
         }
-        leadsStatistics.sort(by: { $0.combinationsMaking < $1.combinationsMaking || ($0.combinationsMaking == $1.combinationsMaking && $0.totalTricks < $1.totalTricks)})
+        leadsStatistics.sort()
     }
     
     public func leadAnalysis(for leadPlan: LeadPlan, holding: RankPositions) -> LeadAnalysis {
@@ -108,15 +113,23 @@ public struct StatisticalAnalysis {
     
     public func tricksForAllLayouts(for leadPlan: LeadPlan) -> [LayoutTricks] {
         var result = [LayoutTricks] ()
-        var i = leadPlans.startIndex
-        while i < self.leadPlans.endIndex && leadPlans[i] != leadPlan {
-            i += 1
-        }
-        if i >= leadPlans.endIndex { fatalError() }
+        guard let i = leadPlans.firstIndex(where: { $0 == leadPlan}) else { fatalError() }
         for layoutResult in layoutResults {
             result.append(LayoutTricks(holding: layoutResult.holding, representsCombinations: layoutResult.representsCombinations, tricksTaken: layoutResult.leadAnalyses[i].tricksTaken))
         }
         return result
     }
- 
+    
+    public var bestLeads: ArraySlice<LeadStatistics> {
+        if leadsStatistics.count > 1 {
+            var i = leadsStatistics.endIndex - 1
+            let best = leadsStatistics[i]
+            repeat {
+                i -= 1
+                if leadsStatistics[i] < best { return leadsStatistics[(i+1)...] }
+            } while i > leadsStatistics.startIndex
+        }
+        return leadsStatistics[...]
+    }
 }
+

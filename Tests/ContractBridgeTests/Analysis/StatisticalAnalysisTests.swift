@@ -26,7 +26,9 @@ class StatisticalAnalysisTests: XCTestCase {
                print("Makes \(zz.combinationsMaking) of \(zz.totalCombinations) combinations")
                print("% Combos making: \(zz.percentMaking)")
            }
-           let bestLead = stataz.leadsStatistics.last!
+           let bestLeads = stataz.bestLeads
+           let bestLead = bestLeads[0]  // For now just pick one of them
+           print("\(bestLeads.count) leads make \(bestLead.averageTricks) tricks for \(bestLead.percentMaking)%")
            let ts = stataz.tricksForAllLayouts(for: bestLead.leadPlan)
            for tse in ts {
                if tse.tricksTaken >= tricksRequired {
