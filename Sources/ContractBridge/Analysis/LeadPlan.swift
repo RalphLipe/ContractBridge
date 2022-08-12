@@ -9,7 +9,7 @@ import Foundation
 
 
 
-public struct LeadPlan: Equatable {
+public struct LeadPlan: Equatable, Hashable {
     public let position: Position
     public let intent: Intent
     let lead: RankRange

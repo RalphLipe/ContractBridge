@@ -8,7 +8,46 @@
 import Foundation
 
 
-public struct LeadAnalysis {
+public struct LeadAnalysis: Comparable {
+    public static func < (lhs: LeadAnalysis, rhs: LeadAnalysis) -> Bool {
+        return lhs.tricksTaken < rhs.tricksTaken
+    }
+    
+    public let tricksTaken: Int
+    private let play: [RankRange?]
+    
+    internal init(tricksTaken: Int, play: [RankRange?]) {
+        assert(tricksTaken < 14)
+        self.tricksTaken = tricksTaken
+        self.play = play
+    }
+    
+    public subscript(position: Position) -> RankRange? {
+        return play[position.rawValue]
+    }
+    
+    private func maxRank(for pair: Pair) -> Rank? {
+        let positions = pair.positions
+        if let play0 = self[positions.0] {
+            if let play1 = self[positions.1] {
+                return max(play0.upperBound, play1.upperBound)
+            } else {
+                return play0.upperBound
+            }
+        } else {
+            return self[positions.1]?.upperBound
+        }
+    }
+    
+    public var winningPair: Pair {
+        guard let nsMax = maxRank(for: .ns) else { return .ew }
+        guard let ewMax = maxRank(for: .ew) else { return .ns }
+        return nsMax > ewMax ? .ns : .ew
+    }
+    
+}
+
+public struct LeadAnalyzer {
     public let holding: RankPositions
     public let requiredTricks: Int
     public let leadPlan: LeadPlan
@@ -27,6 +66,7 @@ public struct LeadAnalysis {
     
     public var winningRankRange: RankRange { return self[winner]! }
     private var statisticalAnalysis: Bool { return marked != nil }
+
     
     public private(set) subscript(position: Position) -> RankRange? {
         get {
@@ -37,18 +77,22 @@ public struct LeadAnalysis {
         }
     }
     
-    public init(holding: RankPositions, leadPlan: LeadPlan, leadOption: LeadOption) {
-        self.init(holding: holding, leadPlan: leadPlan, optionalMarked: nil, requiredTricks: 0, leadOption: leadOption)
+    public var analysis: LeadAnalysis {
+        return LeadAnalysis(tricksTaken: tricksTaken, play: playedRanges)
     }
     
-    public init(holding: RankPositions, leadPlan: LeadPlan, marked: RankSet, requiredTricks: Int, leadOption: LeadOption) {
-        self.init(holding: holding, leadPlan: leadPlan, optionalMarked: marked, requiredTricks: requiredTricks, leadOption: leadOption)
+    public static func doubleDummy(holding: RankPositions, leadPlan: LeadPlan, leadOption: LeadOption) -> LeadAnalysis {
+        return LeadAnalyzer(holding: holding, leadPlan: leadPlan, marked: nil, requiredTricks: 0, leadOption: leadOption).analysis
+    }
+    public static func statistical(holding: RankPositions, leadPlan: LeadPlan, marked: RankSet, requiredTricks: Int, leadOption: LeadOption) -> LeadAnalysis {
+        return LeadAnalyzer(holding: holding, leadPlan: leadPlan, marked: marked, requiredTricks: requiredTricks, leadOption: leadOption).analysis
     }
     
-    private init(holding: RankPositions, leadPlan: LeadPlan, optionalMarked: RankSet?, requiredTricks: Int, leadOption: LeadOption) {
+ 
+    private init(holding: RankPositions, leadPlan: LeadPlan, marked: RankSet?, requiredTricks: Int, leadOption: LeadOption) {
         self.holding = holding
         self.leadPlan = leadPlan
-        self.marked = optionalMarked
+        self.marked = marked
         self.requiredTricks = requiredTricks
         self.leadOption = leadOption
         self.winner = leadPlan.position
@@ -56,6 +100,9 @@ public struct LeadAnalysis {
         self.positionsPlayed = 1
         self.nextToAct = leadPlan.position.next
         tricksTaken = playNextPosition()
+        if tricksTaken > 10 {
+            print("FOOGOGOGO")
+        }
         // At this point, winner will always be equal to the lead position (since it has been unwound)
         // compute the appropriate winner...
         // TODO: This is not really accurate...  The real "winner" will be in the same pair, but the one with
@@ -88,6 +135,7 @@ public struct LeadAnalysis {
             winner = currentPosition
         }
         let maxTricks = (positionsPlayed == 4) ? analyzeNextHolding() : playNextPosition()
+        self[currentPosition] = nil // TODO: Is this necessary?  If so what does it do?
         nextToAct = currentPosition
         winner = currentWinner
         positionsPlayed -= 1
@@ -110,12 +158,10 @@ public struct LeadAnalysis {
                   //  let nextMarked = holding.mark(knownMarked: marked!, leadFrom: leadPlan.position, play: playedRanks)
                     let nextMarked = marked!     // TODO: Remove this - it's bogus.
                     let nextSA = StatisticalAnalysis(holding: nextHolding, leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, marked: nextMarked, leadOption: leadOption)
-                    let bestLead = nextSA.leadsStatistics.last!.leadPlan
-                    let leadAnalysis = nextSA.leadAnalysis(for: bestLead, holding: nextHolding)
-                    tricksWon += leadAnalysis.tricksTaken
+                    tricksWon += nextSA.numTricksBestLead
                 } else {
                     let nextDDAZ = DoubleDummyAnalysis(holding: nextHolding, leadPair: leadPlan.position.pair)
-                    tricksWon += nextDDAZ.leadAnalyses.last!.tricksTaken
+                    tricksWon += nextDDAZ.maxTricksTaken
                 }
             }
         }

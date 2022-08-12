@@ -189,9 +189,9 @@ public struct RankPositions : Equatable, Hashable {
     ///   - range:Range to limit search to
     ///   - position: Position rank is assigned to
     /// - Returns: Minimum rank held by `position` within `range`
-    public func min(in range: ClosedRange<Rank>, for _position: Position) -> Rank {
+    public func min(in range: ClosedRange<Rank>, for position: Position) -> Rank {
         for rank in range {
-            if self[rank] == _position { return rank }
+            if self[rank] == position { return rank }
         }
         fatalError()
     }

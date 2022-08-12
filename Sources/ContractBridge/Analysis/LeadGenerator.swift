@@ -60,7 +60,7 @@ public struct LeadGenerator {
         if option == .leadHigh {
             let shortSide0 = rankPositions.count(for: pair.positions.0) < rankPositions.count(for: pair.positions.1)
             if (!generateHighLead(choices: choices0, partnerChoices: choices1, isShortSide: shortSide0)) {
-                generateHighLead(choices: choices1, partnerChoices: choices0, isShortSide: !shortSide0)
+                _ = generateHighLead(choices: choices1, partnerChoices: choices0, isShortSide: !shortSide0)
             }
             assert(leads.count == 1)
         } else {
@@ -164,9 +164,9 @@ public struct LeadGenerator {
             return
         }
         // TODO: Perhaps if next position shows out then we could avoid generating some of these leads.
+        generateFinesses(position: position, leadRange: choices.all[0], partnerChoices: partnerChoices)
         if let low = choices.low {
-            generateFinesses(position: position, leadRange: low, partnerChoices: partnerChoices)
-            // TODO:  Both of the following are symetrica -- don't do it again.  Just replicate it
+        // TODO:  Both of the following are symetrical -- don't do it again.  Just replicate it
         ///    let lowRank = low.lowest(cover: nil)
             if partnerChoices.low != nil {
                 leads.append(LeadPlan(position: position, lead: low, intent: .playLow))
@@ -177,7 +177,6 @@ public struct LeadGenerator {
         }
         if let midChoices = choices.mid {
             for midChoice in midChoices {
-                generateFinesses(position: position, leadRange: midChoice, partnerChoices: partnerChoices)
                 generateRides(position: position, leadRange: midChoice, partnerChoices: partnerChoices)
             }
         }
