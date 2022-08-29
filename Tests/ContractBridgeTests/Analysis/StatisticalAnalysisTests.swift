@@ -45,6 +45,7 @@ class StatisticalAnalysisTests: XCTestCase {
        
        func testStatsAz() throws {
            analyze(north: [.ace, .queen], south: [.two], tricksRequired: 2)
+           analyze(north: [.ace, .queen, .four], south: [.two, .three], tricksRequired: 2)
 
            analyze(north: [.ace, .queen, .ten], south: [.two, .three], tricksRequired: 3)
            

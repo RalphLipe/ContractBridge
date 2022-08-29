@@ -9,7 +9,7 @@ import Foundation
 import XCTest
 
 
-public struct LC { //LayoutCombinations??
+public struct LayoutCombinations { 
     public let holding: RankPositions
     public let combinationsRepresented: Int
 }
@@ -266,14 +266,14 @@ public struct RankPositions : Equatable, Hashable {
     // TODO: Make sure this follows "normalized" which is LOW cards moved first.  Can cnage this but need to change
     // normalized implementation...
     // TODO: Should callback include marked ranks?  Perhaps...
-    internal mutating func shiftPairHoldings(pair: Pair, start: Rank?, marked: RankSet, combinations: Int, lca: inout [LC]) -> Void {
+    internal mutating func shiftPairHoldings(pair: Pair, start: Rank?, marked: RankSet, combinations: Int, lca: inout [LayoutCombinations]) -> Void {
         var rank: Rank? = start
         // Skip any opponent and undefined ranks until we hit one for this pair or we run off the end
         while rank != nil && (self[rank!]?.pair != pair || marked.contains(rank!)) {
             rank = rank!.nextHigher
         }
         if rank == nil {
-            lca.append(LC(holding: self, combinationsRepresented: combinations))
+            lca.append(LayoutCombinations(holding: self, combinationsRepresented: combinations))
         } else {
             let pairPositions = pair.positions
             var ranks = RankSet()
@@ -305,10 +305,10 @@ public struct RankPositions : Equatable, Hashable {
         }
     }
     
-    public func allPossibleLayouts(pair: Pair, marked: RankSet) -> [LC] {
+    public func allPossibleLayouts(pair: Pair, marked: RankSet) -> [LayoutCombinations] {
         var rp = self
   //      print("NOW ALL COMBOS OFF OF THIS POS: \(rp)")
-        var lca = [LC]()
+        var lca = [LayoutCombinations]()
         rp.shiftPairHoldings(pair: pair, start: .two, marked: marked, combinations: 1, lca: &lca)
         return lca
     }

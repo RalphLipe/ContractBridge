@@ -157,7 +157,7 @@ public struct StatisticalAnalysis {
         self.init(holding: holding, leadPair: leadPair, requiredTricks: requiredTricks, marked: marked, leadOption: leadOption, leadPlans: leadPlans, layouts: layouts, leadAnalyses: &ignored)
     }
     
-    internal init(holding: RankPositions, leadPair: Pair, requiredTricks: Int, marked: RankSet, leadOption: LeadOption, leadPlans: [LeadPlan], layouts: [LC], leadAnalyses: inout [LeadAnalysis]?) {
+    internal init(holding: RankPositions, leadPair: Pair, requiredTricks: Int, marked: RankSet, leadOption: LeadOption, leadPlans: [LeadPlan], layouts: [LayoutCombinations], leadAnalyses: inout [LeadAnalysis]?) {
         self.holding = holding
         self.marked = marked
         self.leadPair = leadPair
@@ -267,7 +267,7 @@ public struct StatisticalAnalysis {
 public struct StatisticalWithLeads {
     public let analysis: StatisticalAnalysis
     let leadPlans: [LeadPlan]
-    let layouts: [LC]
+    let layouts: [LayoutCombinations]
     let leadAnalyses: [LeadAnalysis]
    
     // DONT LIKE THIS DUPLICATED CODE
@@ -290,30 +290,46 @@ public struct StatisticalWithLeads {
         self.leadAnalyses = leadAnalyses!
     }
     
+    private func analysisFor(lead: Array<LeadPlan>.Index, layout: Array<LayoutCombinations>.Index) -> LeadAnalysis {
+        return leadAnalyses[(lead * layouts.count) + layout]
+    }
+    
     public var leadStatistics: [LeadPlan: LeadStatistics] {
         var results = [LeadPlan: LeadStatistics]()
         for i in leadPlans.indices {
             var stats = LeadStatistics()
             for j in layouts.indices {
-                stats = stats.addResult(leadAnalyses[(i * layouts.count) + j], combinations: layouts[j].combinationsRepresented, requiredTricks: analysis.requiredTricks)
+                stats = stats.addResult(analysisFor(lead: i, layout: j), combinations: layouts[j].combinationsRepresented, requiredTricks: analysis.requiredTricks)
             }
             results[leadPlans[i]] = stats
         }
         return results
     }
-    /*
-    public var bestLeadsIndices: Set<Array<LeadStatistics>.Index> {
-        let best = leadsStatistics.max()
-        return leadsStatistics.indices.reduce(into: []) {
-            results, i in
-            if leadsStatistics[i] == best {
-                results.insert(i)
+
+    public func layoutsMaking(atLeast requiredTricks: Int, for leadPlan: LeadPlan) -> [LayoutCombinations] {
+        var making = [LayoutCombinations]()
+        // TODO: Error checking ... what to do if leadplan cant be found
+        let i = leadPlans.firstIndex(of: leadPlan)!
+        for j in layouts.indices {
+            let leadAnalysis = analysisFor(lead: i, layout: j)
+            if leadAnalysis.tricksTaken >= requiredTricks {
+                making.append(layouts[j])
             }
         }
+        return making
     }
     
-    public var bestLead: LeadStatistics {
-        return leadsStatistics.max()!
+    public func layoutsMaking(exactly requiredTricks: Int, for leadPlan: LeadPlan) -> [LayoutCombinations] {
+        var making = [LayoutCombinations]()
+        // TODO: Error checking ... what to do if leadplan cant be found
+        let i = leadPlans.firstIndex(of: leadPlan)!
+        for j in layouts.indices {
+            let leadAnalysis = analysisFor(lead: i, layout: j)
+            if leadAnalysis.tricksTaken == requiredTricks {
+                making.append(layouts[j])
+            }
+        }
+        return making
     }
-    */
+    
 }
