@@ -346,10 +346,14 @@ public struct StatisticalWithLeads {
         return making
     }
     
-    public func leadAnalysis(leadPlan: LeadPlan, layout: RankPositions) -> LeadAnalysis {
-        let i = leadPlans.firstIndex(of: leadPlan)!
-        let j = layouts.firstIndex(where: { $0.holding == layout })!
-        return analysisFor(lead: i, layout: j)
+    public func leadAnalyses(for layout: RankPositions) -> [LeadPlan: LeadAnalysis] {
+        var results: [LeadPlan: LeadAnalysis] = [:]
+        if let j = layouts.firstIndex(where: { $0.holding == layout }) {
+            for i in leadPlans.indices {
+                results[leadPlans[i]] = analysisFor(lead: i, layout: j)
+            }
+        }
+        return results
     }
     
 }
