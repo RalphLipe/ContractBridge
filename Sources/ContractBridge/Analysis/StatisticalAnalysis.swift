@@ -305,6 +305,20 @@ public struct StatisticalWithLeads {
         }
         return results
     }
+    
+    public var bestLeads: Set<LeadPlan> {
+        var results = Set<LeadPlan>()
+        for i in leadPlans.indices {
+            var stats = LeadStatistics()
+            for j in layouts.indices {
+                stats = stats.addResult(analysisFor(lead: i, layout: j), combinations: layouts[j].combinationsRepresented, requiredTricks: analysis.requiredTricks)
+            }
+            if stats == analysis.bestStats {
+                results.insert(leadPlans[i])
+            }
+        }
+        return results
+    }
 
     public func layoutsMaking(atLeast requiredTricks: Int, for leadPlan: LeadPlan) -> [LayoutCombinations] {
         var making = [LayoutCombinations]()
@@ -330,6 +344,12 @@ public struct StatisticalWithLeads {
             }
         }
         return making
+    }
+    
+    public func leadAnalysis(leadPlan: LeadPlan, layout: RankPositions) -> LeadAnalysis {
+        let i = leadPlans.firstIndex(of: leadPlan)!
+        let j = layouts.firstIndex(where: { $0.holding == layout })!
+        return analysisFor(lead: i, layout: j)
     }
     
 }
