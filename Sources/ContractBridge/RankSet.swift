@@ -51,6 +51,11 @@ public struct RankSet: Sequence, Equatable, ExpressibleByArrayLiteral {
         sequence.forEach { insert($0) }
     }
     
+    public init<S>(_ cards: S, suit: Suit) where S:Sequence, S.Element == Card {
+        self.init()
+        cards.forEach { if $0.suit == suit { insert($0.rank) } }
+    }
+    
     public init(arrayLiteral elements: Rank...) {
         self.init()
         elements.forEach { insert($0) }
@@ -133,6 +138,16 @@ public struct RankSet: Sequence, Equatable, ExpressibleByArrayLiteral {
     
     public mutating func formIntersection(_ other: RankSet) {
         ranks = ranks & other.ranks
+    }
+    
+    // TODO: Add test case
+    public mutating func subtract(_ other: RankSet) {
+        ranks = ranks & (~other.ranks)
+    }
+    
+    // TODO: Add test case
+    public func subtracting(_ other: RankSet) -> RankSet {
+        return RankSet(ranks & (~other.ranks))
     }
     
     public func makeIterator() -> RankSetIterator {

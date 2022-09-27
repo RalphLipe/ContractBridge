@@ -116,7 +116,11 @@ public struct StatisticalAnalysis {
     public let requiredTricks: Int
     public let totalCombinations: Int
     public let bestStats: LeadStatistics
-    public let numTricksBestLead: Int
+    // NOTE: This variable tells you the number of tricks taken for the the best lead when
+    // analizing the INITIAL LAYOUT passed
+    public let numTricksBestLeadInitialLayout: Int
+    public let maxTricks: Int
+    public let minTricks: Int
 
     public var percentCombinationsMaking: Double {
         return percentCombinationsMaking(bestStats)
@@ -166,7 +170,9 @@ public struct StatisticalAnalysis {
         assert(holding.hasRanks(leadPair))
         if leadAnalyses != nil { leadAnalyses?.reserveCapacity(leadPlans.count * layouts.count) }
         var best = LeadStatistics()
-        var bestTricks = 0
+        var bestTricksInitialLayout = 0
+        var minTricks = 13
+        var maxTricks = 0
         let normHolding = holding.normalized()
         for lead in leadPlans {
             var stats = LeadStatistics()
@@ -180,16 +186,20 @@ public struct StatisticalAnalysis {
                 }
                 if leadAnalyses != nil { leadAnalyses!.append(result) }
                 stats = stats.addResult(result, combinations: layout.combinationsRepresented, requiredTricks: requiredTricks)
+                minTricks = min(minTricks, result.tricksTaken)
+                maxTricks = max(maxTricks, result.tricksTaken)
             }
             assert(layoutTricks >= 0)
             if stats > best {
                 best = stats
-                bestTricks = layoutTricks
+                bestTricksInitialLayout = layoutTricks
             }
         }
         self.bestStats = best
-        self.numTricksBestLead = bestTricks
+        self.numTricksBestLeadInitialLayout = bestTricksInitialLayout
         self.totalCombinations = layouts.reduce(0) { $0 + $1.combinationsRepresented }
+        self.minTricks = minTricks
+        self.maxTricks = maxTricks
     }
         
     /*

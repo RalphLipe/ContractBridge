@@ -14,28 +14,25 @@ public struct LeadAnalysis: Comparable {
     }
     
     public let tricksTaken: Int
-    private let play: [RankRange?]
+    public let play: PositionRanks
     
-    internal init(tricksTaken: Int, play: [RankRange?]) {
+    internal init(tricksTaken: Int, play: PositionRanks) {
         assert(tricksTaken < 14)
         self.tricksTaken = tricksTaken
         self.play = play
     }
     
-    public subscript(position: Position) -> RankRange? {
-        return play[position.rawValue]
-    }
     
     private func maxRank(for pair: Pair) -> Rank? {
         let positions = pair.positions
-        if let play0 = self[positions.0] {
-            if let play1 = self[positions.1] {
-                return max(play0.upperBound, play1.upperBound)
+        if let play0 = play[positions.0] {
+            if let play1 = play[positions.1] {
+                return max(play0, play1)
             } else {
-                return play0.upperBound
+                return play0
             }
         } else {
-            return self[positions.1]?.upperBound
+            return play[positions.1]
         }
     }
     
@@ -78,7 +75,9 @@ public struct LeadAnalyzer {
     }
     
     public var analysis: LeadAnalysis {
-        return LeadAnalysis(tricksTaken: tricksTaken, play: playedRanges)
+        var pr = PositionRanks()
+        Position.allCases.forEach { pr[$0] = playedRanges[$0.rawValue]?.upperBound }    // TODO: Remove this hack
+        return LeadAnalysis(tricksTaken: tricksTaken, play: pr)
     }
     
     public static func doubleDummy(holding: RankPositions, leadPlan: LeadPlan, leadOption: LeadOption) -> LeadAnalysis {
@@ -158,7 +157,7 @@ public struct LeadAnalyzer {
                   //  let nextMarked = holding.mark(knownMarked: marked!, leadFrom: leadPlan.position, play: playedRanks)
                     let nextMarked = marked!     // TODO: Remove this - it's bogus.
                     let nextSA = StatisticalAnalysis(holding: nextHolding, leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, marked: nextMarked, leadOption: leadOption)
-                    tricksWon += nextSA.numTricksBestLead
+                    tricksWon += nextSA.numTricksBestLeadInitialLayout
                 } else {
                     let nextDDAZ = DoubleDummyAnalysis(holding: nextHolding, leadPair: leadPlan.position.pair)
                     tricksWon += nextDDAZ.maxTricksTaken

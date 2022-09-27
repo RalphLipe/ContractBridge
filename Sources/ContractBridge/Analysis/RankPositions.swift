@@ -9,11 +9,6 @@ import Foundation
 import XCTest
 
 
-public struct LayoutCombinations { 
-    public let holding: RankPositions
-    public let combinationsRepresented: Int
-}
-
 public typealias RankPositionsId = UInt64
 
 /// Contains an optional position for every rank.
@@ -42,7 +37,12 @@ public struct RankPositions : Equatable, Hashable {
         positions = id
     }
      
-    
+    public init(hands: Hands, suit: Suit) {
+        self.init()
+        for position in Position.allCases {
+            self[position] = RankSet(hands[position], suit: suit)
+        }
+    }
     
     /// Copies the contents of a dictionary into a RankPositions structure.
     /// - Parameter dictionary: A dictionary containing positions of ranks
@@ -80,6 +80,12 @@ public struct RankPositions : Equatable, Hashable {
         }
     }
     
+    // TODO: Document and test
+    var ranks: RankSet {
+        var result = RankSet()
+        Rank.allCases.forEach { if self[$0] != nil { result.insert($0) }}
+        return result
+    }
     
     public mutating func reassignRanks(from: Position?, to: Position?) {
         for rank in Rank.allCases {
@@ -88,6 +94,7 @@ public struct RankPositions : Equatable, Hashable {
             }
         }
     }
+    
     
     /// A boolean that indicates if every rank has a non-nil posiition
     public var isFull: Bool {

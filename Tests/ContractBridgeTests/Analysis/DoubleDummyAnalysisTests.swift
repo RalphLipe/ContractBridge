@@ -30,7 +30,7 @@ class DoubleDummyAnalysisTests: XCTestCase {
             print("Trick 1 won by \(analysis.winningPair)")
             var pos = bestLead.position
             for _ in Position.allCases {
-                if let play = analysis[pos] {
+                if let play = analysis.play[pos] {
                     print("\(pos): \(play)")
                 }
                 pos = pos.next
