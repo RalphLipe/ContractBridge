@@ -38,6 +38,9 @@ public struct VariableXXX {
     }
 }
 
+
+
+// TODO: Document this:
 public struct XXXCombination {
     public var known: KnownHoldings
     public var unknownCount0: Int
