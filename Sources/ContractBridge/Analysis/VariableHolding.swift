@@ -9,20 +9,20 @@ import Foundation
 import AppKit
 
 public struct KnownHoldings {
-    var rank: Rank
-    let pair: Pair
-    var count0: Int = 0
-    var count1: Int = 0
+    public var rank: Rank
+    public let pair: Pair
+    public var count0: Int = 0
+    public var count1: Int = 0
     public init(rank: Rank, pair: Pair) {
         self.rank = rank
         self.pair = pair
     }
-    var count: Int { return count0 + count1 }
+    public var count: Int { return count0 + count1 }
 }
 
 public struct VariableXXX {
-    var known: KnownHoldings
-    var unknownCount: Int = 0
+    public var known: KnownHoldings
+    public var unknownCount: Int = 0
     
     public var count: Int {
         return known.count + unknownCount
@@ -34,11 +34,11 @@ public struct VariableXXX {
 }
 
 public struct XXXCombination {
-    var known: KnownHoldings
-    var unknownCount0: Int = 0
-    var unknownCount1: Int = 0
-    var unknownCount: Int { return unknownCount0 + unknownCount1 }
-    var count: Int { return known.count + unknownCount }
+    public var known: KnownHoldings
+    public var unknownCount0: Int = 0
+    public var unknownCount1: Int = 0
+    public var unknownCount: Int { return unknownCount0 + unknownCount1 }
+    public var count: Int { return known.count + unknownCount }
     
     func count(for position: Position) -> Int {
         if known.pair != position.pair { return 0 }

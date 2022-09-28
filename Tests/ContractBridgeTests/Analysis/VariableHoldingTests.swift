@@ -18,11 +18,15 @@ class VariableHoldingTests: XCTestCase {
     
 
     func testInit() throws {
-        var vh = VariableHolding(partialHolding: rp("N:AQ5 - 234 -"))
+        var vh = VariableHolding(partialHolding: rp("N:AQT8 - 34 -"))
         XCTAssertEqual(vh.combinations, 128)
         var tc = 0
         for ch in vh.combinationHoldings() {
             tc += ch.combinations
+            print("\(ch.combinations)")
+            for r in ch.ranges {
+                print("   \(r.known.rank)   K0 = \(r.known.count0)  K1 = \(r.known.count1)   U0 = \(r.unknownCount0)   U1 = \(r.unknownCount1)")
+            }
         }
         XCTAssertEqual(tc, 128)
     }
