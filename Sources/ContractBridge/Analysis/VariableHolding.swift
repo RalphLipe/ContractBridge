@@ -8,7 +8,7 @@
 import Foundation
 import AppKit
 
-public struct KnownHoldings {
+public struct KnownHoldings: Equatable {
     public var rank: Rank
     public let pair: Pair
     public var count0: Int = 0
@@ -24,6 +24,11 @@ public struct VariableXXX {
     public var known: KnownHoldings
     public var unknownCount: Int = 0
     
+    public init(known: KnownHoldings, unknownCount: Int) {
+        self.known = known
+        self.unknownCount = unknownCount
+    }
+    
     public var count: Int {
         return known.count + unknownCount
     }
@@ -35,10 +40,16 @@ public struct VariableXXX {
 
 public struct XXXCombination {
     public var known: KnownHoldings
-    public var unknownCount0: Int = 0
-    public var unknownCount1: Int = 0
+    public var unknownCount0: Int
+    public var unknownCount1: Int
     public var unknownCount: Int { return unknownCount0 + unknownCount1 }
     public var count: Int { return known.count + unknownCount }
+    
+    public init(known: KnownHoldings, unknownCount0: Int = 0, unknownCount1: Int = 0) {
+        self.known = known
+        self.unknownCount0 = unknownCount0
+        self.unknownCount1 = unknownCount1
+    }
     
     func count(for position: Position) -> Int {
         if known.pair != position.pair { return 0 }
@@ -110,7 +121,7 @@ public struct XXXCombination {
 }
 
 public struct VariableHolding {
-    private var ranges: [VariableXXX] = []
+    public var ranges: [VariableXXX] = []
     private let variablePair: Pair
     
     private func pair(for rank: Rank, in holding: RankPositions) -> Pair {
@@ -238,19 +249,28 @@ public struct VariableCombination {
         if let rank = rank {
             guard let i = ranges.firstIndex(where: { $0.known.rank == rank }) else { fatalError() }
             ranges[i].play(rank, from: position)
+        }
+    }
+    
+    private mutating func compact() {
+        var i = 0
+        while i < ranges.count {
             if ranges[i].count == 0 {
                 ranges.remove(at: i)
                 if ranges.count > 0 {
-                    if i == ranges.count - 1 {
+                    if i == ranges.count {
                         ranges[i - 1].known.rank = .ace
                     } else if i == 0 {
                         ranges[i].known.rank = .two
                     } else {
+                             assert(ranges[i].known.pair == ranges[i-1].known.pair)
                         ranges[i].merge(with: ranges[i-1])
                         if i == 1 { ranges[i].known.rank = .two }
                         ranges.remove(at: i-1)
                     }
                 }
+            } else {
+                i += 1
             }
         }
     }
@@ -261,7 +281,7 @@ public struct VariableCombination {
         }
     }
     
-    private mutating func internalPlay(leadPlan: LeadPlan, play: PositionRanks) {
+    private mutating func internalPlay(leadPosition: Position, play: PositionRanks) {
         guard let winning = play.winning else { fatalError() }
         // First we will mark any inticated ranks as know for the variable pair.
         // If one side or the other shows out then all ranks are known to be in the partner position
@@ -277,12 +297,12 @@ public struct VariableCombination {
         }
         // TODO: If one nil then nothing left to do...
         // TODO: Mark ranges as known based on play:  2nd position if N/S wins or if E/W wins double finesse
-        if winning.position == leadPlan.position.previous { // If 4th seat wins then check for marked 2nd position ranks
-            if let thirdHand = play[leadPlan.position.partner] {
-                if thirdHand > play[leadPlan.position]! {
+        if winning.position == leadPosition.previous { // If 4th seat wins then check for marked 2nd position ranks
+            if let thirdHand = play[leadPosition.partner] {
+                if thirdHand > play[leadPosition]! {
                     for i in ranges.indices {
                         if ranges[i].known.rank > thirdHand && ranges[i].known.rank < winning.rank && ranges[i].known.pair == variablePair {
-                            ranges[i].allKnown(in: leadPlan.position.next)
+                            ranges[i].allKnown(in: leadPosition.next)
                         }
                     }
                 }
@@ -294,17 +314,18 @@ public struct VariableCombination {
             if winning.rank < .ace {
                 for i in ranges.indices {
                     if ranges[i].known.rank > winning.rank && ranges[i].known.pair == variablePair {
-                        ranges[i].allKnown(in: leadPlan.position.next)
+                        ranges[i].allKnown(in: leadPosition.next)
                     }
                 }
             }
         }
         Position.allCases.forEach { self.play(play[$0], from: $0) }
+        compact()
     }
     
-    public func play(leadPlan: LeadPlan, play: PositionRanks) -> VariableHolding {
+    public func play(leadPosition: Position, play: PositionRanks) -> VariableHolding {
         var next = self
-        next.internalPlay(leadPlan: leadPlan, play: play)
+        next.internalPlay(leadPosition: leadPosition, play: play)
         return VariableHolding(from: next)
     }
 }
