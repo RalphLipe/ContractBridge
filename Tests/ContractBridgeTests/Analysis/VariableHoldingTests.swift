@@ -130,6 +130,7 @@ class VariableHoldingTests: XCTestCase {
 
 
 
+    // Test of commit
     func testKQFinesse() throws {
         let vh = VariableHolding(partialHolding: rp("N:KQ5 - 234 -"))
         XCTAssertEqual(vh.combinations, 128)
