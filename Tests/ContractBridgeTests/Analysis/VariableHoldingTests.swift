@@ -191,4 +191,100 @@ class VariableHoldingTests: XCTestCase {
     }
 
     
+    func testDoublieFinesse() throws {
+        let vh = VariableHolding(partialHolding: rp("N:AQT - 234 -"))
+        XCTAssertEqual(vh.combinations, 128)
+        let expected = [ VariableXXX(.two, n: 0, s: 3),
+                         VariableXXX(.nine, ewUnknown: 5),
+                         VariableXXX(.ten, n: 1, s: 0),
+                         VariableXXX(.jack, ewUnknown: 1),
+                         VariableXXX(.queen, n: 1, s: 0),
+                         VariableXXX(.king, ewUnknown: 1),
+                         VariableXXX(.ace, n: 1, s:0) ]
+        XCTAssertEqual(expected, vh.ranges)
+        var tc = 0
+        for ch in vh.combinationHoldings() {
+            tc += ch.combinations
+            print("\(ch.combinations)")
+            for r in ch.ranges {
+                print("   \(r.known.rank)   K0 = \(r.known.count0)  K1 = \(r.known.count1)   U0 = \(r.unknownCount0)   U1 = \(r.unknownCount1)")
+            }
+        }
+        XCTAssertEqual(tc, 128)
+
+        let offsideJ = [ XXXCombination(.two, n: 0, s: 3),
+                         XXXCombination(.nine, e: 3, w: 2),
+                         XXXCombination(.ten, n: 1, s: 0),
+                         XXXCombination(.jack, e: 1, w: 0),
+                         XXXCombination(.queen, n: 1, s: 0),
+                         XXXCombination(.king, e: 0, w: 1),
+                         XXXCombination(.ace, n: 1, s: 0) ]
+
+        var vc = try! findCombination(offsideJ, in: vh)
+        
+        var pr = PositionRanks()
+        pr[.south] = .two
+        pr[.west] = .nine
+        pr[.north] = .ten
+        pr[.east] = .jack
+
+        let vhAfterFailedFinesse = vc.play(leadPosition: .south, play: pr)
+        
+        let expectedFailedFinesse =
+                        [ VariableXXX(.two, n: 0, s: 2),
+                          VariableXXX(.jack, ewUnknown: 4),
+                          VariableXXX(.queen, n:1, s:0),
+                         VariableXXX(.king, ewUnknown: 1),
+                         VariableXXX(.ace, n: 1, s: 0) ]
+        
+        XCTAssertEqual(expectedFailedFinesse, vhAfterFailedFinesse.ranges)
+        
+        let onsideJ = [ XXXCombination(.two, n: 0, s: 3),
+                         XXXCombination(.nine, e: 3, w: 2),
+                         XXXCombination(.ten, n: 1, s: 0),
+                         XXXCombination(.jack, e: 0, w: 1),
+                         XXXCombination(.queen, n: 1, s: 0),
+                         XXXCombination(.king, e: 1, w: 0),
+                         XXXCombination(.ace, n: 1, s: 0) ]
+        
+        vc = try! findCombination(onsideJ, in: vh)
+        pr[.east] = .king
+        
+        
+        let vhAfterSuccessfulFinesse = vc.play(leadPosition: .south, play: pr)
+        
+        let expectedSucceededFinesse =
+                    [ VariableXXX(.two, n: 0, s: 2),
+                      VariableXXX(.jack, ewUnknown: 4, wKnown: 1),
+                      VariableXXX(.ace, n: 2, s: 0) ]
+        
+        XCTAssertEqual(expectedSucceededFinesse, vhAfterSuccessfulFinesse.ranges)
+        
+
+        // Now put both the King and Jack onside...
+        let onsideJK = [ XXXCombination(.two, n: 0, s: 3),
+                         XXXCombination(.nine, e: 3, w: 2),
+                         XXXCombination(.ten, n: 1, s: 0),
+                         XXXCombination(.jack, e: 0, w: 1),
+                         XXXCombination(.queen, n: 1, s: 0),
+                         XXXCombination(.king, e: 0, w: 1),
+                         XXXCombination(.ace, n: 1, s: 0) ]
+        
+        vc = try! findCombination(onsideJK, in: vh)
+        pr[.east] = .nine
+
+        let vhAfterDoubleSuccess = vc.play(leadPosition: .south, play: pr)
+        
+        let expectedDouleSuccess =
+        [ VariableXXX(.two, n: 0, s: 2),
+          VariableXXX(.jack, ewUnknown: 3, wKnown: 1),
+          VariableXXX(.queen, n: 1, s:0),
+          VariableXXX(.king, ewUnknown: 0, wKnown: 1),
+          VariableXXX(.ace, n: 1, s: 0) ]
+
+        XCTAssertEqual(expectedDouleSuccess, vhAfterDoubleSuccess.ranges)
+        
+        
+    }
+    
 }
