@@ -8,8 +8,8 @@
 import XCTest
 import ContractBridge
 
-extension VariableXXX: Equatable {
-    public static func == (lhs: VariableXXX, rhs: VariableXXX) -> Bool {
+extension VariableRange: Equatable {
+    public static func == (lhs: VariableRange, rhs: VariableRange) -> Bool {
         lhs.unknownCount == rhs.unknownCount && lhs.known == rhs.known
     }
     
@@ -30,8 +30,8 @@ extension VariableXXX: Equatable {
 }
 
 
-extension XXXCombination: Equatable {
-    public static func == (lhs: XXXCombination, rhs: XXXCombination) -> Bool {
+extension VariableRangeCombination: Equatable {
+    public static func == (lhs: VariableRangeCombination, rhs: VariableRangeCombination) -> Bool {
         lhs.unknownCount0 == rhs.unknownCount0 && lhs.unknownCount1 == rhs.unknownCount1 && lhs.known == rhs.known
     }
 
@@ -51,8 +51,7 @@ extension XXXCombination: Equatable {
     }
 }
 
-// This is just a test for GitHub.  See if it stays in sync
-// And this is just another line... What about this
+
 class VariableHoldingTests: XCTestCase {
 
     func rp(_ s: String) -> RankPositions {
@@ -66,7 +65,7 @@ class VariableHoldingTests: XCTestCase {
         case combinationNotFound
     }
     
-    func findCombination(_ comb: [XXXCombination], in vh: VariableHolding) throws -> VariableCombination {
+    func findCombination(_ comb: [VariableRangeCombination], in vh: VariableHolding) throws -> VariableCombination {
         for c in vh.combinationHoldings() {
             if c.ranges == comb {
                 return c
@@ -80,11 +79,11 @@ class VariableHoldingTests: XCTestCase {
     func testAQFinesse() throws {
         let vh = VariableHolding(partialHolding: rp("N:AQ - 23 -"))
         XCTAssertEqual(vh.combinations, 512)
-        let expected = [ VariableXXX(.two, n: 0, s: 2),
-                         VariableXXX(.jack, ewUnknown: 8),
-                         VariableXXX(.queen, n: 1, s: 0),
-                         VariableXXX(.king, ewUnknown: 1),
-                         VariableXXX(.ace, n: 1, s: 0) ]
+        let expected = [ VariableRange(.two, n: 0, s: 2),
+                         VariableRange(.jack, ewUnknown: 8),
+                         VariableRange(.queen, n: 1, s: 0),
+                         VariableRange(.king, ewUnknown: 1),
+                         VariableRange(.ace, n: 1, s: 0) ]
         XCTAssertEqual(expected, vh.ranges)
         var tc = 0
         for ch in vh.combinationHoldings() {
@@ -92,11 +91,11 @@ class VariableHoldingTests: XCTestCase {
         }
         XCTAssertEqual(tc, 512)
 
-        let offsideK = [ XXXCombination(.two, n: 0, s: 2),
-                         XXXCombination(.jack, e: 4, w: 4),
-                         XXXCombination(.queen, n: 1, s: 0),
-                         XXXCombination(.king, e: 1, w: 0),
-                         XXXCombination(.ace, n: 1, s: 0) ]
+        let offsideK = [ VariableRangeCombination(.two, n: 0, s: 2),
+                         VariableRangeCombination(.jack, e: 4, w: 4),
+                         VariableRangeCombination(.queen, n: 1, s: 0),
+                         VariableRangeCombination(.king, e: 1, w: 0),
+                         VariableRangeCombination(.ace, n: 1, s: 0) ]
 
         var vc = try! findCombination(offsideK, in: vh)
         
@@ -108,25 +107,25 @@ class VariableHoldingTests: XCTestCase {
         let vhAfterFailedFinesse = vc.play(leadPosition: .south, play: pr)
         
         let expectedFailedFinesse =
-                        [ VariableXXX(.two, n: 0, s: 1),
-                         VariableXXX(.king, ewUnknown: 7),
-                         VariableXXX(.ace, n: 1, s: 0) ]
+                        [ VariableRange(.two, n: 0, s: 1),
+                         VariableRange(.king, ewUnknown: 7),
+                         VariableRange(.ace, n: 1, s: 0) ]
         
         XCTAssertEqual(expectedFailedFinesse, vhAfterFailedFinesse.ranges)
         
-        let onsideK =  [ XXXCombination(.two, n: 0, s: 2),
-                         XXXCombination(.jack, e: 4, w: 4),
-                         XXXCombination(.queen, n: 1, s: 0),
-                         XXXCombination(.king, e: 0, w: 1),
-                         XXXCombination(.ace, n: 1, s: 0) ]
+        let onsideK =  [ VariableRangeCombination(.two, n: 0, s: 2),
+                         VariableRangeCombination(.jack, e: 4, w: 4),
+                         VariableRangeCombination(.queen, n: 1, s: 0),
+                         VariableRangeCombination(.king, e: 0, w: 1),
+                         VariableRangeCombination(.ace, n: 1, s: 0) ]
         vc = try! findCombination(onsideK, in: vh)
         
         pr[.east] = .jack
         let vhAfterSuccessfulFinesse = vc.play(leadPosition: .south, play: pr)
         
-        let expectedSucceededFinesse = [ VariableXXX(.two, n: 0, s: 1),
-                         VariableXXX(.king, ewUnknown: 6, wKnown: 1),
-                         VariableXXX(.ace, n: 1, s: 0) ]
+        let expectedSucceededFinesse = [ VariableRange(.two, n: 0, s: 1),
+                         VariableRange(.king, ewUnknown: 6, wKnown: 1),
+                         VariableRange(.ace, n: 1, s: 0) ]
         XCTAssertEqual(expectedSucceededFinesse, vhAfterSuccessfulFinesse.ranges)
     }
 
@@ -137,10 +136,10 @@ class VariableHoldingTests: XCTestCase {
     func testKQFinesse() throws {
         let vh = VariableHolding(partialHolding: rp("N:KQ5 - 234 -"))
         XCTAssertEqual(vh.combinations, 128)
-        let expected = [ VariableXXX(.two, n: 1, s: 3),
-                         VariableXXX(.jack, ewUnknown: 6),
-                         VariableXXX(.king, n: 2, s: 0),
-                         VariableXXX(.ace, ewUnknown: 1) ]
+        let expected = [ VariableRange(.two, n: 1, s: 3),
+                         VariableRange(.jack, ewUnknown: 6),
+                         VariableRange(.king, n: 2, s: 0),
+                         VariableRange(.ace, ewUnknown: 1) ]
         XCTAssertEqual(expected, vh.ranges)
         var tc = 0
         for ch in vh.combinationHoldings() {
@@ -152,10 +151,10 @@ class VariableHoldingTests: XCTestCase {
         }
         XCTAssertEqual(tc, 128)
 
-        let offsideA = [ XXXCombination(.two, n: 1, s: 3),
-                         XXXCombination(.jack, e: 3, w: 3),
-                         XXXCombination(.king, n: 2, s: 0),
-                         XXXCombination(.ace, e: 1, w: 0) ]
+        let offsideA = [ VariableRangeCombination(.two, n: 1, s: 3),
+                         VariableRangeCombination(.jack, e: 3, w: 3),
+                         VariableRangeCombination(.king, n: 2, s: 0),
+                         VariableRangeCombination(.ace, e: 1, w: 0) ]
 
         var vc = try! findCombination(offsideA, in: vh)
         
@@ -168,16 +167,16 @@ class VariableHoldingTests: XCTestCase {
         let vhAfterFailedFinesse = vc.play(leadPosition: .south, play: pr)
         
         let expectedFailedFinesse =
-                        [ VariableXXX(.two, n: 1, s: 2),
-                         VariableXXX(.jack, ewUnknown: 5),
-                         VariableXXX(.ace, n: 1, s: 0) ]
+                        [ VariableRange(.two, n: 1, s: 2),
+                         VariableRange(.jack, ewUnknown: 5),
+                         VariableRange(.ace, n: 1, s: 0) ]
         
         XCTAssertEqual(expectedFailedFinesse, vhAfterFailedFinesse.ranges)
         
-        let onsideA = [ XXXCombination(.two, n: 1, s: 3),
-                        XXXCombination(.jack, e: 3, w: 3),
-                        XXXCombination(.king, n: 2, s: 0),
-                        XXXCombination(.ace, e: 0, w: 1) ]
+        let onsideA = [ VariableRangeCombination(.two, n: 1, s: 3),
+                        VariableRangeCombination(.jack, e: 3, w: 3),
+                        VariableRangeCombination(.king, n: 2, s: 0),
+                        VariableRangeCombination(.ace, e: 0, w: 1) ]
 
         vc = try! findCombination(onsideA, in: vh)
         
@@ -186,10 +185,10 @@ class VariableHoldingTests: XCTestCase {
         let vhAfterSuccessfulFinesse = vc.play(leadPosition: .south, play: pr)
         
         let expectedSucceededFinesse =
-                    [ VariableXXX(.two, n: 1, s: 2),
-                     VariableXXX(.jack, ewUnknown: 4),
-                      VariableXXX(.king, n: 1, s: 0),
-                      VariableXXX(.ace, ewUnknown: 0, eKnown:0, wKnown: 1) ]
+                    [ VariableRange(.two, n: 1, s: 2),
+                     VariableRange(.jack, ewUnknown: 4),
+                      VariableRange(.king, n: 1, s: 0),
+                      VariableRange(.ace, ewUnknown: 0, eKnown:0, wKnown: 1) ]
                     
         XCTAssertEqual(expectedSucceededFinesse, vhAfterSuccessfulFinesse.ranges)
     }
@@ -198,13 +197,13 @@ class VariableHoldingTests: XCTestCase {
     func testDoublieFinesse() throws {
         let vh = VariableHolding(partialHolding: rp("N:AQT - 234 -"))
         XCTAssertEqual(vh.combinations, 128)
-        let expected = [ VariableXXX(.two, n: 0, s: 3),
-                         VariableXXX(.nine, ewUnknown: 5),
-                         VariableXXX(.ten, n: 1, s: 0),
-                         VariableXXX(.jack, ewUnknown: 1),
-                         VariableXXX(.queen, n: 1, s: 0),
-                         VariableXXX(.king, ewUnknown: 1),
-                         VariableXXX(.ace, n: 1, s:0) ]
+        let expected = [ VariableRange(.two, n: 0, s: 3),
+                         VariableRange(.nine, ewUnknown: 5),
+                         VariableRange(.ten, n: 1, s: 0),
+                         VariableRange(.jack, ewUnknown: 1),
+                         VariableRange(.queen, n: 1, s: 0),
+                         VariableRange(.king, ewUnknown: 1),
+                         VariableRange(.ace, n: 1, s:0) ]
         XCTAssertEqual(expected, vh.ranges)
         var tc = 0
         for ch in vh.combinationHoldings() {
@@ -216,13 +215,13 @@ class VariableHoldingTests: XCTestCase {
         }
         XCTAssertEqual(tc, 128)
 
-        let offsideJ = [ XXXCombination(.two, n: 0, s: 3),
-                         XXXCombination(.nine, e: 3, w: 2),
-                         XXXCombination(.ten, n: 1, s: 0),
-                         XXXCombination(.jack, e: 1, w: 0),
-                         XXXCombination(.queen, n: 1, s: 0),
-                         XXXCombination(.king, e: 0, w: 1),
-                         XXXCombination(.ace, n: 1, s: 0) ]
+        let offsideJ = [ VariableRangeCombination(.two, n: 0, s: 3),
+                         VariableRangeCombination(.nine, e: 3, w: 2),
+                         VariableRangeCombination(.ten, n: 1, s: 0),
+                         VariableRangeCombination(.jack, e: 1, w: 0),
+                         VariableRangeCombination(.queen, n: 1, s: 0),
+                         VariableRangeCombination(.king, e: 0, w: 1),
+                         VariableRangeCombination(.ace, n: 1, s: 0) ]
 
         var vc = try! findCombination(offsideJ, in: vh)
         
@@ -235,21 +234,21 @@ class VariableHoldingTests: XCTestCase {
         let vhAfterFailedFinesse = vc.play(leadPosition: .south, play: pr)
         
         let expectedFailedFinesse =
-                        [ VariableXXX(.two, n: 0, s: 2),
-                          VariableXXX(.jack, ewUnknown: 4),
-                          VariableXXX(.queen, n:1, s:0),
-                         VariableXXX(.king, ewUnknown: 1),
-                         VariableXXX(.ace, n: 1, s: 0) ]
+                        [ VariableRange(.two, n: 0, s: 2),
+                          VariableRange(.jack, ewUnknown: 4),
+                          VariableRange(.queen, n:1, s:0),
+                         VariableRange(.king, ewUnknown: 1),
+                         VariableRange(.ace, n: 1, s: 0) ]
         
         XCTAssertEqual(expectedFailedFinesse, vhAfterFailedFinesse.ranges)
         
-        let onsideJ = [ XXXCombination(.two, n: 0, s: 3),
-                         XXXCombination(.nine, e: 3, w: 2),
-                         XXXCombination(.ten, n: 1, s: 0),
-                         XXXCombination(.jack, e: 0, w: 1),
-                         XXXCombination(.queen, n: 1, s: 0),
-                         XXXCombination(.king, e: 1, w: 0),
-                         XXXCombination(.ace, n: 1, s: 0) ]
+        let onsideJ = [ VariableRangeCombination(.two, n: 0, s: 3),
+                         VariableRangeCombination(.nine, e: 3, w: 2),
+                         VariableRangeCombination(.ten, n: 1, s: 0),
+                         VariableRangeCombination(.jack, e: 0, w: 1),
+                         VariableRangeCombination(.queen, n: 1, s: 0),
+                         VariableRangeCombination(.king, e: 1, w: 0),
+                         VariableRangeCombination(.ace, n: 1, s: 0) ]
         
         vc = try! findCombination(onsideJ, in: vh)
         pr[.east] = .king
@@ -258,21 +257,21 @@ class VariableHoldingTests: XCTestCase {
         let vhAfterSuccessfulFinesse = vc.play(leadPosition: .south, play: pr)
         
         let expectedSucceededFinesse =
-                    [ VariableXXX(.two, n: 0, s: 2),
-                      VariableXXX(.jack, ewUnknown: 4, wKnown: 1),
-                      VariableXXX(.ace, n: 2, s: 0) ]
+                    [ VariableRange(.two, n: 0, s: 2),
+                      VariableRange(.jack, ewUnknown: 4, wKnown: 1),
+                      VariableRange(.ace, n: 2, s: 0) ]
         
         XCTAssertEqual(expectedSucceededFinesse, vhAfterSuccessfulFinesse.ranges)
         
 
         // Now put both the King and Jack onside...
-        let onsideJK = [ XXXCombination(.two, n: 0, s: 3),
-                         XXXCombination(.nine, e: 3, w: 2),
-                         XXXCombination(.ten, n: 1, s: 0),
-                         XXXCombination(.jack, e: 0, w: 1),
-                         XXXCombination(.queen, n: 1, s: 0),
-                         XXXCombination(.king, e: 0, w: 1),
-                         XXXCombination(.ace, n: 1, s: 0) ]
+        let onsideJK = [ VariableRangeCombination(.two, n: 0, s: 3),
+                         VariableRangeCombination(.nine, e: 3, w: 2),
+                         VariableRangeCombination(.ten, n: 1, s: 0),
+                         VariableRangeCombination(.jack, e: 0, w: 1),
+                         VariableRangeCombination(.queen, n: 1, s: 0),
+                         VariableRangeCombination(.king, e: 0, w: 1),
+                         VariableRangeCombination(.ace, n: 1, s: 0) ]
         
         vc = try! findCombination(onsideJK, in: vh)
         pr[.east] = .nine
@@ -280,12 +279,12 @@ class VariableHoldingTests: XCTestCase {
         let vhAfterDoubleSuccess = vc.play(leadPosition: .south, play: pr)
         
         let expectedDouleSuccess =
-        [ VariableXXX(.two, n: 0, s: 2),
-          VariableXXX(.jack, ewUnknown: 3, wKnown: 1),
-          VariableXXX(.queen, n: 1, s:0),
-          VariableXXX(.king, ewUnknown: 0, wKnown: 1),
-          VariableXXX(.ace, n: 1, s: 0) ]
-
+            [   VariableRange(.two, n: 0, s: 2),
+                VariableRange(.jack, ewUnknown: 3, wKnown: 1),
+                VariableRange(.queen, n: 1, s:0),
+                VariableRange(.king, ewUnknown: 0, wKnown: 1),
+                VariableRange(.ace, n: 1, s: 0) ]
+        
         XCTAssertEqual(expectedDouleSuccess, vhAfterDoubleSuccess.ranges)
         
         

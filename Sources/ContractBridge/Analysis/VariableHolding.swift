@@ -20,7 +20,7 @@ public struct KnownHoldings: Equatable {
     public var count: Int { return count0 + count1 }
 }
 
-public struct VariableXXX {
+public struct VariableRange {
     public var known: KnownHoldings
     public var unknownCount: Int = 0
     
@@ -41,7 +41,7 @@ public struct VariableXXX {
 
 
 // TODO: Document this:
-public struct XXXCombination {
+public struct VariableRangeCombination {
     public var known: KnownHoldings
     public var unknownCount0: Int
     public var unknownCount1: Int
@@ -59,8 +59,8 @@ public struct XXXCombination {
         return position == known.pair.positions.0 ? known.count0 + unknownCount0 : known.count1 + unknownCount1
     }
     
-    var variableXXX: VariableXXX {
-        return VariableXXX(known: known, unknownCount: unknownCount)
+    var variableRange: VariableRange {
+        return VariableRange(known: known, unknownCount: unknownCount)
     }
     
     // Standard math factorial
@@ -98,7 +98,7 @@ public struct XXXCombination {
         }
     }
     
-    internal mutating func merge(with other: XXXCombination) {
+    internal mutating func merge(with other: VariableRangeCombination) {
         assert(known.pair == other.known.pair)
         assert(known.rank > other.known.rank)
         known.count0 += other.known.count0
@@ -124,7 +124,7 @@ public struct XXXCombination {
 }
 
 public struct VariableHolding {
-    public var ranges: [VariableXXX] = []
+    public var ranges: [VariableRange] = []
     private let variablePair: Pair
     
     private func pair(for rank: Rank, in holding: RankPositions) -> Pair {
@@ -136,7 +136,7 @@ public struct VariableHolding {
     }
     
     public init(from vc: VariableCombination) {
-        self.ranges = vc.ranges.map { $0.variableXXX }
+        self.ranges = vc.ranges.map { $0.variableRange }
         self.variablePair = vc.variablePair
     }
     
@@ -166,7 +166,7 @@ public struct VariableHolding {
                 rank = next
             }
             known.rank = ranges.count == 0 ? .two : rank
-            ranges.append(VariableXXX(known: known, unknownCount: unknownCount))
+            ranges.append(VariableRange(known: known, unknownCount: unknownCount))
             guard let next = rank.nextHigher else { break }
             rank = next
         }
@@ -181,12 +181,12 @@ public struct VariableHolding {
     
     private class ComboBuilder {
         private let variableHolding: VariableHolding
-        private var ranges: [XXXCombination]
+        private var ranges: [VariableRangeCombination]
         private var combos: [VariableCombination] = []
         
         init(_ variableHolding: VariableHolding) {
             self.variableHolding = variableHolding
-            self.ranges = variableHolding.ranges.map { return XXXCombination(known: $0.known) }
+            self.ranges = variableHolding.ranges.map { return VariableRangeCombination(known: $0.known) }
             createCombo(index: 0)
         }
         
@@ -218,7 +218,7 @@ public struct VariableHolding {
 }
 
 public struct VariableCombination {
-    public var ranges: [XXXCombination]
+    public var ranges: [VariableRangeCombination]
     public let variablePair: Pair
     
     public func ranks(for position: Position) -> RankSet {
