@@ -52,7 +52,7 @@ extension XXXCombination: Equatable {
 }
 
 // This is just a test for GitHub.  See if it stays in sync
-
+// And this is just another line... What about this
 class VariableHoldingTests: XCTestCase {
 
     func rp(_ s: String) -> RankPositions {
