@@ -8,6 +8,7 @@
 import XCTest
 import ContractBridge
 
+// This is a test of commit
 extension VariableRange: Equatable {
     public static func == (lhs: VariableRange, rhs: VariableRange) -> Bool {
         lhs.unknownCount == rhs.unknownCount && lhs.known == rhs.known
