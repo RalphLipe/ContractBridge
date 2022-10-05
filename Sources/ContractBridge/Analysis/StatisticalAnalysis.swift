@@ -54,6 +54,7 @@ public class StatisticalAnalysis {
     private var leadAnalyses: [LeadAnalysis]
     private let leadPlans: [LeadPlan]
     private let layouts: [VariableCombination]
+    private var bestLeadIndex: Array<LeadPlan>.Index
 
     
     public static func analyze(holding: VariableHolding, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption = .considerAll, cache: StatsCache?) -> StatisticalAnalysis {
@@ -74,36 +75,32 @@ public class StatisticalAnalysis {
         self.leadPair = leadPair
         self.requiredTricks = requiredTricks
         self.leadOption = leadOption
-        assert(holding.holdsRanks(leadPair))
+       // assert(holding.holdsRanks(leadPair))
         self.leadPlans = LeadGenerator.generateLeads(holding: holding, pair: leadPair, option: leadOption)
+        assert(leadPlans.count > 0)
         self.leadAnalyses = []
         leadAnalyses.reserveCapacity(leadPlans.count * layouts.count)
+        self.bestLeadIndex = 0
         var best = LeadStatistics()
-        for lead in leadPlans {
+        for i in leadPlans.indices {
             var stats = LeadStatistics()
             for layout in layouts {
-                let result = LeadAnalyzer.statistical(holding: layout, leadPlan: lead, requiredTricks: requiredTricks, leadOption: leadOption, cache: cache)
+                let result = LeadAnalyzer.statistical(holding: layout, leadPlan: leadPlans[i], requiredTricks: requiredTricks, leadOption: leadOption, cache: cache)
                 leadAnalyses.append(result)
                 let count = Double(layout.combinations)
                 let c = Double(count)
                 stats.averageTricks += result.stats.averageTricks * c
                 stats.percentMaking += result.stats.percentMaking * c
-   //             if result.stats.averageTricks > 1.0 {
-   //                 print("MO TRICKS: \(result.stats.averageTricks) \(c)")
-            //    }
-
             }
             // At this point stats needs to be divided by the total number of combinations
             // since each individual result was accumulated, weighted by the number of combinations
             // for a specific variable combination holding.
             let c = Double(holding.combinations)
-   //         if stats.averageTricks > 0.0 {
-   //             print("\(stats.averageTricks) \(c)")
-   //         }
             stats.averageTricks /= c
             stats.percentMaking /= c
             if stats > best {
                 best = stats
+                bestLeadIndex = i
             }
         }
         self.bestStats = best
@@ -146,6 +143,15 @@ public class StatisticalAnalysis {
         return results
     }
 
+    // This method is used interanally to find the statistics for the best lead
+    // taken for a specific variable combination.
+    public func bestLeadStats(for vc: VariableCombination) -> LeadStatistics? {
+        if let j = layouts.firstIndex(of: vc) {
+            return analysisFor(lead: bestLeadIndex, layout: j).stats
+        }
+        return nil
+    }
+    
     /*
     public func layoutsMaking(atLeast requiredTricks: Int, for leadPlan: LeadPlan) -> [VariableCombination] {
         var making = [VariableCombination]()

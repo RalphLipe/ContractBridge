@@ -77,28 +77,18 @@ public struct LeadAnalyzer {
     
     internal func analyzeNextHolding() -> LeadStatistics {
         let nextVC = holding.play(leadPosition: leadPlan.position, play: play)
-        let nextHolding = VariableHolding(from: nextVC)
         let wonTrick = play.winning?.position.pair == leadPlan.position.pair
         let nextRequiredTricks = wonTrick ? max(0, requiredTricks - 1) : requiredTricks
-        if nextHolding.holdsRanks(leadPlan.position.pair) {
+        var stats = LeadStatistics(averageTricks: wonTrick ? 1.0 : 0.0, percentMaking: nextRequiredTricks == 0 ? 100.0 : 0.0)
+        if nextVC.holdsRanks(leadPlan.position.pair) {
             // TODO: Perhaps handle trivial cases here....
-            // WHAT WE NEED TO DO:
-            //   Get the nextHolding AND variableCombination
-            let nextSA = StatisticalAnalysis.analyze(holding: nextHolding, leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, leadOption: leadOption, cache: cache)
-            // TODO: This is not efficient... Add to Statistical Analyis
-            let allLeadStats = nextSA.leadAnalyses(for: nextVC)
-            let bestLeads = nextSA.bestLeads
-            let stats = allLeadStats[bestLeads.first!]!.stats
-            if wonTrick {
-                return LeadStatistics(averageTricks: stats.averageTricks + 1.0, percentMaking: stats.percentMaking)
-                
-            }
-            return stats
+            let nextSA = StatisticalAnalysis.analyze(holding: VariableHolding(from: nextVC), leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, leadOption: leadOption, cache: cache)
+            guard let statsNext = nextSA.bestLeadStats(for: nextVC) else { fatalError() }
+            // Add the result for average tricks, and use the percent making.
+            stats.percentMaking = statsNext.percentMaking
+            stats.averageTricks += statsNext.averageTricks
         }
-  //      if !wonTrick {
-  //          print("Well we dont win everything!")
-  //      }
-        return LeadStatistics(averageTricks: wonTrick ? 1.0 : 0.0, percentMaking: nextRequiredTricks == 0 ? 100.0 : 0.0)
+        return stats
     }
 
     // TODO: Work on this --- There are bugs

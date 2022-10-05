@@ -162,14 +162,7 @@ public struct VariableHolding: Hashable, Equatable {
         return ranges.reduce(into: RankSet()) { if $1.known.count(for: position) > 0 { $0.insert($1.known.rank) }}
     }
 
-    public func holdsRanks(_ pair: Pair) -> Bool {
-        for range in ranges {
-            if range.known.pair == pair && range.count > 0 {
-                return true
-            }
-        }
-        return false
-    }
+
     
     public func count(for position: Position) -> Int {
         assert(variablePair != position.pair)
@@ -259,6 +252,15 @@ public struct VariableCombination: Equatable {
     
     public func ranks(for position: Position) -> RankSet {
         return ranges.reduce(into: RankSet()) { if $1.count(for: position) > 0 { $0.insert($1.known.rank) }}
+    }
+    
+    public func holdsRanks(_ pair: Pair) -> Bool {
+        for range in ranges {
+            if range.known.pair == pair && range.count > 0 {
+                return true
+            }
+        }
+        return false
     }
     
     // Standard math factorial
