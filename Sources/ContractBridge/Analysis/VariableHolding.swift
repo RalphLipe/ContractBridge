@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import AppKit
 
 public struct KnownHoldings: Equatable, Hashable {
     public var rank: Rank
