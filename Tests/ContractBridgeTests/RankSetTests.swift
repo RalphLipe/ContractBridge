@@ -87,6 +87,18 @@ class RankSetTests: XCTestCase {
         
     }
     
+    func testMinCover() throws {
+        let s: RankSet = [.four, .seven, .eight, .jack, .king]
+        XCTAssertEqual(s.min(atLeast: nil), .four)
+        XCTAssertEqual(s.min(atLeast: .two), .four)
+        XCTAssertEqual(s.min(atLeast: .ace), .four)
+        XCTAssertEqual(s.min(atLeast: .five), .seven)
+        XCTAssertEqual(s.min(atLeast: .seven), .seven)
+        XCTAssertEqual(s.min(atLeast: .eight), .eight)
+        XCTAssertEqual(s.min(atLeast: .nine), .jack)
+        XCTAssertEqual(s.min(atLeast: .queen), .king)
+    }
+    
     func testUnion() throws {
         let s1: RankSet = [.four, .five, .queen]
         var s2: RankSet = [.eight, .five, .ace]

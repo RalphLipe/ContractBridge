@@ -8,7 +8,7 @@
 import Foundation
 import AppKit
 
-public struct KnownHoldings: Equatable {
+public struct KnownHoldings: Equatable, Hashable {
     public var rank: Rank
     public let pair: Pair
     public var count0: Int = 0
@@ -18,9 +18,13 @@ public struct KnownHoldings: Equatable {
         self.pair = pair
     }
     public var count: Int { return count0 + count1 }
+    public func count(for position: Position) -> Int {
+        if position.pair != pair { return 0 }
+        return position == pair.positions.0 ? count0 : count1
+    }
 }
 
-public struct VariableRange {
+public struct VariableRange: Equatable, Hashable {
     public var known: KnownHoldings
     public var unknownCount: Int = 0
     
@@ -34,14 +38,14 @@ public struct VariableRange {
     }
     
     internal func combinations(for pair: Pair) -> Int {
-        return known.pair == pair ? (1 << count) : 1
+        return known.pair == pair ? (1 << unknownCount) : 1
     }
 }
 
 
 
 // TODO: Document this:
-public struct VariableRangeCombination {
+public struct VariableRangeCombination: Equatable {
     public var known: KnownHoldings
     public var unknownCount0: Int
     public var unknownCount1: Int
@@ -76,7 +80,7 @@ public struct VariableRangeCombination {
     }
     
     internal func combinations(for pair: Pair) -> Int {
-        return known.pair == pair ? (1 << known.count) * combinations(n: unknownCount, r: unknownCount0) : 1
+        return known.pair == pair ? combinations(n: unknownCount, r: unknownCount0) : 1
     }
 
     internal mutating func play(_ rank: Rank, from position: Position) {
@@ -112,6 +116,10 @@ public struct VariableRangeCombination {
             if position == known.pair.positions.0 {
                 known.count0 += unknownCount0
                 unknownCount0 = 0
+                // HACK FOR DEBUGGING
+                if unknownCount1 > 0 {
+                    print("THIS IS STRANGE")
+                }
                 assert(unknownCount1 == 0)
             } else {
                 known.count1 += unknownCount1
@@ -123,9 +131,18 @@ public struct VariableRangeCombination {
     
 }
 
-public struct VariableHolding {
+public struct VariableHolding: Hashable, Equatable {
     public var ranges: [VariableRange] = []
-    private let variablePair: Pair
+    public let variablePair: Pair
+    
+    public static func == (lhs: VariableHolding, rhs: VariableHolding) -> Bool {
+        return lhs.ranges == rhs.ranges && lhs.variablePair == rhs.variablePair
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(variablePair)
+        hasher.combine(ranges)
+    }
     
     private func pair(for rank: Rank, in holding: RankPositions) -> Pair {
         if let position = holding[rank] {
@@ -138,6 +155,25 @@ public struct VariableHolding {
     public init(from vc: VariableCombination) {
         self.ranges = vc.ranges.map { $0.variableRange }
         self.variablePair = vc.variablePair
+    }
+    
+    public func ranks(for position: Position) -> RankSet {
+        assert(variablePair != position.pair)
+        return ranges.reduce(into: RankSet()) { if $1.known.count(for: position) > 0 { $0.insert($1.known.rank) }}
+    }
+
+    public func holdsRanks(_ pair: Pair) -> Bool {
+        for range in ranges {
+            if range.known.pair == pair && range.count > 0 {
+                return true
+            }
+        }
+        return false
+    }
+    
+    public func count(for position: Position) -> Int {
+        assert(variablePair != position.pair)
+        return ranges.reduce(0) { return $0 + $1.known.count(for: position) }
     }
     
     public init(partialHolding: RankPositions, variablePair: Pair = .ew) {
@@ -217,7 +253,7 @@ public struct VariableHolding {
     
 }
 
-public struct VariableCombination {
+public struct VariableCombination: Equatable {
     public var ranges: [VariableRangeCombination]
     public let variablePair: Pair
     
@@ -264,9 +300,10 @@ public struct VariableCombination {
                     if i == ranges.count {
                         ranges[i - 1].known.rank = .ace
                     } else if i == 0 {
-                        ranges[i].known.rank = .two
+                        ranges[0].known.rank = .two
                     } else {
-                             assert(ranges[i].known.pair == ranges[i-1].known.pair)
+                        // We have deledted a mid-range so now merge
+                        assert(ranges[i].known.pair == ranges[i-1].known.pair)
                         ranges[i].merge(with: ranges[i-1])
                         if i == 1 { ranges[i].known.rank = .two }
                         ranges.remove(at: i-1)
@@ -276,6 +313,11 @@ public struct VariableCombination {
                 i += 1
             }
         }
+        // Now if there is a single range make sure it is .ace instead of .two
+        // All the logic above has tried to keep entry [0] as .two
+        if ranges.count == 1 {
+            ranges[0].known.rank = .ace
+        }
     }
     
     private mutating func allKnown(in position: Position) {
@@ -284,7 +326,7 @@ public struct VariableCombination {
         }
     }
     
-    private mutating func internalPlay(leadPosition: Position, play: PositionRanks) {
+    private mutating func internalPlay(leadPosition: Position, play: PositionRanks, finesseInferences: Bool) {
         guard let winning = play.winning else { fatalError() }
         // First we will mark any inticated ranks as know for the variable pair.
         // If one side or the other shows out then all ranks are known to be in the partner position
@@ -293,31 +335,31 @@ public struct VariableCombination {
             if play[varPos.1] != nil {
                 allKnown(in: varPos.1)
             }
-        } else {
-            if play[varPos.1] == nil {
-                allKnown(in: varPos.0)
-            }
+        } else if play[varPos.1] == nil {
+            allKnown(in: varPos.0)
         }
-        // TODO: If one nil then nothing left to do...
-        // TODO: Mark ranges as known based on play:  2nd position if N/S wins or if E/W wins double finesse
-        if winning.position == leadPosition.previous { // If 4th seat wins then check for marked 2nd position ranks
-            if let thirdHand = play[leadPosition.partner] {
-                if thirdHand > play[leadPosition]! {
-                    for i in ranges.indices {
-                        if ranges[i].known.rank > thirdHand && ranges[i].known.rank < winning.rank && ranges[i].known.pair == variablePair {
-                            ranges[i].allKnown(in: leadPosition.next)
+        if finesseInferences {
+            // TODO: If one nil then nothing left to do...
+            // TODO: Mark ranges as known based on play:  2nd position if N/S wins or if E/W wins double finesse
+            if winning.position == leadPosition.previous { // If 4th seat wins then check for marked 2nd position ranks
+                if let thirdHand = play[leadPosition.partner] {
+                    if thirdHand > play[leadPosition]! {
+                        for i in ranges.indices {
+                            if ranges[i].known.rank > thirdHand && ranges[i].known.rank < winning.rank && ranges[i].known.pair == variablePair {
+                                ranges[i].allKnown(in: leadPosition.next)
+                            }
                         }
                     }
                 }
-            }
-            // It is possible that a range is marked by a double finesse...  If
-        } else {
-            // TODO: Really?  Is this logic right?  Could both sides duck?  Right now only 2nd seat ducks
-            // Since the lead pair won, then any higher ranks than the winning one must be in 2nd position
-            if winning.rank < .ace {
-                for i in ranges.indices {
-                    if ranges[i].known.rank > winning.rank && ranges[i].known.pair == variablePair {
-                        ranges[i].allKnown(in: leadPosition.next)
+                // It is possible that a range is marked by a double finesse...  If
+            } else if winning.position.pair == leadPosition.pair  {
+                // TODO: Really?  Is this logic right?  Could both sides duck?  Right now only 2nd seat ducks
+                // Since the lead pair won, then any higher ranks than the winning one must be in 2nd position
+                if winning.rank < .ace {
+                    for i in ranges.indices {
+                        if ranges[i].known.rank > winning.rank && ranges[i].known.pair == variablePair {
+                            ranges[i].allKnown(in: leadPosition.next)
+                        }
                     }
                 }
             }
@@ -326,19 +368,19 @@ public struct VariableCombination {
         compact()
     }
     
-    public func play(leadPosition: Position, play: PositionRanks) -> VariableHolding {
+    public func play(leadPosition: Position, play: PositionRanks, finesseInferences: Bool = true) -> VariableCombination {
         var next = self
-        next.internalPlay(leadPosition: leadPosition, play: play)
-        return VariableHolding(from: next)
+        next.internalPlay(leadPosition: leadPosition, play: play, finesseInferences: finesseInferences)
+        return next
     }
 }
     
     
 
-public struct LayoutCombinations {
-    public let holding: RankPositions
-    public let combinationsRepresented: Int
-}
+//public struct LayoutCombinations {
+//    public let holding: RankPositions
+//    public let combinationsRepresented: Int
+//}
 
 /*
 public struct LayoutGenerator {

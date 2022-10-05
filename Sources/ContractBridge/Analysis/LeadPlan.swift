@@ -12,9 +12,9 @@ import Foundation
 public struct LeadPlan: Equatable, Hashable {
     public let position: Position
     public let intent: Intent
-    let lead: RankRange
-    let minThirdHand: RankRange?
-    let maxThirdHand: RankRange?
+    let lead: Rank
+    let minThirdHand: Rank?
+    let maxThirdHand: Rank?
     
     public enum Intent {
         case cashWinner, // May lead a winner rank, or lead low rank with minThirdHand set to winner rank
@@ -23,7 +23,7 @@ public struct LeadPlan: Equatable, Hashable {
              playLow    // Low card lead toward low card
     }
     
-    init(position: Position, lead: RankRange, intent: Intent, minThirdHand: RankRange? = nil, maxThirdHand: RankRange? = nil) {
+    init(position: Position, lead: Rank, intent: Intent, minThirdHand: Rank? = nil, maxThirdHand: Rank? = nil) {
         self.position = position
         self.intent = intent
         self.lead = lead
@@ -34,24 +34,28 @@ public struct LeadPlan: Equatable, Hashable {
 
 
 public extension String.StringInterpolation {
-    private func ranks(range: ClosedRange<Rank>?, position: Position, hands: Hands?, suit: Suit?, style: ContractBridge.Style) -> String? {
-        guard let range = range else { return nil }
-        guard let hands = hands,
-              let suit = suit else {
-            return "\(range)"
-        }
+    private func ranks(rank: Rank?, position: Position, hands: Hands?, suit: Suit?, style: ContractBridge.Style) -> String? {
+        guard let rank = rank else { return nil }
+        return "\(rank)"    // TODO: This needs ranges of cards here...
+    //    guard let hands = hands,
+    //          let suit = suit else {
+    //        return "\(rank)"
+    //    }
+        /*
         // TODO: This is a kludge...
         var r = hands[position].ranks(for: suit)
         let rg = RankSet(range)
         r.formIntersection(rg)
         return "\(r, style: style)"
+         */
     }
     
     mutating func appendInterpolation(_ leadPlan: LeadPlan, hands: Hands? = nil, suit: Suit? = nil, style: ContractBridge.Style = .symbol) {
         let position = leadPlan.position
-        let leadRanks = ranks(range: leadPlan.lead, position: leadPlan.position, hands: hands, suit: suit, style: style)!
-        let minThirdRanks = ranks(range: leadPlan.minThirdHand,position: position.partner, hands: hands, suit: suit, style: style)
-        let maxThirdRanks = ranks(range: leadPlan.maxThirdHand, position: position.partner, hands: hands, suit: suit, style: style)
+        // TODO: Need to work on ranges of cards from equivalent ranks...
+        let leadRanks = ranks(rank: leadPlan.lead, position: leadPlan.position, hands: hands, suit: suit, style: style)!
+        let minThirdRanks = ranks(rank: leadPlan.minThirdHand,position: position.partner, hands: hands, suit: suit, style: style)
+        let maxThirdRanks = ranks(rank: leadPlan.maxThirdHand, position: position.partner, hands: hands, suit: suit, style: style)
 
         var desc: String = ""
         switch leadPlan.intent {
@@ -63,13 +67,12 @@ public extension String.StringInterpolation {
             }
         case .finesse:
             desc = "lead \(leadRanks) from \(position, style: style) finessing \(minThirdRanks!) "
-            /*
-            if let maxCover = self.maxThirdHand {
+            
+            if let maxCover = maxThirdRanks {
                 desc += "covering with \(maxCover)"
             } else {
                 desc += "not covering"
             }
-             */ // TODO: Should we do this cover/not cover tingine
                 
         case .ride:
             desc = "ride \(leadRanks) from \(position, style: style) "

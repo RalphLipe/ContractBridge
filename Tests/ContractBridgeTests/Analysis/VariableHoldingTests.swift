@@ -8,11 +8,9 @@
 import XCTest
 import ContractBridge
 
-// This is a test of commit
-extension VariableRange: Equatable {
-    public static func == (lhs: VariableRange, rhs: VariableRange) -> Bool {
-        lhs.unknownCount == rhs.unknownCount && lhs.known == rhs.known
-    }
+
+
+extension VariableRange {
     
     init(_ rank: Rank, ewUnknown: Int, eKnown: Int = 0, wKnown: Int = 0) {
         assert(Pair.ew.positions.0 == .east)
@@ -31,11 +29,8 @@ extension VariableRange: Equatable {
 }
 
 
-extension VariableRangeCombination: Equatable {
-    public static func == (lhs: VariableRangeCombination, rhs: VariableRangeCombination) -> Bool {
-        lhs.unknownCount0 == rhs.unknownCount0 && lhs.unknownCount1 == rhs.unknownCount1 && lhs.known == rhs.known
-    }
-
+extension VariableRangeCombination {
+   
     init(_ rank: Rank, e: Int, w: Int, eKnown: Int = 0, wKnown: Int = 0) {
         assert(Pair.ew.positions.0 == .east)
         var k = KnownHoldings(rank: rank, pair: .ew)
@@ -54,14 +49,14 @@ extension VariableRangeCombination: Equatable {
 
 
 class VariableHoldingTests: XCTestCase {
-
+ /*
     func rp(_ s: String) -> RankPositions {
         let deal = try! Deal(from: s)
         return RankPositions(hands: deal.hands, suit: .spades)
         
     }
     
-
+    
     enum FindComboError: Error {
         case combinationNotFound
     }
@@ -76,6 +71,82 @@ class VariableHoldingTests: XCTestCase {
         throw FindComboError.combinationNotFound
     }
     
+    func playCombo(_ c: VariableCombination) {
+        var play = PositionRanks()
+        for p in Position.allCases {
+            let ranks = c.ranks(for: p)
+            if let r = ranks.max() {
+                play[p] = r
+            }
+        }
+        let vh = c.play(leadPosition: .south, play: play, finesseInferences: false)
+        playAll(vh)
+    }
+    
+    
+    func playAll(_ vh: VariableHolding) {
+        if !Self.vhSeen.contains(vh) {
+            if vh.ranges.count > 0 {    // TODO: Add isEmpty
+                var totalCombos = 0
+                for c in vh.combinationHoldings() {
+                    totalCombos += c.combinations
+                    playCombo(c)
+                }
+                XCTAssertEqual(totalCombos, vh.combinations)
+            }
+            Self.vhSeen.insert(vh)
+        }
+    }
+    
+    static var vhSeen = Set<VariableHolding>()
+    
+    func printVH(_ vh: VariableHolding) {
+        print("\(vh.ranges.count) ranges have \(vh.combinations):")
+        for r in vh.ranges {
+            print("   \(r.known.rank) \(r.known.pair) k=\(r.known.count0),\(r.known.count1) u=\(r.unknownCount)")
+        }
+    }
+    
+    func printAndClearCache() {
+        for vh in Self.vhSeen {
+            printVH(vh)
+        }
+        Self.vhSeen = Set<VariableHolding>()
+    }
+    
+    // NOTE:  A simple test of ranges that can not be inferred to have known holdings
+    // are the only thing that work for this test.
+
+    func testPlayAllCombos() throws {
+        var vh = VariableHolding(partialHolding: rp("N:AQ - 2467 -"))
+        XCTAssertEqual(vh.combinations, 128)
+        playAll(vh)
+        print("Saw \(Self.vhSeen.count) diffent holdings *******")
+        printAndClearCache()
+        vh = VariableHolding(partialHolding: rp("N:- - - -"))
+        XCTAssertEqual(vh.ranges.count, 1)
+        XCTAssertEqual(vh.ranges[0].unknownCount, 13)
+        XCTAssertEqual(vh.ranges[0].known.pair, .ew)
+        XCTAssertEqual(vh.combinations, 8192)
+        playAll(vh)
+        print("Saw \(Self.vhSeen.count) diffent holdings *******")
+        vh = VariableHolding(partialHolding: rp("N:2 - 3 -"))
+        XCTAssertEqual(vh.ranges.count, 2)
+        XCTAssertEqual(vh.ranges[0].count, 2)
+        XCTAssertEqual(vh.ranges[0].known.pair, .ns)
+        XCTAssertEqual(vh.combinations, 2048)
+        playAll(vh)
+        print("Saw \(Self.vhSeen.count) diffent holdings *******")
+        vh = VariableHolding(partialHolding: rp("N:26TA - 48Q -"))
+        XCTAssertEqual(vh.ranges.count, 13)
+        XCTAssertEqual(vh.ranges[0].count, 1)
+        XCTAssertEqual(vh.ranges[0].known.pair, .ns)
+        XCTAssertEqual(vh.ranges[1].known.pair, .ew)
+        XCTAssertEqual(vh.combinations, 64)
+        playAll(vh)
+        print("Saw \(Self.vhSeen.count) diffent holdings *******")
+    }
+
     
     func testAQFinesse() throws {
         let vh = VariableHolding(partialHolding: rp("N:AQ - 23 -"))
@@ -132,8 +203,6 @@ class VariableHoldingTests: XCTestCase {
 
 
 
-    // Test of commit
-    // Another test
     func testKQFinesse() throws {
         let vh = VariableHolding(partialHolding: rp("N:KQ5 - 234 -"))
         XCTAssertEqual(vh.combinations, 128)
@@ -287,8 +356,42 @@ class VariableHoldingTests: XCTestCase {
                 VariableRange(.ace, n: 1, s: 0) ]
         
         XCTAssertEqual(expectedDouleSuccess, vhAfterDoubleSuccess.ranges)
-        
-        
     }
+    
+
+    func testShowsOut() throws {
+        let vh = VariableHolding(partialHolding: rp("N:AQ4 - 23J -"))
+        XCTAssertEqual(vh.combinations, 128)
+        let expected = [ VariableRange(.two, n: 1, s: 2),
+                         VariableRange(.ten, ewUnknown: 6),
+                         VariableRange(.queen, n: 1, s: 1),
+                         VariableRange(.king, ewUnknown: 1),
+                         VariableRange(.ace, n: 1, s: 0) ]
+        XCTAssertEqual(expected, vh.ranges)
+        let eastOut = [ VariableRangeCombination(.two, n: 1, s: 2),
+                        VariableRangeCombination(.ten, e: 0, w: 6),
+                        VariableRangeCombination(.queen, n: 1, s: 1),
+                        VariableRangeCombination(.king, e: 0, w: 1),
+                        VariableRangeCombination(.ace, n: 1, s: 0) ]
+
+        let vc = try! findCombination(eastOut, in: vh)
+        
+        var pr = PositionRanks()
+        pr[.north] = .queen
+        pr[.south] = .two
+        pr[.east] = nil
+        pr[.west] = .ten
+        let vhAfterEastShowsOut = vc.play(leadPosition: .south, play: pr)
+        
+        let expectedKnownInWest =
+                        [ VariableRange(.two, n: 1, s: 1),
+                          VariableRange(.ten, ewUnknown: 0, wKnown: 5),
+                          VariableRange(.queen, n: 0, s: 1),
+                          VariableRange(.king, ewUnknown: 0, wKnown: 1),
+                          VariableRange(.ace, n: 1, s: 0) ]
+        
+        XCTAssertEqual(expectedKnownInWest, vhAfterEastShowsOut.ranges)
+    }
+*/
     
 }

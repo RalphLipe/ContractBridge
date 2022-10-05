@@ -257,7 +257,7 @@ public struct RankPositions : Equatable, Hashable {
         return playable.first
     }
      */
-    
+  /*
     // Standard math factorial
     private static func factorial(_ n: Int) -> Int {
         assert(n >= 0)
@@ -380,6 +380,7 @@ public struct RankPositions : Equatable, Hashable {
         }
         return marked
     }
+   */
 }
 
 

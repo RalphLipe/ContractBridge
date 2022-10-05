@@ -7,7 +7,7 @@
 
 import Foundation
 
-
+/*
 public struct DoubleDummyAnalysis {
     public let holding: RankPositions
     public let leadPair: Pair
@@ -58,4 +58,4 @@ public struct DoubleDummyWithLeads {
         return leads
     }
 }
-
+*/

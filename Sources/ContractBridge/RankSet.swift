@@ -119,6 +119,16 @@ public struct RankSet: Sequence, Equatable, ExpressibleByArrayLiteral {
         return Rank(rawValue: ranks.trailingZeroBitCount)
     }
     
+    //
+    public func min(atLeast: Rank?) -> Rank? {
+        var choice = atLeast
+        while let rank = choice {
+            if contains(rank) { return rank }
+            choice = rank.nextHigher
+        }
+        return min()
+    }
+    
     public func max() -> Rank? {
         if ranks == 0 { return nil }
         return Rank(rawValue: 15 - ranks.leadingZeroBitCount)

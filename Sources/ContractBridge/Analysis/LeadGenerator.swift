@@ -10,23 +10,24 @@ import Foundation
 public struct RangeChoices {
     // TODO: Is this "position" a good idea?
     public let position: Position
-    public let all: [RankRange]
-    public let win: RankRange?
-    public let mid: [RankRange]?
-    public let low: RankRange?
+    public let all: [Rank]
+    public let win: Rank?
+    public let mid: [Rank]?
+    public let low: Rank?
     
-    init(_ rankRanges: [RankRange], position: Position) {
-        self.all = rankRanges
+    init(_ ranks: [Rank], position: Position) {
+        self.all = ranks
         self.position = position
         var r = all
         // It is important to look at the ranges in this order: Win, Low and then the rest
         // because when the final range is 2...A the last AND first are both winners and low
-        self.win = r.count > 0 && r.last!.upperBound == .ace ? r.removeLast() : nil
-        self.low = r.count > 0 && r.first!.lowerBound == .two ? r.removeFirst() : nil
+        self.win = r.count > 0 && r.last == .ace ? r.removeLast() : nil
+        self.low = r.count > 0 && r.first == .two ? r.removeFirst() : nil
         self.mid = r.count > 0 ? r : nil
     }
-    init(rankPositions: RankPositions, position: Position) {
-        self.init(rankPositions.playableRanges(for: position), position: position)
+    init(holding: VariableHolding, position: Position) {
+        // TODO: Maybe just use rank set directly instead of arrays here.  But later on...
+        self.init(Array<Rank>(holding.ranks(for: position)), position: position)
     }
 }
 
@@ -36,29 +37,29 @@ public enum LeadOption {
 }
 
 public struct LeadGenerator {
-    private let rankPositions: RankPositions
+    private let holding: VariableHolding
     private let pair: Pair
     private var leads: [LeadPlan]
     private let option: LeadOption
 
-    private init(rankPositions: RankPositions, pair: Pair, option: LeadOption) {
-        self.rankPositions = rankPositions
+    private init(holding: VariableHolding, pair: Pair, option: LeadOption) {
+        self.holding = holding
         self.pair = pair
         self.leads = []
         self.option = option
     }
 
-    public static func generateLeads(rankPositions: RankPositions, pair: Pair, option: LeadOption) -> [LeadPlan] {
-        var generator = LeadGenerator(rankPositions: rankPositions, pair: pair, option: option)
+    public static func generateLeads(holding: VariableHolding, pair: Pair, option: LeadOption) -> [LeadPlan] {
+        var generator = LeadGenerator(holding: holding, pair: pair, option: option)
         generator.generateLeads()
         return generator.leads
     }
 
     private mutating func generateLeads() {
-        let choices0 = RangeChoices(rankPositions: rankPositions, position: pair.positions.0)
-        let choices1 = RangeChoices(rankPositions: rankPositions, position: pair.positions.1)
+        let choices0 = RangeChoices(holding: holding, position: pair.positions.0)
+        let choices1 = RangeChoices(holding: holding, position: pair.positions.1)
         if option == .leadHigh {
-            let shortSide0 = rankPositions.count(for: pair.positions.0) < rankPositions.count(for: pair.positions.1)
+            let shortSide0 = holding.count(for: pair.positions.0) < holding.count(for: pair.positions.1)
             if (!generateHighLead(choices: choices0, partnerChoices: choices1, isShortSide: shortSide0)) {
                 _ = generateHighLead(choices: choices1, partnerChoices: choices0, isShortSide: !shortSide0)
             }
@@ -80,8 +81,8 @@ public struct LeadGenerator {
                 if partnerChoices.all.isEmpty {
                     lead = LeadPlan(position: choices.position, lead: choices.all.last!, intent: .ride)
                 } else {
-                    let max = choices.all.last!.upperBound
-                    let maxPartner = partnerChoices.all.last!.upperBound
+                    let max = choices.all.last!
+                    let maxPartner = partnerChoices.all.last!
                     if max > maxPartner || (max == maxPartner && isShortSide) {
                         lead = LeadPlan(position: choices.position, lead: choices.all.last!, intent: .ride)
                     }
@@ -95,45 +96,55 @@ public struct LeadGenerator {
         return false
     }
     
-    private func coverRanges(cover: RankRange, coverChoices: ArraySlice<RankRange>) -> [RankRange?] {
-        var ranges = Array<RankRange?>()
-        var lastRange = cover
-        var mustCover: RankRange? = nil
+    // THIS IS WHERE I STOPPED FOR THE NIGHT.  THIS IS STRANGE SINCE IT CAN RETURN [NIL] FOR
+    // uncovered finesse or ride logic.  Not sure if that's exactly what we want.
+    // TODO:  THIS IS TOTALLY SCREWED UP.  FOR NOW COVER EVERYTHING AND ALWAYS RETURN [NIL]
+    // TO MAKE UNCOVERED CHOICE TOO...
+    private func cover(_ coverRank: Rank, coverChoices: ArraySlice<Rank>) -> [Rank?] {
+        var ranks = Array<Rank?>()
+        ranks.append(nil)
+        coverChoices.forEach { ranks.append($0) }
+        return ranks
+        /*
+        var ranks = Array<Rank?>()
+        var lastRank = coverRank
+        var mustCover: Rank? = nil
         // Starting with the first range and moving up, if the next range has a gap of one card
         // then we will always cover it, so we don't want to generate an uncovered finesse.
         // **** TODO: Make sure this logic still is right...
         for coverChoice in coverChoices {
+            // TODO: Figure out if there is a single value gap.  If so then ........... what?
             if coverChoice.lowerBound.nextLower != lastRange.upperBound.nextHigher {
                 // Gap of > 1 card, so add this to the list (could be nil if first range has gap)
-                ranges.append(mustCover)
+                ranks.append(mustCover)
             }
             mustCover = coverChoice
-            lastRange = coverChoice
+            lastRank = coverChoice
         }
-        ranges.append(mustCover)
-        return ranges
+        ranks.append(mustCover)
+        return ranks
+         */
     }
     
-    private mutating func generateFinesses(position: Position, leadRange: RankRange, partnerChoices: RangeChoices)  {
+    private mutating func generateFinesses(position: Position, leadRank: Rank, partnerChoices: RangeChoices)  {
         for i in partnerChoices.all.indices {
-            let finesseRange = partnerChoices.all[i]
-            if leadRange.upperBound < finesseRange.upperBound &&
-                finesseRange.upperBound < .ace {
-                let coverRanges = i == partnerChoices.all.endIndex ? [nil] : coverRanges(cover: finesseRange, coverChoices: partnerChoices.all[(i + 1)...])
-                for coverRange in coverRanges {
-                    leads.append(LeadPlan(position: position, lead: leadRange, intent: .finesse, minThirdHand: finesseRange, maxThirdHand: coverRange))
+            let finesseRank = partnerChoices.all[i]
+            if leadRank < finesseRank && finesseRank < .ace {
+                let coverRanks = i == partnerChoices.all.endIndex ? [nil] : cover(finesseRank, coverChoices: partnerChoices.all[(i + 1)...])
+                for coverRank in coverRanks {
+                    leads.append(LeadPlan(position: position, lead: leadRank, intent: .finesse, minThirdHand: finesseRank, maxThirdHand: coverRank))
                 }
             }
         }
     }
 
-    private mutating func generateRides(position: Position, leadRange: RankRange, partnerChoices: RangeChoices)  {
+    private mutating func generateRides(position: Position, leadRank: Rank, partnerChoices: RangeChoices)  {
         var didSomething = false
         for i in partnerChoices.all.indices {
-            if leadRange.upperBound < partnerChoices.all[i].upperBound {
-                let coverRanges = coverRanges(cover: leadRange, coverChoices: partnerChoices.all[i...])
-                for coverRange in coverRanges {
-                    leads.append(LeadPlan(position: position, lead: leadRange, intent: .ride, minThirdHand: nil, maxThirdHand: coverRange))
+            if leadRank < partnerChoices.all[i] {
+                let coverRanks = cover(leadRank, coverChoices: partnerChoices.all[i...])
+                for coverRank in coverRanks {
+                    leads.append(LeadPlan(position: position, lead: leadRank, intent: .ride, minThirdHand: nil, maxThirdHand: coverRank))
                     didSomething = true
                     
                 }
@@ -141,7 +152,7 @@ public struct LeadGenerator {
             }
         }
         if !didSomething {
-            leads.append(LeadPlan(position: position, lead: leadRange, intent: .ride, minThirdHand: nil, maxThirdHand: nil))
+            leads.append(LeadPlan(position: position, lead: leadRank, intent: .ride, minThirdHand: nil, maxThirdHand: nil))
         }
     }
     
@@ -154,17 +165,21 @@ public struct LeadGenerator {
         }
         let position = choices.position
         if partnerChoices.all.count == 0 {
-            if let winners = choices.win {
-                leads.append(LeadPlan(position: position, lead: winners, intent: .cashWinner))
-            } else if let low = choices.low {
-                leads.append(LeadPlan(position: position, lead: low, intent: .playLow))
-            } else {
-                leads.append(LeadPlan(position: position, lead: choices.mid![0], intent: .ride))
+            // Simply try the highest and lowest as choices.  If highest is .ace then
+            // it's a winner.  If they the same rank then just do the one thing...
+            let high = choices.all.last!
+            let low = choices.all.first!
+            if high == low {
+                let intent: LeadPlan.Intent = high == .ace ? .cashWinner : high == .two ? .playLow : .ride
+                leads.append(LeadPlan(position: position, lead: high, intent: intent))
+                return
             }
+            leads.append(LeadPlan(position: position, lead: high, intent: high == .ace ? .cashWinner : .ride))
+            leads.append(LeadPlan(position: position, lead: low, intent: low == .two ? .playLow : .ride))
             return
         }
         // TODO: Perhaps if next position shows out then we could avoid generating some of these leads.
-        generateFinesses(position: position, leadRange: choices.all[0], partnerChoices: partnerChoices)
+        generateFinesses(position: position, leadRank: choices.all[0], partnerChoices: partnerChoices)
         if let low = choices.low {
         // TODO:  Both of the following are symetrical -- don't do it again.  Just replicate it
         ///    let lowRank = low.lowest(cover: nil)
@@ -177,7 +192,7 @@ public struct LeadGenerator {
         }
         if let midChoices = choices.mid {
             for midChoice in midChoices {
-                generateRides(position: position, leadRange: midChoice, partnerChoices: partnerChoices)
+                generateRides(position: position, leadRank: midChoice, partnerChoices: partnerChoices)
             }
         }
         if let win = choices.win {
