@@ -44,7 +44,7 @@ public struct VariableRange: Equatable, Hashable {
 
 
 // TODO: Document this:
-public struct VariableRangeCombination: Equatable {
+public struct VariableRangeCombination: Equatable, Hashable {
     public var known: KnownHoldings
     public var unknownCount0: Int
     public var unknownCount1: Int
@@ -245,7 +245,7 @@ public struct VariableHolding: Hashable, Equatable {
     
 }
 
-public struct VariableCombination: Equatable {
+public struct VariableCombination: Equatable, Hashable {
     public var ranges: [VariableRangeCombination]
     public let variablePair: Pair
     
