@@ -57,7 +57,7 @@ public struct VariableRangeCombination: Equatable, Hashable {
         self.unknownCount1 = unknownCount1
     }
     
-    func count(for position: Position) -> Int {
+    public func count(for position: Position) -> Int {
         if known.pair != position.pair { return 0 }
         return position == known.pair.positions.0 ? known.count0 + unknownCount0 : known.count1 + unknownCount1
     }
