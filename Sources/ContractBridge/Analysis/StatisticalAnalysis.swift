@@ -190,4 +190,15 @@ public class StatisticalAnalysis {
         return results
     }
     
+    
+    // TODO: Review VAR/FUNC for many of these things...  Expensive operation?  Not really
+    public var combinationsMaking: Set<VariableCombination> {
+        var result = Set<VariableCombination>()
+        for j in layouts.indices {
+            if analysisFor(lead: bestLeadIndex, layout: j).stats.percentMaking == 100.0 {
+                result.insert(layouts[j])
+            }
+        }
+        return result
+    }
 }
