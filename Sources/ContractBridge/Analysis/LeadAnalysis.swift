@@ -21,7 +21,7 @@ public struct LeadAnalyzer {
     public let holding: VariableCombination
     public let requiredTricks: Int
     public let leadPlan: LeadPlan
- //   public internal(set) var winner: Position
+    public internal(set) var winner: Position
     public internal(set) var play = PositionRanks()
     public internal(set) var stats = LeadStatistics()
     private var nextToAct: Position
@@ -52,6 +52,7 @@ public struct LeadAnalyzer {
         self.requiredTricks = requiredTricks
         self.leadOption = leadOption
         self.play[leadPlan.position] = leadPlan.lead
+        self.winner = leadPlan.position
         self.positionsPlayed = 1
         self.nextToAct = leadPlan.position.next
         stats = playNextPosition()
@@ -60,24 +61,24 @@ public struct LeadAnalyzer {
     
     mutating func play(_ playedRank: Rank?) -> LeadStatistics {
         let currentPosition = nextToAct
-//        let currentWinner = winner
+        let currentWinner = winner
         positionsPlayed += 1
         play[currentPosition] = playedRank
         self.nextToAct = self.nextToAct.next
- //       if playedRank != nil && playedRank! > self.winningRank {
- //           winner = currentPosition
- //       }
+        if playedRank != nil && playedRank! > play[winner]! {
+            winner = currentPosition
+        }
         let stats = (positionsPlayed == 4) ? analyzeNextHolding() : playNextPosition()
-        play[currentPosition] = nil
+  // NOTE:  DO NOT DO THIS!!! ==>       play[currentPosition] = nil
         nextToAct = currentPosition
- //       winner = currentWinner
+        winner = currentWinner
         positionsPlayed -= 1
         return stats
     }
     
     internal func analyzeNextHolding() -> LeadStatistics {
         let nextVC = holding.play(leadPosition: leadPlan.position, play: play)
-        let wonTrick = play.winning?.position.pair == leadPlan.position.pair
+        let wonTrick = winner.pair == leadPlan.position.pair
         let nextRequiredTricks = wonTrick ? max(0, requiredTricks - 1) : requiredTricks
         var stats = LeadStatistics(averageTricks: wonTrick ? 1.0 : 0.0, percentMaking: nextRequiredTricks == 0 ? 100.0 : 0.0)
         if nextVC.holdsRanks(leadPlan.position.pair) {
@@ -191,23 +192,22 @@ public struct LeadAnalyzer {
     private func thirdHand(hand: RankSet) -> Rank {
         assert(nextToAct.pair == .ns)
         var cover: Rank? = nil
-        guard let winning = play.winning else { fatalError("There must be at least one winning rank") }
+        let winningRank = play[winner]!
         if let min = leadPlan.minThirdHand,
-           winning.position.pair == leadPlan.position.pair || min > winning.rank {
+           winner.pair == leadPlan.position.pair || min > winningRank {
             cover = min
         }
-        if cover == nil && winning.position.pair == leadPlan.position.pair.opponents {
+        if cover == nil && winner.pair == leadPlan.position.pair.opponents {
             if let maxThirdHand = leadPlan.maxThirdHand,
-               maxThirdHand > winning.rank {
-                cover = winning.rank
+               maxThirdHand > winningRank {
+                cover = winningRank
             }
         }
         return hand.min(atLeast: cover)!
     }
     
     private func fourthHand(hand: RankSet) -> Rank {
-        guard let winning = play.winning else { fatalError("There must be at least one winning rank") }
-        let rankToCover = winning.position.pair == leadPlan.position.pair ? winning.rank : nil
+        let rankToCover = winner.pair == leadPlan.position.pair ? play[winner] : nil
         return hand.min(atLeast: rankToCover)!
     }
 }
