@@ -8,149 +8,136 @@
 import Foundation
 
 
-
-public struct PairCounts: Equatable, Hashable {
-    public var count0: Int = 0
-    public var count1: Int = 0
-    public var count: Int { return count0 + count1 }
-    public subscript(position: Position) -> Int {
-        get {
-            return position.pair.positions.0 == position ? count0 : count1
+public struct VariableRankPositions: Hashable, Equatable {
+    public struct PairCounts: Equatable, Hashable {
+        public var count0: Int
+        public var count1: Int
+        public var count: Int { return count0 + count1 }
+        public init(count0: Int = 0, count1: Int = 0) {
+            self.count0 = count0
+            self.count1 = count1
         }
-        set {
-            assert(newValue >= 0)
-            if position.pair.positions.0 == position {
-                count0 = newValue
-            } else {
-                count1 = newValue
+        public subscript(position: Position) -> Int {
+            get {
+                return position.pair.positions.0 == position ? count0 : count1
+            }
+            set {
+                assert(newValue >= 0)
+                if position.pair.positions.0 == position {
+                    count0 = newValue
+                } else {
+                    count1 = newValue
+                }
             }
         }
+        static func +=(lhs: inout PairCounts, rhs: PairCounts) {
+            lhs.count0 += rhs.count0
+            lhs.count1 += rhs.count1
+        }
     }
-    static func +=(lhs: inout PairCounts, rhs: PairCounts) {
-        lhs.count0 += rhs.count0
-        lhs.count1 += rhs.count1
-    }
-}
-
-/*
-public struct KnownHoldings: Equatable, Hashable {
-    public var rank: Rank
-    public let pair: Pair
-    public var count0: Int = 0
-    public var count1: Int = 0
-    public init(rank: Rank, pair: Pair) {
-        self.rank = rank
-        self.pair = pair
-    }
-    public var count: Int { return count0 + count1 }
-    public func count(for position: Position) -> Int {
-        if position.pair != pair { return 0 }
-        return position == pair.positions.0 ? count0 : count1
-    }
-}
- */
-
-public struct VariableBracket: Equatable, Hashable {
-    public var pair: Pair
-    public var upperBound: Rank
-    public var known: PairCounts
-    public var unknownCount: Int = 0
-    
-    public init(pair: Pair, upperBound: Rank, known: PairCounts, unknownCount: Int) {
-        self.pair = pair
-        self.upperBound = upperBound
-        self.known = known
-        self.unknownCount = unknownCount
-    }
-    
-    public var count: Int {
-        return known.count + unknownCount
-    }
-    
-    public func knownCount(_ position: Position) -> Int {
-        return pair == position.pair ? known[position] : 0
-    }
-    
-    internal func combinations(for pair: Pair) -> Int {
-        return pair == pair ? (1 << unknownCount) : 1
-    }
-}
 
 
-
-// TODO: Document this:
-public struct VariantBracket: Equatable, Hashable {
     
     
-    public var pair: Pair
-    public var upperBound: Rank
-    public var known: PairCounts
-    public var unknown: PairCounts
-    public var count: Int { return known.count + unknown.count }
-    
-    public init(pair: Pair, upperBound: Rank, known: PairCounts, unknown: PairCounts) {
-        self.pair = pair
-        self.upperBound = upperBound
-        self.known = known
-        self.unknown = unknown
-        assert(unknown.count0 >= 0)
-        assert(unknown.count1 >= 0)
-    }
-    
-    public func count(_ position: Position) -> Int {
-        return pair == position.pair ? known[position] + unknown[position] : 0
-    }
-    
-    var variableBracket: VariableBracket {
-        return VariableBracket(pair: pair, upperBound: upperBound, known: known, unknownCount: unknown.count)
-    }
-    
-    // Standard math factorial
-    private func factorial(_ n: Int) -> Int {
-        assert(n >= 0)
-        return n <= 1 ? 1 : n * factorial(n - 1)
-    }
-    
-    // Computes the combinations of n items placed into r positions.  Google "Combinations Formula" for more info.
-    private func combinations(n: Int, r: Int) -> Int {
-        assert(n >= r)
-        return (r == 0 || r == n) ? 1 : factorial(n) / (factorial(r) * factorial(n - r))
-    }
-    
-    internal func combinations(for pair: Pair) -> Int {
-        return pair == pair ? combinations(n: unknown.count, r: unknown.count0) : 1
-    }
-    
-    internal mutating func play(_ rank: Rank, from position: Position) {
-        if pair != position.pair { fatalError() }
-        if known[position] > 0 {
-            known[position] -= 1
-        } else {
-            assert(unknown[position] > 0)
-            unknown[position] -= 1
+    public struct Bracket: Equatable, Hashable {
+        public var pair: Pair
+        public var upperBound: Rank
+        public var known: PairCounts
+        public var unknownCount: Int = 0
+        
+        public init(pair: Pair, upperBound: Rank, known: PairCounts, unknownCount: Int) {
+            self.pair = pair
+            self.upperBound = upperBound
+            self.known = known
+            self.unknownCount = unknownCount
+        }
+        
+        public var count: Int {
+            return known.count + unknownCount
+        }
+        
+        public func knownCount(_ position: Position) -> Int {
+            return pair == position.pair ? known[position] : 0
+        }
+        
+        internal func combinations(for pair: Pair) -> Int {
+            return self.pair == pair ? (1 << unknownCount) : 1
         }
     }
     
-    internal mutating func merge(with other: VariantBracket) {
-        assert(pair == other.pair)
-        assert(upperBound > other.upperBound)
-        known += other.known
-        unknown += other.unknown
-    }
     
-    internal mutating func setAllKnown(in position: Position) {
-        if pair == position.pair {
-            known[position] += unknown[position]
-            unknown[position] = 0
-            assert(count(position.partner) == 0)
-        }
-    }
-}
-
-public struct VariableRankPositions: Hashable, Equatable {
+    
     // THis needs to be contained in VariableRankPositions...
     public struct Variant: Equatable, Hashable {
-        public var brackets: [VariantBracket]
+        // TODO: Document this:
+        public struct Bracket: Equatable, Hashable {
+            public var pair: Pair
+            public var upperBound: Rank
+            public var known: PairCounts
+            public var unknown: PairCounts
+            public var count: Int { return known.count + unknown.count }
+            
+            public init(pair: Pair, upperBound: Rank, known: PairCounts, unknown: PairCounts) {
+                self.pair = pair
+                self.upperBound = upperBound
+                self.known = known
+                self.unknown = unknown
+                assert(unknown.count0 >= 0)
+                assert(unknown.count1 >= 0)
+            }
+            
+            public func count(_ position: Position) -> Int {
+                return pair == position.pair ? known[position] + unknown[position] : 0
+            }
+            
+            var variableBracket: VariableRankPositions.Bracket {
+                return VariableRankPositions.Bracket(pair: pair, upperBound: upperBound, known: known, unknownCount: unknown.count)
+            }
+            
+            // Standard math factorial
+            private func factorial(_ n: Int) -> Int {
+                assert(n >= 0)
+                return n <= 1 ? 1 : n * factorial(n - 1)
+            }
+            
+            // Computes the combinations of n items placed into r positions.  Google "Combinations Formula" for more info.
+            private func combinations(n: Int, r: Int) -> Int {
+                assert(n >= r)
+                return (r == 0 || r == n) ? 1 : factorial(n) / (factorial(r) * factorial(n - r))
+            }
+            
+            internal func combinations(for pair: Pair) -> Int {
+                return self.pair == pair ? combinations(n: unknown.count, r: unknown.count0) : 1
+            }
+            
+            internal mutating func play(_ rank: Rank, from position: Position) {
+                if pair != position.pair { fatalError() }
+                if known[position] > 0 {
+                    known[position] -= 1
+                } else {
+                    assert(unknown[position] > 0)
+                    unknown[position] -= 1
+                }
+            }
+            
+            internal mutating func merge(with other: Bracket) {
+                assert(pair == other.pair)
+                assert(upperBound > other.upperBound)
+                known += other.known
+                unknown += other.unknown
+            }
+            
+            internal mutating func setAllKnown(in position: Position) {
+                if pair == position.pair {
+                    known[position] += unknown[position]
+                    unknown[position] = 0
+                    assert(count(position.partner) == 0)
+                }
+            }
+        }
+
+        
+        public var brackets: [Variant.Bracket]
         public let variablePair: Pair
         
         public func ranks(for position: Position) -> RankSet {
@@ -165,31 +152,12 @@ public struct VariableRankPositions: Hashable, Equatable {
             }
             return false
         }
-        
-        // Standard math factorial
-        private static func factorial(_ n: Int) -> Int {
-            assert(n >= 0)
-            return n <= 1 ? 1 : n * factorial(n - 1)
-        }
-        
-        // Computes the combinations of n items placed into r positions.  Google "Combinations Formula" for more info.
-        private static func combinations(n: Int, r: Int) -> Int {
-            assert(n >= r)
-            return (r == 0 || r == n) ? 1 : factorial(n) / (factorial(r) * factorial(n - r))
-        }
-        
+
         public var combinations: Int {
-            var c = 1
-            for bracket in brackets {
-                if bracket.pair == variablePair {
-                    c *= 1 << bracket.known.count
-                    c *= Self.combinations(n: bracket.unknown.count, r: bracket.unknown.count0)
-                }
-            }
-            return c
+            return brackets.reduce(1) { $0 * $1.combinations(for: variablePair) }
         }
         
-        private func index(_ rank: Rank) -> Array<VariantBracket>.Index {
+        private func index(_ rank: Rank) -> Array<Bracket>.Index {
             return brackets.firstIndex(where: {$0.upperBound >= rank} )!
         }
 
@@ -218,11 +186,7 @@ public struct VariableRankPositions: Hashable, Equatable {
                     i += 1
                 }
             }
-            // Now if there is a single range make sure it is .ace instead of .two
-         //   if brackets.count == 1 {
-         //       brackets[0].coequal.rank = .ace
-          //  }
-            assert(brackets.count != 1 || brackets[0].upperBound == .ace)
+            assert(brackets.count == 0 || brackets.last!.upperBound == .ace)
         }
         
         private mutating func allKnown(in position: Position) {
@@ -321,7 +285,7 @@ public struct VariableRankPositions: Hashable, Equatable {
     
 
     
-    public var brackets: [VariableBracket] = []
+    public var brackets: [Bracket] = []
     public let variablePair: Pair
     
     public static func == (lhs: VariableRankPositions, rhs: VariableRankPositions) -> Bool {
@@ -342,7 +306,7 @@ public struct VariableRankPositions: Hashable, Equatable {
     }
     
     public init(from variant: Variant) {
-        self.brackets = variant.brackets.map { VariableBracket(pair: $0.pair, upperBound: $0.upperBound, known: $0.known, unknownCount: $0.unknown.count) }
+        self.brackets = variant.brackets.map { VariableRankPositions.Bracket(pair: $0.pair, upperBound: $0.upperBound, known: $0.known, unknownCount: $0.unknown.count) }
         self.variablePair = variant.variablePair
     }
     
@@ -381,7 +345,7 @@ public struct VariableRankPositions: Hashable, Equatable {
                 if pair != self.pair(for: next, in: partialHolding) { break }
                 rank = next
             }
-            brackets.append(VariableBracket(pair: pair, upperBound: rank, known: known, unknownCount: unknownCount))
+            brackets.append(Bracket(pair: pair, upperBound: rank, known: known, unknownCount: unknownCount))
             guard let next = rank.nextHigher else { break }
             rank = next
         }
@@ -396,12 +360,12 @@ public struct VariableRankPositions: Hashable, Equatable {
     
     private class VariantBuilder {
         private let variableRankPositions: VariableRankPositions
-        private var brackets: [VariantBracket]
+        private var brackets: [Variant.Bracket]
         private var variants: [Variant] = []
         
         init(_ variableRankPositions: VariableRankPositions) {
             self.variableRankPositions = variableRankPositions
-            self.brackets = variableRankPositions.brackets.map { return VariantBracket(pair: $0.pair, upperBound: $0.upperBound, known: $0.known, unknown: PairCounts()) }
+            self.brackets = variableRankPositions.brackets.map { return Variant.Bracket(pair: $0.pair, upperBound: $0.upperBound, known: $0.known, unknown: PairCounts()) }
             createVariant(index: 0)
         }
         
