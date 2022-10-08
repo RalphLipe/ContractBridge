@@ -301,7 +301,7 @@ public struct Variant: Equatable, Hashable {
 
     private mutating func play(_ rank: Rank?, from position: Position) {
         if let rank = rank {
-            guard let i = groups.lastIndex(where: { $0.upperBound <= rank }) else { fatalError() }
+            guard let i = groups.firstIndex(where: { $0.upperBound >= rank }) else { fatalError() }
             groups[i].play(rank, from: position)
         }
     }
