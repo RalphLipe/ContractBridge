@@ -53,7 +53,7 @@ public class StatisticalAnalysis {
     public let bestStats: LeadStatistics
     private var leadAnalyses: [LeadAnalysis]
     private let leadPlans: [LeadPlan]
-    private let variants: [Variant]
+    private let variants: [VariableRankPositions.Variant]
     private var bestLeadIndex: Array<LeadPlan>.Index
 
     
@@ -107,7 +107,7 @@ public class StatisticalAnalysis {
     }
         
     
-    private func analysisFor(lead: Array<LeadPlan>.Index, variant: Array<Variant>.Index) -> LeadAnalysis {
+    private func analysisFor(lead: Array<LeadPlan>.Index, variant: Array<VariableRankPositions.Variant>.Index) -> LeadAnalysis {
         return leadAnalyses[(lead * variants.count) + variant]
     }
     
@@ -145,7 +145,7 @@ public class StatisticalAnalysis {
 
     // This method is used interanally to find the statistics for the best lead
     // taken for a specific variable combination.
-    public func bestLeadStats(for variant: Variant) -> LeadStatistics? {
+    public func bestLeadStats(for variant: VariableRankPositions.Variant) -> LeadStatistics? {
         if let j = variants.firstIndex(of: variant) {
             return analysisFor(lead: bestLeadIndex, variant: j).stats
         }
@@ -180,7 +180,7 @@ public class StatisticalAnalysis {
     }
      */
     
-    public func leadAnalyses(for variant: Variant) -> [LeadPlan: LeadAnalysis] {
+    public func leadAnalyses(for variant: VariableRankPositions.Variant) -> [LeadPlan: LeadAnalysis] {
         var results: [LeadPlan: LeadAnalysis] = [:]
         if let j = variants.firstIndex(where: { $0 == variant }) {
             for i in leadPlans.indices {
@@ -192,8 +192,8 @@ public class StatisticalAnalysis {
     
     
     // TODO: Review VAR/FUNC for many of these things...  Expensive operation?  Not really
-    public var combinationsMaking: Set<Variant> {
-        var result = Set<Variant>()
+    public var combinationsMaking: Set<VariableRankPositions.Variant> {
+        var result = Set<VariableRankPositions.Variant>()
         for j in variants.indices {
             if analysisFor(lead: bestLeadIndex, variant: j).stats.percentMaking == 100.0 {
                 result.insert(variants[j])

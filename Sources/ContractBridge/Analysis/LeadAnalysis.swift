@@ -18,7 +18,7 @@ public struct LeadAnalysis: Comparable {
 }
 
 public struct LeadAnalyzer {
-    public let holding: Variant
+    public let holding: VariableRankPositions.Variant
     public let requiredTricks: Int
     public let leadPlan: LeadPlan
     public internal(set) var winner: Position
@@ -40,12 +40,12 @@ public struct LeadAnalyzer {
         return LeadAnalyzer(holding: holding, leadPlan: leadPlan, requiredTricks: 0, leadOption: leadOption).analysis
     }
   */
-    public static func statistical(holding: Variant, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) -> LeadAnalysis {
+    public static func statistical(holding: VariableRankPositions.Variant, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) -> LeadAnalysis {
         return LeadAnalyzer(holding: holding, leadPlan: leadPlan, requiredTricks: requiredTricks, leadOption: leadOption, cache: cache).analysis
     }
     
  
-    private init(holding: Variant, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) {
+    private init(holding: VariableRankPositions.Variant, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) {
         self.holding = holding
         self.cache = cache
         self.leadPlan = leadPlan
