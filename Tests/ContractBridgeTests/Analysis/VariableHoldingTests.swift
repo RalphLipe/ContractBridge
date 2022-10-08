@@ -9,8 +9,8 @@ import XCTest
 import ContractBridge
 
 
-
-extension VariableRange {
+/*
+extension VariableGroup {
     
     init(_ rank: Rank, ewUnknown: Int, eKnown: Int = 0, wKnown: Int = 0) {
         assert(Pair.ew.positions.0 == .east)
@@ -29,7 +29,7 @@ extension VariableRange {
 }
 
 
-extension VariableRangeCombination {
+extension VariantGroup {
    
     init(_ rank: Rank, e: Int, w: Int, eKnown: Int = 0, wKnown: Int = 0) {
         assert(Pair.ew.positions.0 == .east)
@@ -47,7 +47,7 @@ extension VariableRangeCombination {
     }
 }
 
-
+*/
 class VariableHoldingTests: XCTestCase {
  /*
     func rp(_ s: String) -> RankPositions {

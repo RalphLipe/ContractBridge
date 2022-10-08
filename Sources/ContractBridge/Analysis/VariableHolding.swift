@@ -7,6 +7,32 @@
 
 import Foundation
 
+
+
+public struct PairCounts: Equatable, Hashable {
+    public var count0: Int = 0
+    public var count1: Int = 0
+    public var count: Int { return count0 + count1 }
+    public subscript(position: Position) -> Int {
+        get {
+            return position.pair.positions.0 == position ? count0 : count1
+        }
+        set {
+            assert(newValue >= 0)
+            if position.pair.positions.0 == position {
+                count0 = newValue
+            } else {
+                count1 = newValue
+            }
+        }
+    }
+    static func +=(lhs: inout PairCounts, rhs: PairCounts) {
+        lhs.count0 += rhs.count0
+        lhs.count1 += rhs.count1
+    }
+}
+
+/*
 public struct KnownHoldings: Equatable, Hashable {
     public var rank: Rank
     public let pair: Pair
@@ -22,12 +48,17 @@ public struct KnownHoldings: Equatable, Hashable {
         return position == pair.positions.0 ? count0 : count1
     }
 }
+ */
 
-public struct VariableRange: Equatable, Hashable {
-    public var known: KnownHoldings
+public struct VariableGroup: Equatable, Hashable {
+    public var pair: Pair
+    public var upperBound: Rank
+    public var known: PairCounts
     public var unknownCount: Int = 0
     
-    public init(known: KnownHoldings, unknownCount: Int) {
+    public init(pair: Pair, upperBound: Rank, known: PairCounts, unknownCount: Int) {
+        self.pair = pair
+        self.upperBound = upperBound
         self.known = known
         self.unknownCount = unknownCount
     }
@@ -36,34 +67,40 @@ public struct VariableRange: Equatable, Hashable {
         return known.count + unknownCount
     }
     
+    public func knownCount(_ position: Position) -> Int {
+        return pair == position.pair ? known[position] : 0
+    }
+    
     internal func combinations(for pair: Pair) -> Int {
-        return known.pair == pair ? (1 << unknownCount) : 1
+        return pair == pair ? (1 << unknownCount) : 1
     }
 }
 
 
 
 // TODO: Document this:
-public struct VariableRangeCombination: Equatable, Hashable {
-    public var known: KnownHoldings
-    public var unknownCount0: Int
-    public var unknownCount1: Int
-    public var unknownCount: Int { return unknownCount0 + unknownCount1 }
-    public var count: Int { return known.count + unknownCount }
+public struct VariantGroup: Equatable, Hashable {
+    public var pair: Pair
+    public var upperBound: Rank
+    public var known: PairCounts
+    public var unknown: PairCounts
+    public var count: Int { return known.count + unknown.count }
     
-    public init(known: KnownHoldings, unknownCount0: Int = 0, unknownCount1: Int = 0) {
+    public init(pair: Pair, upperBound: Rank, known: PairCounts, unknown: PairCounts) {
+        self.pair = pair
+        self.upperBound = upperBound
         self.known = known
-        self.unknownCount0 = unknownCount0
-        self.unknownCount1 = unknownCount1
+        self.unknown = unknown
+        assert(unknown.count0 >= 0)
+        assert(unknown.count1 >= 0)
     }
     
-    public func count(for position: Position) -> Int {
-        if known.pair != position.pair { return 0 }
-        return position == known.pair.positions.0 ? known.count0 + unknownCount0 : known.count1 + unknownCount1
+    public func count(_ position: Position) -> Int {
+        return pair == position.pair ? known[position] + unknown[position] : 0
     }
     
-    var variableRange: VariableRange {
-        return VariableRange(known: known, unknownCount: unknownCount)
+    var variableGroup: VariableGroup {
+        return VariableGroup(pair: pair, upperBound: upperBound, known: known, unknownCount: unknown.count)
     }
     
     // Standard math factorial
@@ -79,68 +116,46 @@ public struct VariableRangeCombination: Equatable, Hashable {
     }
     
     internal func combinations(for pair: Pair) -> Int {
-        return known.pair == pair ? combinations(n: unknownCount, r: unknownCount0) : 1
+        return pair == pair ? combinations(n: unknown.count, r: unknown.count0) : 1
     }
 
     internal mutating func play(_ rank: Rank, from position: Position) {
-        if known.pair != position.pair { fatalError() }
-        if known.pair.positions.0 == position {
-            if known.count0 > 0 {
-                known.count0 -= 1
-            } else {
-                assert(unknownCount0 > 0)
-                unknownCount0 -= 1
-            }
+        if pair != position.pair { fatalError() }
+        if known[position] > 0 {
+            known[position] -= 1
         } else {
-            if known.count1 > 0 {
-                known.count1 -= 1
-            } else {
-                assert(unknownCount1 > 0)
-                unknownCount1 -= 1
-            }
+            assert(unknown[position] > 0)
+            unknown[position] -= 1
         }
     }
     
-    internal mutating func merge(with other: VariableRangeCombination) {
-        assert(known.pair == other.known.pair)
-        assert(known.rank > other.known.rank)
-        known.count0 += other.known.count0
-        known.count1 += other.known.count1
-        unknownCount0 += other.unknownCount0
-        unknownCount1 += other.unknownCount1
+    internal mutating func merge(with other: VariantGroup) {
+        assert(pair == other.pair)
+        assert(upperBound > other.upperBound)
+        known += other.known
+        unknown += other.unknown
     }
     
-    internal mutating func allKnown(in position: Position) {
-        if known.pair == position.pair {
-            if position == known.pair.positions.0 {
-                known.count0 += unknownCount0
-                unknownCount0 = 0
-                // HACK FOR DEBUGGING
-                if unknownCount1 > 0 {
-                    print("THIS IS STRANGE")
-                }
-                assert(unknownCount1 == 0)
-            } else {
-                known.count1 += unknownCount1
-                unknownCount1 = 0
-                assert(unknownCount0 == 0)
-            }
+    internal mutating func setAllKnown(in position: Position) {
+        if pair == position.pair {
+            known[position] += unknown[position]
+            unknown[position] = 0
+            assert(count(position.partner) == 0)
         }
     }
-    
 }
 
-public struct VariableHolding: Hashable, Equatable {
-    public var ranges: [VariableRange] = []
+public struct VariableRankPositions: Hashable, Equatable {
+    public var groups: [VariableGroup] = []
     public let variablePair: Pair
     
-    public static func == (lhs: VariableHolding, rhs: VariableHolding) -> Bool {
-        return lhs.ranges == rhs.ranges && lhs.variablePair == rhs.variablePair
+    public static func == (lhs: VariableRankPositions, rhs: VariableRankPositions) -> Bool {
+        return lhs.groups == rhs.groups && lhs.variablePair == rhs.variablePair
     }
     
     public func hash(into hasher: inout Hasher) {
         hasher.combine(variablePair)
-        hasher.combine(ranges)
+        hasher.combine(groups)
     }
     
     private func pair(for rank: Rank, in holding: RankPositions) -> Pair {
@@ -151,21 +166,25 @@ public struct VariableHolding: Hashable, Equatable {
         }
     }
     
-    public init(from vc: VariableCombination) {
-        self.ranges = vc.ranges.map { $0.variableRange }
-        self.variablePair = vc.variablePair
+    public init(from variant: Variant) {
+        self.groups = variant.groups.map { VariableGroup(pair: $0.pair, upperBound: $0.upperBound, known: $0.known, unknownCount: $0.unknown.count) }
+        self.variablePair = variant.variablePair
     }
     
     public func ranks(for position: Position) -> RankSet {
         assert(variablePair != position.pair)
-        return ranges.reduce(into: RankSet()) { if $1.known.count(for: position) > 0 { $0.insert($1.known.rank) }}
+        return groups.reduce(into: RankSet()) { if $1.knownCount(position) > 0 { $0.insert($1.upperBound) }}
     }
 
+    
+    public var loserUpperBound: Rank {
+        return groups[0].upperBound
+    }
 
     
     public func count(for position: Position) -> Int {
         assert(variablePair != position.pair)
-        return ranges.reduce(0) { return $0 + $1.known.count(for: position) }
+        return groups.reduce(0) { return $0 + $1.knownCount(position) }
     }
     
     public init(partialHolding: RankPositions, variablePair: Pair = .ew) {
@@ -174,17 +193,11 @@ public struct VariableHolding: Hashable, Equatable {
         var rank = Rank.two
         while true {
             let pair = pair(for: rank, in: partialHolding)
-            var known = KnownHoldings(rank: rank, pair: pair)
+            var known = PairCounts()
             var unknownCount = 0
-            let positions = pair.positions
             while true {
                 if let position = partialHolding[rank] {
-                    if position == positions.0 {
-                        known.count0 += 1
-                    } else {
-                        assert(position == positions.1)
-                        known.count1 += 1
-                    }
+                    known[position] += 1
                 } else {
                     assert(pair == variablePair)
                     unknownCount += 1
@@ -193,8 +206,7 @@ public struct VariableHolding: Hashable, Equatable {
                 if pair != self.pair(for: next, in: partialHolding) { break }
                 rank = next
             }
-            known.rank = ranges.count == 0 ? .two : rank
-            ranges.append(VariableRange(known: known, unknownCount: unknownCount))
+            groups.append(VariableGroup(pair: pair, upperBound: rank, known: known, unknownCount: unknownCount))
             guard let next = rank.nextHigher else { break }
             rank = next
         }
@@ -204,58 +216,59 @@ public struct VariableHolding: Hashable, Equatable {
     
     
     public var combinations: Int {
-        return ranges.reduce(1) { return $0 * $1.combinations(for: variablePair) }
+        return groups.reduce(1) { return $0 * $1.combinations(for: variablePair) }
     }
     
-    private class ComboBuilder {
-        private let variableHolding: VariableHolding
-        private var ranges: [VariableRangeCombination]
-        private var combos: [VariableCombination] = []
+    private class VariantBuilder {
+        private let variableRankPositions: VariableRankPositions
+        private var groups: [VariantGroup]
+        private var variants: [Variant] = []
         
-        init(_ variableHolding: VariableHolding) {
-            self.variableHolding = variableHolding
-            self.ranges = variableHolding.ranges.map { return VariableRangeCombination(known: $0.known) }
-            createCombo(index: 0)
+        init(_ variableRankPositions: VariableRankPositions) {
+            self.variableRankPositions = variableRankPositions
+            self.groups = variableRankPositions.groups.map { return VariantGroup(pair: $0.pair, upperBound: $0.upperBound, known: $0.known, unknown: PairCounts()) }
+            createVariant(index: 0)
         }
         
-        internal static func combos(for variableHolding: VariableHolding) -> [VariableCombination] {
-            return ComboBuilder(variableHolding).combos
+        internal static func variants(for variableRankPositions: VariableRankPositions) -> [Variant] {
+            return VariantBuilder(variableRankPositions).variants
         }
         
-        private func createCombo(index: Int) {
-            if index >= ranges.count {
-                combos.append(VariableCombination(ranges: ranges, variablePair: variableHolding.variablePair))
+        private func createVariant(index: Int) {
+            if index >= groups.count {
+                variants.append(Variant(groups: groups, variablePair: variableRankPositions.variablePair))
             } else {
-                let unknown = variableHolding.ranges[index].unknownCount
+                let unknown = variableRankPositions.groups[index].unknownCount
                 var count0 = 0
                 // NOTE: This look will always execute once even if unknown == 0
                 while count0 <= unknown {
-                    ranges[index].unknownCount0 = count0
-                    ranges[index].unknownCount1 = unknown - count0
-                    createCombo(index: index + 1)
+                    groups[index].unknown.count0 = count0
+                    groups[index].unknown.count1 = unknown - count0
+                    createVariant(index: index + 1)
                     count0 += 1
                 }
             }
         }
     }
     
-    public func combinationHoldings() -> [VariableCombination] {
-        return ComboBuilder.combos(for: self)
+    public var variants: [Variant] {
+        return VariantBuilder.variants(for: self)
     }
     
 }
 
-public struct VariableCombination: Equatable, Hashable {
-    public var ranges: [VariableRangeCombination]
+// THis needs to be contained in VariableRankPositions...
+public struct Variant: Equatable, Hashable {
+    public var groups: [VariantGroup]
     public let variablePair: Pair
     
     public func ranks(for position: Position) -> RankSet {
-        return ranges.reduce(into: RankSet()) { if $1.count(for: position) > 0 { $0.insert($1.known.rank) }}
+        return groups.reduce(into: RankSet()) { if $1.count(position) > 0 { $0.insert($1.upperBound) }}
     }
     
     public func holdsRanks(_ pair: Pair) -> Bool {
-        for range in ranges {
-            if range.known.pair == pair && range.count > 0 {
+        for group in groups {
+            if group.pair == pair && group.count > 0 {
                 return true
             }
         }
@@ -276,38 +289,36 @@ public struct VariableCombination: Equatable, Hashable {
     
     public var combinations: Int {
         var c = 1
-        for range in ranges {
-            if range.known.pair == variablePair {
-                c *= 1 << range.known.count
-                c *= Self.combinations(n: range.unknownCount, r: range.unknownCount0)
+        for group in groups {
+            if group.pair == variablePair {
+                c *= 1 << group.known.count
+                c *= Self.combinations(n: group.unknown.count, r: group.unknown.count0)
             }
         }
         return c
     }
     
+
     private mutating func play(_ rank: Rank?, from position: Position) {
         if let rank = rank {
-            guard let i = ranges.firstIndex(where: { $0.known.rank == rank }) else { fatalError() }
-            ranges[i].play(rank, from: position)
+            guard let i = groups.lastIndex(where: { $0.upperBound <= rank }) else { fatalError() }
+            groups[i].play(rank, from: position)
         }
     }
     
     private mutating func compact() {
         var i = 0
-        while i < ranges.count {
-            if ranges[i].count == 0 {
-                ranges.remove(at: i)
-                if ranges.count > 0 {
-                    if i == ranges.count {
-                        ranges[i - 1].known.rank = .ace
-                    } else if i == 0 {
-                        ranges[0].known.rank = .two
-                    } else {
-                        // We have deledted a mid-range so now merge
-                        assert(ranges[i].known.pair == ranges[i-1].known.pair)
-                        ranges[i].merge(with: ranges[i-1])
-                        if i == 1 { ranges[i].known.rank = .two }
-                        ranges.remove(at: i-1)
+        while i < groups.count {
+            if groups[i].count == 0 {
+                groups.remove(at: i)
+                if groups.count > 0 {
+                    if i == groups.count {
+                        groups[i - 1].upperBound = .ace
+                    } else if i > 0 {
+                        // This is a mid-range merge.
+                        assert(groups[i].pair == groups[i-1].pair)
+                        groups[i].merge(with: groups[i-1])
+                        groups.remove(at: i-1)
                     }
                 }
             } else {
@@ -315,15 +326,15 @@ public struct VariableCombination: Equatable, Hashable {
             }
         }
         // Now if there is a single range make sure it is .ace instead of .two
-        // All the logic above has tried to keep entry [0] as .two
-        if ranges.count == 1 {
-            ranges[0].known.rank = .ace
-        }
+     //   if groups.count == 1 {
+     //       groups[0].coequal.rank = .ace
+      //  }
+        assert(groups.count != 1 || groups[0].upperBound == .ace)
     }
     
     private mutating func allKnown(in position: Position) {
-        for i in ranges.indices {
-            ranges[i].allKnown(in: position)
+        for i in groups.indices {
+            groups[i].setAllKnown(in: position)
         }
     }
     
@@ -345,9 +356,9 @@ public struct VariableCombination: Equatable, Hashable {
             if winning.position == leadPosition.previous { // If 4th seat wins then check for marked 2nd position ranks
                 if let thirdHand = play[leadPosition.partner] {
                     if thirdHand > play[leadPosition]! {
-                        for i in ranges.indices {
-                            if ranges[i].known.rank > thirdHand && ranges[i].known.rank < winning.rank && ranges[i].known.pair == variablePair {
-                                ranges[i].allKnown(in: leadPosition.next)
+                        for i in groups.indices {
+                            if groups[i].upperBound > thirdHand && groups[i].upperBound < winning.rank && groups[i].pair == variablePair {
+                                groups[i].setAllKnown(in: leadPosition.next)
                             }
                         }
                     }
@@ -357,9 +368,9 @@ public struct VariableCombination: Equatable, Hashable {
                 // TODO: Really?  Is this logic right?  Could both sides duck?  Right now only 2nd seat ducks
                 // Since the lead pair won, then any higher ranks than the winning one must be in 2nd position
                 if winning.rank < .ace {
-                    for i in ranges.indices {
-                        if ranges[i].known.rank > winning.rank && ranges[i].known.pair == variablePair {
-                            ranges[i].allKnown(in: leadPosition.next)
+                    for i in groups.indices {
+                        if groups[i].upperBound > winning.rank && groups[i].pair == variablePair {
+                            groups[i].setAllKnown(in: leadPosition.next)
                         }
                     }
                 }
@@ -369,7 +380,7 @@ public struct VariableCombination: Equatable, Hashable {
         compact()
     }
     
-    public func play(leadPosition: Position, play: PositionRanks, finesseInferences: Bool = true) -> VariableCombination {
+    public func play(leadPosition: Position, play: PositionRanks, finesseInferences: Bool = true) -> Variant {
         var next = self
         next.internalPlay(leadPosition: leadPosition, play: play, finesseInferences: finesseInferences)
         return next
@@ -378,57 +389,4 @@ public struct VariableCombination: Equatable, Hashable {
     
     
 
-//public struct LayoutCombinations {
-//    public let holding: RankPositions
-//    public let combinationsRepresented: Int
-//}
 
-/*
-public struct LayoutGenerator {
-    private static func assignUnknown(holding: RankPositions, pair: Pair, start: Rank?, unknown: RankSet, combinations: Int, inout layouts: [LayoutCombinations]) -> Void {
-        var shiftRanks = RankSet()
-        var rank: Rank? = start
-        while rank != nil,
-              holding[rank!] != pair.opponents {
-            if unknown.contains(rank!) {
-                shiftRanks.insert(rank!)
-            }
-            rank = rank?.nextHigher
-        }
-    }
-    
-    public static func generateLayouts(known holding: RankPositions, unknown: RankSet, heldBy pair: Pair) -> [LayoutCombinations] {
-        var layouts = Array<LayoutCombinations>()
-        if unknown.isEmpty {
-            layouts.append(LayoutCombinations(holding: holding, combinationsRepresented: 1))
-        } else {
-            // TODO: Who is the right pair for parameter.  Seems ambiguous...
-            Self.shil
-        }
-        return layouts
-    }
-}
-*/
-
-/*
-// TODO: Class or struct?  Seems like class probably
-public class CombinationAnalysis {
-    // TODO: Cache of child analyses
-    //
-    
-    public static func analyze(holding: RankPositions, onLead: Pair) -> CombinationAnalysis {
-        return Self.analyze(partialHolding: holding, onlead: onLead, unknownPositions: RankSet(), heldBy: onLead.opponents)
-    }
-    
-    public static func analyze(partialHolding: RankPositions, onLead: Pair) -> CombinationAnalysis {
-        let unknown = RankSet(Rank.allCases).subtracting(partialHolding.ranks)
-    }
-    
-    public static func analyze(partialHolding: RankPositions, onLead: Pair, unknownPositions: RankSet, heldBy: Pair) -> CombinationAnalysis {
-        
-    }
-    
-    
-    private init(cache: [LayoutCombinations: CombinationAnalysis])
-}
- */

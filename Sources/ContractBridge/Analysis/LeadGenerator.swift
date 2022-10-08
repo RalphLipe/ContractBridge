@@ -14,20 +14,23 @@ public struct RangeChoices {
     public let win: Rank?
     public let mid: [Rank]?
     public let low: Rank?
+    public let losingRank: Rank
     
-    init(_ ranks: [Rank], position: Position) {
+    init(_ ranks: [Rank], position: Position, loserUpperBound: Rank) {
+        self.losingRank = loserUpperBound
         self.all = ranks
         self.position = position
         var r = all
         // It is important to look at the ranges in this order: Win, Low and then the rest
         // because when the final range is 2...A the last AND first are both winners and low
         self.win = r.count > 0 && r.last == .ace ? r.removeLast() : nil
-        self.low = r.count > 0 && r.first == .two ? r.removeFirst() : nil
+        self.low = r.count > 0 && r.first == loserUpperBound ? r.removeFirst() : nil
         self.mid = r.count > 0 ? r : nil
+
     }
-    init(holding: VariableHolding, position: Position) {
+    init(holding: VariableRankPositions, position: Position) {
         // TODO: Maybe just use rank set directly instead of arrays here.  But later on...
-        self.init(Array<Rank>(holding.ranks(for: position)), position: position)
+        self.init(Array<Rank>(holding.ranks(for: position)), position: position, loserUpperBound: holding.loserUpperBound)
     }
 }
 
@@ -37,19 +40,19 @@ public enum LeadOption {
 }
 
 public struct LeadGenerator {
-    private let holding: VariableHolding
+    private let holding: VariableRankPositions
     private let pair: Pair
     private var leads: [LeadPlan]
     private let option: LeadOption
 
-    private init(holding: VariableHolding, pair: Pair, option: LeadOption) {
+    private init(holding: VariableRankPositions, pair: Pair, option: LeadOption) {
         self.holding = holding
         self.pair = pair
         self.leads = []
         self.option = option
     }
 
-    public static func generateLeads(holding: VariableHolding, pair: Pair, option: LeadOption) -> [LeadPlan] {
+    public static func generateLeads(holding: VariableRankPositions, pair: Pair, option: LeadOption) -> [LeadPlan] {
         var generator = LeadGenerator(holding: holding, pair: pair, option: option)
         generator.generateLeads()
         return generator.leads
@@ -170,12 +173,12 @@ public struct LeadGenerator {
             let high = choices.all.last!
             let low = choices.all.first!
             if high == low {
-                let intent: LeadPlan.Intent = high == .ace ? .cashWinner : high == .two ? .playLow : .ride
+                let intent: LeadPlan.Intent = high == .ace ? .cashWinner : high == choices.losingRank ? .playLow : .ride
                 leads.append(LeadPlan(position: position, lead: high, intent: intent))
                 return
             }
             leads.append(LeadPlan(position: position, lead: high, intent: high == .ace ? .cashWinner : .ride))
-            leads.append(LeadPlan(position: position, lead: low, intent: low == .two ? .playLow : .ride))
+            leads.append(LeadPlan(position: position, lead: low, intent: low == choices.losingRank ? .playLow : .ride))
             return
         }
         // TODO: Perhaps if next position shows out then we could avoid generating some of these leads.

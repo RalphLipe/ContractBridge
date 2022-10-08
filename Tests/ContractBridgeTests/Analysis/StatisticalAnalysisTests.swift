@@ -20,7 +20,7 @@ class StatisticalAnalysisTests: XCTestCase {
         print("=====================================================================")
         print("Analyzing \(holding) needing \(tricksRequired) tricks ")
         if leadOption == .leadHigh { print("***** ONLY CONSIDERING LEADING HIGH ******")}
-        let vh = VariableHolding(partialHolding: holding, variablePair: .ew)
+        let vh = VariableRankPositions(partialHolding: holding, variablePair: .ew)
    //     for range in vh.ranges {
    //         print(range)
    //     }

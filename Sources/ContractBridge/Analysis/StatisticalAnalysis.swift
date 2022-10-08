@@ -33,7 +33,7 @@ public struct LeadStatistics: Comparable {
 
 
 public struct StatsCacheKey: Hashable, Equatable {
-    public let holding: VariableHolding
+    public let holding: VariableRankPositions
     public let requiredTricks: Int
     public let leadOption: LeadOption
 }
@@ -46,18 +46,18 @@ public class StatsCache {
 
 
 public class StatisticalAnalysis {
-    public let holding: VariableHolding
+    public let holding: VariableRankPositions
     public let leadPair: Pair
     public let leadOption: LeadOption
     public let requiredTricks: Int
     public let bestStats: LeadStatistics
     private var leadAnalyses: [LeadAnalysis]
     private let leadPlans: [LeadPlan]
-    private let layouts: [VariableCombination]
+    private let variants: [Variant]
     private var bestLeadIndex: Array<LeadPlan>.Index
 
     
-    public static func analyze(holding: VariableHolding, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption = .considerAll, cache: StatsCache?) -> StatisticalAnalysis {
+    public static func analyze(holding: VariableRankPositions, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption = .considerAll, cache: StatsCache?) -> StatisticalAnalysis {
         let key = StatsCacheKey(holding: holding, requiredTricks: requiredTricks, leadOption: leadOption)
         if let cache = cache {
          //   print("CACHE HIT")
@@ -69,9 +69,9 @@ public class StatisticalAnalysis {
         return sa
     }
     
-    internal init(holding: VariableHolding, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache) {
+    internal init(holding: VariableRankPositions, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache) {
         self.holding = holding
-        self.layouts = holding.combinationHoldings()
+        self.variants = holding.variants    // TODO: Is this so expensive it should be a function, not a property??
         self.leadPair = leadPair
         self.requiredTricks = requiredTricks
         self.leadOption = leadOption
@@ -79,15 +79,15 @@ public class StatisticalAnalysis {
         self.leadPlans = LeadGenerator.generateLeads(holding: holding, pair: leadPair, option: leadOption)
         assert(leadPlans.count > 0)
         self.leadAnalyses = []
-        leadAnalyses.reserveCapacity(leadPlans.count * layouts.count)
+        leadAnalyses.reserveCapacity(leadPlans.count * variants.count)
         self.bestLeadIndex = 0
         var best = LeadStatistics()
         for i in leadPlans.indices {
             var stats = LeadStatistics()
-            for layout in layouts {
-                let result = LeadAnalyzer.statistical(holding: layout, leadPlan: leadPlans[i], requiredTricks: requiredTricks, leadOption: leadOption, cache: cache)
+            for variant in variants {
+                let result = LeadAnalyzer.statistical(holding: variant, leadPlan: leadPlans[i], requiredTricks: requiredTricks, leadOption: leadOption, cache: cache)
                 leadAnalyses.append(result)
-                let count = Double(layout.combinations)
+                let count = Double(variant.combinations)
                 let c = Double(count)
                 stats.averageTricks += result.stats.averageTricks * c
                 stats.percentMaking += result.stats.percentMaking * c
@@ -107,15 +107,15 @@ public class StatisticalAnalysis {
     }
         
     
-    private func analysisFor(lead: Array<LeadPlan>.Index, layout: Array<VariableCombination>.Index) -> LeadAnalysis {
-        return leadAnalyses[(lead * layouts.count) + layout]
+    private func analysisFor(lead: Array<LeadPlan>.Index, variant: Array<Variant>.Index) -> LeadAnalysis {
+        return leadAnalyses[(lead * variants.count) + variant]
     }
     
     private func statsFor(lead: Array<LeadPlan>.Index) -> LeadStatistics {
         var stats = LeadStatistics()
-        for j in layouts.indices {
-            let c = Double(layouts[j].combinations)
-            let a = analysisFor(lead: lead, layout: j)
+        for j in variants.indices {
+            let c = Double(variants[j].combinations)
+            let a = analysisFor(lead: lead, variant: j)
             stats.averageTricks += a.stats.averageTricks * c
             stats.percentMaking += a.stats.percentMaking * c
         }
@@ -145,9 +145,9 @@ public class StatisticalAnalysis {
 
     // This method is used interanally to find the statistics for the best lead
     // taken for a specific variable combination.
-    public func bestLeadStats(for vc: VariableCombination) -> LeadStatistics? {
-        if let j = layouts.firstIndex(of: vc) {
-            return analysisFor(lead: bestLeadIndex, layout: j).stats
+    public func bestLeadStats(for variant: Variant) -> LeadStatistics? {
+        if let j = variants.firstIndex(of: variant) {
+            return analysisFor(lead: bestLeadIndex, variant: j).stats
         }
         return nil
     }
@@ -180,11 +180,11 @@ public class StatisticalAnalysis {
     }
      */
     
-    public func leadAnalyses(for layout: VariableCombination) -> [LeadPlan: LeadAnalysis] {
+    public func leadAnalyses(for variant: Variant) -> [LeadPlan: LeadAnalysis] {
         var results: [LeadPlan: LeadAnalysis] = [:]
-        if let j = layouts.firstIndex(where: { $0 == layout }) {
+        if let j = variants.firstIndex(where: { $0 == variant }) {
             for i in leadPlans.indices {
-                results[leadPlans[i]] = analysisFor(lead: i, layout: j)
+                results[leadPlans[i]] = analysisFor(lead: i, variant: j)
             }
         }
         return results
@@ -192,11 +192,11 @@ public class StatisticalAnalysis {
     
     
     // TODO: Review VAR/FUNC for many of these things...  Expensive operation?  Not really
-    public var combinationsMaking: Set<VariableCombination> {
-        var result = Set<VariableCombination>()
-        for j in layouts.indices {
-            if analysisFor(lead: bestLeadIndex, layout: j).stats.percentMaking == 100.0 {
-                result.insert(layouts[j])
+    public var combinationsMaking: Set<Variant> {
+        var result = Set<Variant>()
+        for j in variants.indices {
+            if analysisFor(lead: bestLeadIndex, variant: j).stats.percentMaking == 100.0 {
+                result.insert(variants[j])
             }
         }
         return result

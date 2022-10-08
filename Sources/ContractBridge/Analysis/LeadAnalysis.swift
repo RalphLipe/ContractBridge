@@ -18,7 +18,7 @@ public struct LeadAnalysis: Comparable {
 }
 
 public struct LeadAnalyzer {
-    public let holding: VariableCombination
+    public let holding: Variant
     public let requiredTricks: Int
     public let leadPlan: LeadPlan
     public internal(set) var winner: Position
@@ -40,12 +40,12 @@ public struct LeadAnalyzer {
         return LeadAnalyzer(holding: holding, leadPlan: leadPlan, requiredTricks: 0, leadOption: leadOption).analysis
     }
   */
-    public static func statistical(holding: VariableCombination, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) -> LeadAnalysis {
+    public static func statistical(holding: Variant, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) -> LeadAnalysis {
         return LeadAnalyzer(holding: holding, leadPlan: leadPlan, requiredTricks: requiredTricks, leadOption: leadOption, cache: cache).analysis
     }
     
  
-    private init(holding: VariableCombination, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) {
+    private init(holding: Variant, leadPlan: LeadPlan, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache?) {
         self.holding = holding
         self.cache = cache
         self.leadPlan = leadPlan
@@ -83,7 +83,7 @@ public struct LeadAnalyzer {
         var stats = LeadStatistics(averageTricks: wonTrick ? 1.0 : 0.0, percentMaking: nextRequiredTricks == 0 ? 100.0 : 0.0)
         if nextVC.holdsRanks(leadPlan.position.pair) {
             // TODO: Perhaps handle trivial cases here....
-            let nextSA = StatisticalAnalysis.analyze(holding: VariableHolding(from: nextVC), leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, leadOption: leadOption, cache: cache)
+            let nextSA = StatisticalAnalysis.analyze(holding: VariableRankPositions(from: nextVC), leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, leadOption: leadOption, cache: cache)
             guard let statsNext = nextSA.bestLeadStats(for: nextVC) else { fatalError() }
             // Add the result for average tricks, and use the percent making.
             stats.percentMaking = statsNext.percentMaking
