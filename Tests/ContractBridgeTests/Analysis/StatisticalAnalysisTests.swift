@@ -98,6 +98,8 @@ class StatisticalAnalysisTests: XCTestCase {
            
            analyze(north: [.king, .queen, .jack, .nine, .five, .four, .three, .two], south: [], tricksRequired: 5)
            
+           analyze(north: [.ace, .queen,  .five, .four, .three], south: [.jack, .ten, .two], tricksRequired: 5)
+           
        }
         
     
