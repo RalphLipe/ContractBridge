@@ -12,96 +12,61 @@ class StatisticalAnalysisTests: XCTestCase {
 
     
        
-       
-    func analyze(north: RankSet, south: RankSet, tricksRequired: Int, leadOption: LeadOption = .considerAll, cache: StatsCache? = nil) {
-        var holding = RankPositions()
-        holding[.north] = north
-        holding[.south] = south
-        print("=====================================================================")
-        print("Analyzing \(holding) needing \(tricksRequired) tricks ")
-        if leadOption == .leadHigh { print("***** ONLY CONSIDERING LEADING HIGH ******")}
-        let vh = VariableRankPositions(partialHolding: holding, variablePair: .ew)
-   //     for range in vh.ranges {
-   //         print(range)
-   //     }
-        let stataz = StatisticalAnalysis.analyze(holding: vh, leadPair: .ns, requiredTricks: tricksRequired, leadOption: leadOption, cache: cache)
+    func printAnalysis(holding: RankPositions, analysis: StatisticalAnalysis) {
         
-        
-        //StatisticalWithLeads(partialHolding: holding, requiredTricks: tricksRequired, leadOption: leadOption)
-        /*
-        let leadStats = stataz.leadStatistics.sorted { $0.value > $1.value }
-        for (leadPlan, stats) in leadStats {
-           print("\(leadPlan)")
-           print("\(stataz.analysis.percentCombinationsMaking(stats))% - Avg tricks = \(stataz.analysis.averageTricks(stats))")
+        let bestStats = analysis.bestStats
+        print("Analysis for \(holding) needing \(analysis.requiredTricks) tricks")
+        if analysis.leadOption == .leadHigh { print("* Only considering leading high *") }
+        print("Best leads make \(bestStats.percentMaking)% of the time making average of \(bestStats.averageTricks) tricks")
+        for lead in analysis.bestLeads {
+            print("    \(lead)")
         }
-         */
-        let best = stataz.bestStats
-        print("best leads make \(best.percentMaking)% of the time making average of \(best.averageTricks) tricks")
-  
-        
-        let bestLeads = stataz.bestLeads
-        for lead in bestLeads {
-            print("BEST:  \(lead)")
+        print("All leads:")
+        for (lead, stats) in analysis.leadStatistics {
+            print("    \(lead) \(stats.percentMaking) \(stats.averageTricks)")
         }
-        print("all leads:")
-        for (lead, stats) in stataz.leadStatistics {
-            print("   \(lead) \(stats.percentMaking) \(stats.averageTricks)")
-        }
-        
-        /*
-           print("\(bestLeads.count) leads make \(bestLead.averageTricks) tricks for \(bestLead.percentMaking)%")
-           let ts = stataz.tricksForAllLayouts(for: bestLead.leadPlan)
-           for tse in ts {
-               if tse.tricksTaken >= tricksRequired {
-                   print("MAKES: \(tse.tricksTaken), comb: \(tse.representsCombinations), hold: \(tse.holding)")
-               }
-           }
-           for tse in ts {
-               if tse.tricksTaken < tricksRequired {
-                   print("NOT MAKE: \(tse.tricksTaken), comb: \(tse.representsCombinations), hold: \(tse.holding)")
-               }
-           }
-         */
-       }
-
-    func testBasicStat() throws {
-        analyze(north: [.ace, .queen], south: [.two], tricksRequired: 2)
-        analyze(north: [.king, .queen, .two], south: [.three, .four, .five], tricksRequired: 2)
     }
     
-    
-       func testStatsAz() throws {
-           analyze(north: [.ace, .queen], south: [.two], tricksRequired: 2)
-           analyze(north: [.ace, .queen, .four], south: [.two, .three], tricksRequired: 2)
-
-           analyze(north: [.ace, .queen, .ten], south: [.two, .three], tricksRequired: 3)
-           
-           // COMBO 458 - lead low to make 2 tricks
-           // TODO: Not same lead or correct %
-           analyze(north: [.king, .ten, .six, .five], south: [.queen, .four, .three, .two], tricksRequired: 2)
-
-           // Combo 440
-           let cache = StatsCache()
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 2, cache: cache)
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 3, cache: cache)
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two],
-                   tricksRequired: 4, cache: cache)
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 0, cache: cache)
-
-           
-           
-        //   print("NOW STATIStical;;;;;:::")
-           analyze(north: [.king, .queen, .five, .four, .three], south: [.ten, .two], tricksRequired: 0, leadOption: .leadHigh)
-           
-           // Combon 294
-           analyze(north: [.king, .queen, .jack, .nine, .five, .four, .three], south: [.two], tricksRequired: 5)
-           
-           analyze(north: [.king, .queen, .jack, .nine, .five, .four, .three, .two], south: [], tricksRequired: 5)
-           
-           analyze(north: [.ace, .queen,  .five, .four, .three], south: [.jack, .ten, .two], tricksRequired: 5)
-           
-       }
+    func analyze(_ s: String, tricksRequired: Int, percentMaking: Double? = nil, averageTricks: Double? = nil, leadOption: LeadOption = .considerAll, cache: StatsCache? = nil, leadIntent: LeadPlan.Intent? = nil) {
+        let deal = try! Deal(from: s)
+        let holding = RankPositions(hands: deal.hands, suit: .spades)
+        let vrp = VariableRankPositions(partialHolding: holding, variablePair: .ew)
+        let analysis = StatisticalAnalysis.analyze(holding: vrp, leadPair: .ns, requiredTricks: tricksRequired, leadOption: leadOption, cache: cache)
+        let bestStats = analysis.bestStats
         
+        if let averageTricks = averageTricks {
+            XCTAssertEqual(averageTricks, bestStats.averageTricks)
+        }
+        if let percentMaking = percentMaking {
+            XCTAssertEqual(percentMaking, bestStats.percentMaking)
+        }
+        if let leadIntent = leadIntent {
+            XCTAssertEqual(analysis.bestLeads.first!.intent, leadIntent)
+        }
+        printAnalysis(holding: holding, analysis: analysis)
+        print("")
+    }
+
+    func testBasicFinesse() throws {
+        analyze("N:AQ - 2 -", tricksRequired: 2, percentMaking: 50.0, averageTricks: 1.5)
+        analyze("N:KQ2 - 345 -", tricksRequired: 2, percentMaking: 50.0, averageTricks: 1.5)
+        
+        // Now put some E/W cards  in known places...
+        analyze("N:AQ - 2 K", tricksRequired: 2, percentMaking: 100.0, averageTricks: 2.0, leadIntent: .finesse)
+        analyze("N:KQ2 - 345 A", tricksRequired: 2, percentMaking: 100.0, averageTricks: 2.0, leadIntent: .finesse)
+        analyze("N:AQ K 2 -", tricksRequired: 2, leadIntent: .cashWinner) // cash winner is only way to get 2 when singleton K
+    }
     
+    func test440() throws {
+        analyze("N:KQ543 - T2 -", tricksRequired: 2)
+        analyze("N:KQ543 - T2 -", tricksRequired: 3)
+        analyze("N:KQ543 - T2 -", tricksRequired: 4)
+    }
+    
+    // TODO: We need to verify that correct lead sequence is used....  At least first lead
+    func test450() throws {
+        analyze("N:KQ76543 - 2 -", tricksRequired: 5, leadIntent: .playLow)
+        analyze("N:KQ76543 - 2 -", tricksRequired: 6, leadIntent: .finesse)
+    }
 
 }
