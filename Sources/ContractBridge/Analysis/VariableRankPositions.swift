@@ -258,7 +258,7 @@ public struct VariableRankPositions: Hashable, Equatable {
             }
         }
         
-        var representativeLayout: RankPositions {
+        public var representativeLayout: RankPositions {
             var result = RankPositions()
             for bracket in brackets {
                 let positions = bracket.pair.positions
@@ -269,20 +269,17 @@ public struct VariableRankPositions: Hashable, Equatable {
             return result
         }
         
-        func upperBound(rank: Rank, pair: Pair) -> Rank {
+        public func upperBound(rank: Rank, pair: Pair) -> Rank {
             return brackets[index(rank)].upperBound
         }
         
-        // TODO: Ranges and rank range are confusing.  Consider new names...
-        func rangeOf(_ rank: Rank?) -> RankRange? {
+        public func rangeOf(_ rank: Rank?) -> RankRange? {
             guard let rank = rank else { return nil }
             let i = index(rank)
             let lowerBound: Rank = i == 0 ? .two : brackets[i-1].upperBound.nextHigher!
             return lowerBound...brackets[i].upperBound
         }
     }
-       
-    
 
     
     public var brackets: [Bracket] = []
