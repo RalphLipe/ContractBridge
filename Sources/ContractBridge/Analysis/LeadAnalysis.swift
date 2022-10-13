@@ -82,6 +82,7 @@ public struct LeadAnalyzer {
         let nextRequiredTricks = wonTrick ? max(0, requiredTricks - 1) : requiredTricks
         var stats = LeadStatistics(averageTricks: wonTrick ? 1.0 : 0.0, percentMaking: nextRequiredTricks == 0 ? 100.0 : 0.0)
         if nextVC.holdsRanks(leadPlan.position.pair) {
+            // TODO: If doing double dummn ethen do double dummy stuff here...
             // TODO: Perhaps handle trivial cases here....
             let nextSA = StatisticalAnalysis.analyze(holding: VariableRankPositions(from: nextVC), leadPair: leadPlan.position.pair, requiredTricks: nextRequiredTricks, leadOption: leadOption, cache: cache)
             guard let statsNext = nextSA.bestLeadStats(for: nextVC) else { fatalError() }

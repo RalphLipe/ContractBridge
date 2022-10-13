@@ -18,16 +18,46 @@ class StatisticalAnalysisTests: XCTestCase {
         print("Analysis for \(holding) needing \(analysis.requiredTricks) tricks")
         if analysis.leadOption == .leadHigh { print("* Only considering leading high *") }
         print("Best leads make \(bestStats.percentMaking)% of the time making average of \(bestStats.averageTricks) tricks")
+       // let leadStats = analysis.leadStatistics
+        var makingV = Set<VariableRankPositions.Variant>()
         for lead in analysis.bestLeads {
             print("    \(lead)")
+            for variant in analysis.holding.variants {
+                if analysis.leadAnalyses(for: variant)[lead]!.stats.percentMaking == 100.0 {
+                    makingV.insert(variant)
+                    print("      \(variant.combinations) - \(variant.representativeLayout)")
+                }
+            }
         }
-        print("All leads:")
+        print("Other leads:")
         for (lead, stats) in analysis.leadStatistics {
-            print("    \(lead) \(stats.percentMaking) \(stats.averageTricks)")
+            if !analysis.bestLeads.contains(lead) {
+                print("    \(lead) \(stats.percentMaking) \(stats.averageTricks)")
+                for variant in makingV {
+                    let a = analysis.leadAnalyses(for: variant)[lead]!
+                    print("      \(variant.combinations) - \(variant.representativeLayout) \(a.stats.percentMaking)% \(a.stats.averageTricks) tricks")
+                    print("           \(a.play)")
+                    if lead.intent == .cashWinner && a.stats.percentMaking == 0.0 {
+                        print("THIS SHOULD MAKE.  LETS LOOK ONE DOWN...")
+                        let nextVar = variant.play(leadPosition: lead.position, play: a.play)
+                        print("Next variant: \(nextVar.representativeLayout)")
+                        let nextAnalysis = StatisticalAnalysis.analyze(holding: VariableRankPositions(from: nextVar), leadPair: .ns, requiredTricks: 5, cache: nil)
+                        print("*** AFTER FIRST CASH WINNER BEST ODDS FOR 5 TRICKS: \(nextAnalysis.bestStats.percentMaking)%")
+                        for lead in nextAnalysis.bestLeads {
+                            print("    **\(lead)")
+                            for variant in nextAnalysis.holding.variants {
+                                if nextAnalysis.leadAnalyses(for: variant)[lead]!.stats.percentMaking == 100.0 {
+                                    print("      **\(variant.combinations) - \(variant.representativeLayout)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     
-    func analyze(_ s: String, tricksRequired: Int, percentMaking: Double? = nil, averageTricks: Double? = nil, leadOption: LeadOption = .considerAll, cache: StatsCache? = nil, leadIntent: LeadPlan.Intent? = nil) {
+    func analyze(_ s: String, tricksRequired: Int, percentMaking: Double? = nil, averageTricks: Double? = nil, leadOption: LeadOption = .considerAll, cache: StatsCache? = nil, leadIntent: LeadPlan.Intent? = nil, verbose: Bool = false) {
         let deal = try! Deal(from: s)
         let holding = RankPositions(hands: deal.hands, suit: .spades)
         let vrp = VariableRankPositions(partialHolding: holding, variablePair: .ew)
@@ -43,8 +73,10 @@ class StatisticalAnalysisTests: XCTestCase {
         if let leadIntent = leadIntent {
             XCTAssertEqual(analysis.bestLeads.first!.intent, leadIntent)
         }
-        printAnalysis(holding: holding, analysis: analysis)
-        print("")
+        if verbose {
+            printAnalysis(holding: holding, analysis: analysis)
+            print("")
+        }
     }
 
     func testBasicFinesse() throws {
@@ -69,4 +101,9 @@ class StatisticalAnalysisTests: XCTestCase {
         analyze("N:KQ76543 - 2 -", tricksRequired: 6, leadIntent: .finesse)
     }
 
+    func testSeemStrange() throws {
+        analyze("N:AT9843 - K2 -", tricksRequired: 0)
+        analyze("N:AT9843 - K2 -", tricksRequired: 6, verbose: true)
+    }
+    
 }

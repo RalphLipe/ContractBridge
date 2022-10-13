@@ -231,10 +231,31 @@ public struct VariableRankPositions: Hashable, Equatable {
                             }
                         }
                     }
+                    // Now any cards in opponents that are in lower brackets than the card played must belong to
+                    // the other opponent.  If a Q drops, the partner of the dropper has the lower cards.
+                    // TODO: This is incomplete since it could be won by 3rd hand. More issues with that though, since
+                    // play could be a finesse.  Need to think this through.  Perhaps pass lead into this method?
+                    if winning.position == leadPosition {
+                        let opponents = leadPosition.pair.opponents.positions
+                        markLowerRanks(opponents.0, play[opponents.0])
+                        markLowerRanks(opponents.1, play[opponents.1])
+                    }
                 }
             }
             Position.allCases.forEach { self.play(play[$0], from: $0) }
             compact()
+        }
+        
+        private mutating func markLowerRanks(_ position: Position, _ played: Rank?) {
+            if let rank = played {
+                var i = index(rank)
+                while i > 0 {
+                    i -= 1
+                    if brackets[i].pair == position.pair {
+                        brackets[i].setAllKnown(in: position.partner)
+                    }
+                }
+            }
         }
         
         public func play(leadPosition: Position, play: PositionRanks, finesseInferences: Bool = true) -> Variant {
@@ -395,4 +416,13 @@ public struct VariableRankPositions: Hashable, Equatable {
  
     
 
+//====================================== NEW DOUBLE DUMMY STUFF
 
+public class DoubleDummy {
+    public var variant: VariableRankPositions.Variant
+    public let leads: [LeadPlan]
+    public init (holding: VariableRankPositions, variant: VariableRankPositions.Variant) {
+        self.variant = variant
+        self.leads = LeadGenerator.generateLeads(holding: holding, pair: .ns, option: .considerAll)
+    }
+}

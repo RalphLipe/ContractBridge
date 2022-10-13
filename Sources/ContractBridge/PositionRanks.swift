@@ -48,3 +48,19 @@ public struct PositionRanks: Equatable {
     }
     
 }
+
+
+public extension String.StringInterpolation {
+    mutating func appendInterpolation(_ positionRanks: PositionRanks, style: ContractBridge.Style = .symbol) {
+        for position in Position.allCases {
+            var rankString = "-"
+            if let rank = positionRanks[position] {
+                rankString = "\(rank)"
+            }
+            appendLiteral("\(position):\(rankString) ")
+        }
+        if let winning = positionRanks.winning {
+            appendLiteral(" \(winning.position) won with \(winning.rank)")
+        }
+    }
+}
