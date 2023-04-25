@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import XCTest
 
 
 public typealias RankPositionsId = UInt64
