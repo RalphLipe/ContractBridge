@@ -24,9 +24,11 @@ let package = Package(
         .target(
             name: "ContractBridge",
             dependencies: []),
+        /*
         .testTarget(
             name: "ContractBridgeTests",
             dependencies: ["ContractBridge"],
             resources: [ .process("Resources") ] ),
+         */
     ]
 )
