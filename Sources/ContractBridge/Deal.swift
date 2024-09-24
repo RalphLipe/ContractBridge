@@ -20,8 +20,9 @@ public struct Hands {
     }
 }
 
-enum DealError: Error {
+public enum DealError: Error {
     case invalidFirstPosition
+    case cardNotFoundInAnyHand
     case invalidNumberOfHands(_ numberOfHands: Int)
     case notFullHand(position: Position, numberOfCards: Int)
     case duplicateCard(_ card: Card)
@@ -66,6 +67,15 @@ public struct Deal: Codable {
     public func encode(to: Encoder) throws {
         var encoder = to.singleValueContainer()
         try encoder.encode(self.serialize())
+    }
+    
+    public func positionFor(card: Card) throws -> Position {
+        for position in Position.allCases {
+            if hands[position].contains(card) {
+                return position
+            }
+        }
+        throw DealError.invalidFirstPosition
     }
     
     public func serialize(startPosition: Position = .north) -> String {
