@@ -13,6 +13,7 @@ public class Event: Codable {
     public var boards = Array<Board>()
     public var pairs = Array<Pair>()
     public var boardResults = Array<BoardResult>()
+    public init() {}
 }
 
 
