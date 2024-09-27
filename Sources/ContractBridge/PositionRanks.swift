@@ -8,11 +8,11 @@
 import Foundation
 
 public struct PositionRanks: Equatable {
-    private var ranks: [Rank?] = Array<Rank?>(repeating: nil, count: Position.allCases.count)
+    private var ranks: [Rank?] = Array<Rank?>(repeating: nil, count: Direction.allCases.count)
 
     public init() { }
     
-    public subscript(position: Position) -> Rank? {
+    public subscript(position: Direction) -> Rank? {
         get {
             return ranks[position.rawValue]
         }
@@ -21,10 +21,10 @@ public struct PositionRanks: Equatable {
         }
     }
     
-    public var winning: (position: Position, rank: Rank)? {
-        var winPos: Position? = nil
+    public var winning: (position: Direction, rank: Rank)? {
+        var winPos: Direction? = nil
         var winRank = Rank.two
-        for position in Position.allCases {
+        for position in Direction.allCases {
             if let rank = self[position] {
                 if rank >= winRank {    // IMPORTANT:  Check for >= so even a .two will assign a winner
                     winRank = rank
@@ -52,7 +52,7 @@ public struct PositionRanks: Equatable {
 
 public extension String.StringInterpolation {
     mutating func appendInterpolation(_ positionRanks: PositionRanks, style: ContractBridge.Style = .symbol) {
-        for position in Position.allCases {
+        for position in Direction.allCases {
             var rankString = "-"
             if let rank = positionRanks[position] {
                 rankString = "\(rank)"

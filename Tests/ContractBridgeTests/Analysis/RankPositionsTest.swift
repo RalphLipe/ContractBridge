@@ -28,7 +28,7 @@ class RankPositionsTest: XCTestCase {
         rpCopy[.eight] = .south
         XCTAssertNotEqual(rpCopy, rp)
         
-        let dict: Dictionary<Rank, Position> = [.two: .north, .five: .north, .eight: .south]
+        let dict: Dictionary<Rank, Direction> = [.two: .north, .five: .north, .eight: .south]
         let rpFromDict = RankPositions(dict)
         XCTAssertEqual(rpCopy, rpFromDict)
        
@@ -95,7 +95,7 @@ class RankPositionsTest: XCTestCase {
             let rpShuffled = rp.equalRanksShuffled()
             // We will assume that the ranks will sometimes be equal to the original assignment, so it's not
             // an error if they are equal, but if less than half are diffrent, we have a problem
-            for position in Position.allCases {
+            for position in Direction.allCases {
                 XCTAssertEqual(rp.count(for: position), rpShuffled.count(for: position))
                 XCTAssertEqual(rp.playableRanges(for: position), rpShuffled.playableRanges(for: position))
                 if (rp[position] != rpShuffled[position]) { numNonEqual += 1 }

@@ -1,13 +1,13 @@
 //
-//  Position.swift
-//  
+//  Direction.swift
+//
 //
 //  Created by Ralph Lipe on 3/9/22.
 //
 
 import Foundation
 
-public enum Position: Int, CaseIterable {
+public enum Direction: Int, CaseIterable, Codable {
     case north = 0, east, south, west
     
     public init?(from: String) {
@@ -20,24 +20,28 @@ public enum Position: Int, CaseIterable {
         }
     }
 
-    public var next: Position {
-        assert(Position.north.rawValue == 0)
-        assert(Position.east.rawValue == 1)
-        assert(Position.south.rawValue == 2)
-        assert(Position.west.rawValue == 3)
-        return Position(rawValue: (self.rawValue + 1) % 4)!
+    public static func dealer(boardNumber: Int) -> Direction {
+        return self.init(rawValue: (boardNumber - 1) % 4)!
+    }
+    
+    public var next: Direction {
+        assert(Direction.north.rawValue == 0)
+        assert(Direction.east.rawValue == 1)
+        assert(Direction.south.rawValue == 2)
+        assert(Direction.west.rawValue == 3)
+        return Direction(rawValue: (self.rawValue + 1) % 4)!
     }
 
-    public var partner: Position {
-        return Position(rawValue: (self.rawValue + 2) % 4)!
+    public var partner: Direction {
+        return Direction(rawValue: (self.rawValue + 2) % 4)!
     }
 
-    public var previous: Position {
-        return Position(rawValue: (self.rawValue + 3) % 4)!
+    public var previous: Direction {
+        return Direction(rawValue: (self.rawValue + 3) % 4)!
     }
 
     
-    public var pair: Pair {
+    public var pairDirection: PairDirection {
         switch self {
         case .north, .south: return .ns
         case .east, .west:   return .ew
@@ -47,18 +51,18 @@ public enum Position: Int, CaseIterable {
 
 
 public extension String.StringInterpolation {
-    mutating func appendInterpolation(_ position: Position, style: ContractBridge.Style = .symbol) {
+    mutating func appendInterpolation(_ direction: Direction, style: ContractBridge.Style = .symbol) {
         var s: String
         switch style {
         case .symbol, .character:
-            switch position {
+            switch direction {
             case .north: s = "N"
             case .east:  s = "E"
             case .south: s = "S"
             case .west:  s = "W"
             }
         case .name:
-            switch position {
+            switch direction {
             case .north: s = "north"
             case .east:  s = "east"
             case .south: s = "south"

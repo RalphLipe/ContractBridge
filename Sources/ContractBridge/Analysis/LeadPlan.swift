@@ -10,7 +10,7 @@ import Foundation
 
 
 public struct LeadPlan: Equatable, Hashable {
-    public let position: Position
+    public let position: Direction
     public let intent: Intent
     let lead: Rank
     let minThirdHand: Rank?
@@ -23,7 +23,7 @@ public struct LeadPlan: Equatable, Hashable {
              playLow    // Low card lead toward low card
     }
     
-    init(position: Position, lead: Rank, intent: Intent, minThirdHand: Rank? = nil, maxThirdHand: Rank? = nil) {
+    init(position: Direction, lead: Rank, intent: Intent, minThirdHand: Rank? = nil, maxThirdHand: Rank? = nil) {
         self.position = position
         self.intent = intent
         self.lead = lead
@@ -34,7 +34,7 @@ public struct LeadPlan: Equatable, Hashable {
 
 
 public extension String.StringInterpolation {
-    private func ranks(rank: Rank?, position: Position, hands: Hands?, suit: Suit?, style: ContractBridge.Style) -> String? {
+    private func ranks(rank: Rank?, position: Direction, hands: Hands?, suit: Suit?, style: ContractBridge.Style) -> String? {
         guard let rank = rank else { return nil }
         return "\(rank)"    // TODO: This needs ranges of cards here...
     //    guard let hands = hands,

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum Risk: CaseIterable {
+public enum Risk: CaseIterable, Codable {
     case undoubled, doubled, redoubled
     
     init?(from: String) {

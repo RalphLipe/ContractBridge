@@ -17,13 +17,13 @@ public struct VariableRankPositions: Hashable, Equatable {
             self.count0 = count0
             self.count1 = count1
         }
-        public subscript(position: Position) -> Int {
+        public subscript(position: Direction) -> Int {
             get {
-                return position.pair.positions.0 == position ? count0 : count1
+                return position.pairDirection.directions.0 == position ? count0 : count1
             }
             set {
                 assert(newValue >= 0)
-                if position.pair.positions.0 == position {
+                if position.pairDirection.directions.0 == position {
                     count0 = newValue
                 } else {
                     count1 = newValue
@@ -40,12 +40,12 @@ public struct VariableRankPositions: Hashable, Equatable {
     
     
     public struct Bracket: Equatable, Hashable {
-        public var pair: Pair
+        public var pair: PairDirection
         public var upperBound: Rank
         public var known: PairCounts
         public var unknownCount: Int = 0
         
-        public init(pair: Pair, upperBound: Rank, known: PairCounts, unknownCount: Int) {
+        public init(pair: PairDirection, upperBound: Rank, known: PairCounts, unknownCount: Int) {
             self.pair = pair
             self.upperBound = upperBound
             self.known = known
@@ -56,11 +56,11 @@ public struct VariableRankPositions: Hashable, Equatable {
             return known.count + unknownCount
         }
         
-        public func knownCount(_ position: Position) -> Int {
-            return pair == position.pair ? known[position] : 0
+        public func knownCount(_ position: Direction) -> Int {
+            return pair == position.pairDirection ? known[position] : 0
         }
         
-        internal func combinations(for pair: Pair) -> Int {
+        internal func combinations(for pair: PairDirection) -> Int {
             return self.pair == pair ? (1 << unknownCount) : 1
         }
     }
@@ -71,13 +71,13 @@ public struct VariableRankPositions: Hashable, Equatable {
     public struct Variant: Equatable, Hashable {
         // TODO: Document this:
         public struct Bracket: Equatable, Hashable {
-            public var pair: Pair
+            public var pair: PairDirection
             public var upperBound: Rank
             public var known: PairCounts
             public var unknown: PairCounts
             public var count: Int { return known.count + unknown.count }
             
-            public init(pair: Pair, upperBound: Rank, known: PairCounts, unknown: PairCounts) {
+            public init(pair: PairDirection, upperBound: Rank, known: PairCounts, unknown: PairCounts) {
                 self.pair = pair
                 self.upperBound = upperBound
                 self.known = known
@@ -86,8 +86,8 @@ public struct VariableRankPositions: Hashable, Equatable {
                 assert(unknown.count1 >= 0)
             }
             
-            public func count(_ position: Position) -> Int {
-                return pair == position.pair ? known[position] + unknown[position] : 0
+            public func count(_ position: Direction) -> Int {
+                return pair == position.pairDirection ? known[position] + unknown[position] : 0
             }
             
             var variableBracket: VariableRankPositions.Bracket {
@@ -106,12 +106,12 @@ public struct VariableRankPositions: Hashable, Equatable {
                 return (r == 0 || r == n) ? 1 : factorial(n) / (factorial(r) * factorial(n - r))
             }
             
-            internal func combinations(for pair: Pair) -> Int {
+            internal func combinations(for pair: PairDirection) -> Int {
                 return self.pair == pair ? combinations(n: unknown.count, r: unknown.count0) : 1
             }
             
-            internal mutating func play(_ rank: Rank, from position: Position) {
-                if pair != position.pair { fatalError() }
+            internal mutating func play(_ rank: Rank, from position: Direction) {
+                if pair != position.pairDirection { fatalError() }
                 if known[position] > 0 {
                     known[position] -= 1
                 } else {
@@ -127,8 +127,8 @@ public struct VariableRankPositions: Hashable, Equatable {
                 unknown += other.unknown
             }
             
-            internal mutating func setAllKnown(in position: Position) {
-                if pair == position.pair {
+            internal mutating func setAllKnown(in position: Direction) {
+                if pair == position.pairDirection {
                     known[position] += unknown[position]
                     unknown[position] = 0
                     assert(count(position.partner) == 0)
@@ -138,13 +138,13 @@ public struct VariableRankPositions: Hashable, Equatable {
 
         
         public var brackets: [Variant.Bracket]
-        public let variablePair: Pair
+        public let variablePair: PairDirection
         
-        public func ranks(for position: Position) -> RankSet {
+        public func ranks(for position: Direction) -> RankSet {
             return brackets.reduce(into: RankSet()) { if $1.count(position) > 0 { $0.insert($1.upperBound) }}
         }
         
-        public func holdsRanks(_ pair: Pair) -> Bool {
+        public func holdsRanks(_ pair: PairDirection) -> Bool {
             for bracket in brackets {
                 if bracket.pair == pair && bracket.count > 0 {
                     return true
@@ -161,7 +161,7 @@ public struct VariableRankPositions: Hashable, Equatable {
             return brackets.firstIndex(where: {$0.upperBound >= rank} )!
         }
 
-        private mutating func play(_ rank: Rank?, from position: Position) {
+        private mutating func play(_ rank: Rank?, from position: Direction) {
             if let rank = rank {
                 brackets[index(rank)].play(rank, from: position)
             }
@@ -189,17 +189,17 @@ public struct VariableRankPositions: Hashable, Equatable {
             assert(brackets.count == 0 || brackets.last!.upperBound == .ace)
         }
         
-        private mutating func allKnown(in position: Position) {
+        private mutating func allKnown(in position: Direction) {
             for i in brackets.indices {
                 brackets[i].setAllKnown(in: position)
             }
         }
         
-        private mutating func internalPlay(leadPosition: Position, play: PositionRanks, finesseInferences: Bool) {
+        private mutating func internalPlay(leadPosition: Direction, play: PositionRanks, finesseInferences: Bool) {
             guard let winning = play.winning else { fatalError() }
             // First we will mark any inticated ranks as know for the variable pair.
             // If one side or the other shows out then all ranks are known to be in the partner position
-            let varPos = variablePair.positions
+            let varPos = variablePair.directions
             if play[varPos.0] == nil {
                 if play[varPos.1] != nil {
                     allKnown(in: varPos.1)
@@ -221,7 +221,7 @@ public struct VariableRankPositions: Hashable, Equatable {
                         }
                     }
                     // It is possible that a range is marked by a double finesse...  If
-                } else if winning.position.pair == leadPosition.pair  {
+                } else if winning.position.pairDirection == leadPosition.pairDirection  {
                     // TODO: Really?  Is this logic right?  Could both sides duck?  Right now only 2nd seat ducks
                     // Since the lead pair won, then any higher ranks than the winning one must be in 2nd position
                     if winning.rank < .ace {
@@ -236,36 +236,36 @@ public struct VariableRankPositions: Hashable, Equatable {
                     // TODO: This is incomplete since it could be won by 3rd hand. More issues with that though, since
                     // play could be a finesse.  Need to think this through.  Perhaps pass lead into this method?
                     if winning.position == leadPosition {
-                        let opponents = leadPosition.pair.opponents.positions
+                        let opponents = leadPosition.pairDirection.opponents.directions
                         markLowerRanks(opponents.0, play[opponents.0])
                         markLowerRanks(opponents.1, play[opponents.1])
                     }
                 }
             }
-            Position.allCases.forEach { self.play(play[$0], from: $0) }
+            Direction.allCases.forEach { self.play(play[$0], from: $0) }
             compact()
         }
         
-        private mutating func markLowerRanks(_ position: Position, _ played: Rank?) {
+        private mutating func markLowerRanks(_ position: Direction, _ played: Rank?) {
             if let rank = played {
                 var i = index(rank)
                 while i > 0 {
                     i -= 1
-                    if brackets[i].pair == position.pair {
+                    if brackets[i].pair == position.pairDirection {
                         brackets[i].setAllKnown(in: position.partner)
                     }
                 }
             }
         }
         
-        public func play(leadPosition: Position, play: PositionRanks, finesseInferences: Bool = true) -> Variant {
+        public func play(leadPosition: Direction, play: PositionRanks, finesseInferences: Bool = true) -> Variant {
             var next = self
             next.internalPlay(leadPosition: leadPosition, play: play, finesseInferences: finesseInferences)
             return next
         }
         
         
-        internal func fillRanks(in layout: inout RankPositions, count: Int, position: Position, rank: inout Rank) -> Void {
+        internal func fillRanks(in layout: inout RankPositions, count: Int, position: Direction, rank: inout Rank) -> Void {
             var c = count
             while c > 0 {
                 layout[rank] = position
@@ -282,7 +282,7 @@ public struct VariableRankPositions: Hashable, Equatable {
         public var representativeLayout: RankPositions {
             var result = RankPositions()
             for bracket in brackets {
-                let positions = bracket.pair.positions
+                let positions = bracket.pair.directions
                 var rank = bracket.upperBound
                 fillRanks(in: &result, count: bracket.count(positions.0), position: positions.0, rank: &rank)
                 fillRanks(in: &result, count: bracket.count(positions.1), position: positions.1, rank: &rank)
@@ -290,7 +290,7 @@ public struct VariableRankPositions: Hashable, Equatable {
             return result
         }
         
-        public func upperBound(rank: Rank, pair: Pair) -> Rank {
+        public func upperBound(rank: Rank, pair: PairDirection) -> Rank {
             return brackets[index(rank)].upperBound
         }
         
@@ -304,7 +304,7 @@ public struct VariableRankPositions: Hashable, Equatable {
 
     
     public var brackets: [Bracket] = []
-    public let variablePair: Pair
+    public let variablePair: PairDirection
     
     public static func == (lhs: VariableRankPositions, rhs: VariableRankPositions) -> Bool {
         return lhs.brackets == rhs.brackets && lhs.variablePair == rhs.variablePair
@@ -315,9 +315,9 @@ public struct VariableRankPositions: Hashable, Equatable {
         hasher.combine(brackets)
     }
     
-    private func pair(for rank: Rank, in holding: RankPositions) -> Pair {
+    private func pair(for rank: Rank, in holding: RankPositions) -> PairDirection {
         if let position = holding[rank] {
-            return position.pair
+            return position.pairDirection
         } else {
             return variablePair
         }
@@ -328,8 +328,8 @@ public struct VariableRankPositions: Hashable, Equatable {
         self.variablePair = variant.variablePair
     }
     
-    public func ranks(for position: Position) -> RankSet {
-        assert(variablePair != position.pair)
+    public func ranks(for position: Direction) -> RankSet {
+        assert(variablePair != position.pairDirection)
         return brackets.reduce(into: RankSet()) { if $1.knownCount(position) > 0 { $0.insert($1.upperBound) }}
     }
 
@@ -339,12 +339,12 @@ public struct VariableRankPositions: Hashable, Equatable {
     }
 
     
-    public func count(for position: Position) -> Int {
-        assert(variablePair != position.pair)
+    public func count(for position: Direction) -> Int {
+        assert(variablePair != position.pairDirection)
         return brackets.reduce(0) { return $0 + $1.knownCount(position) }
     }
     
-    public init(partialHolding: RankPositions, variablePair: Pair = .ew) {
+    public init(partialHolding: RankPositions, variablePair: PairDirection = .ew) {
         self.variablePair = variablePair
         
         var rank = Rank.two

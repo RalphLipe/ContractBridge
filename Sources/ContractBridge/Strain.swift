@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum Strain: Int, Comparable, CaseIterable {
+public enum Strain: Int, Comparable, CaseIterable, Codable {
     case clubs = 0, diamonds, hearts, spades, noTrump
     
     public init(suit: Suit?) {

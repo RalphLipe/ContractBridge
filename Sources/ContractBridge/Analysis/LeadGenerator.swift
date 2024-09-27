@@ -9,14 +9,14 @@ import Foundation
 
 public struct RangeChoices {
     // TODO: Is this "position" a good idea?
-    public let position: Position
+    public let position: Direction
     public let all: [Rank]
     public let win: Rank?
     public let mid: [Rank]?
     public let low: Rank?
     public let losingRank: Rank
     
-    init(_ ranks: [Rank], position: Position, loserUpperBound: Rank) {
+    init(_ ranks: [Rank], position: Direction, loserUpperBound: Rank) {
         self.losingRank = loserUpperBound
         self.all = ranks
         self.position = position
@@ -28,7 +28,7 @@ public struct RangeChoices {
         self.mid = r.count > 0 ? r : nil
 
     }
-    init(holding: VariableRankPositions, position: Position) {
+    init(holding: VariableRankPositions, position: Direction) {
         // TODO: Maybe just use rank set directly instead of arrays here.  But later on...
         self.init(Array<Rank>(holding.ranks(for: position)), position: position, loserUpperBound: holding.loserUpperBound)
     }
@@ -41,28 +41,28 @@ public enum LeadOption {
 
 public struct LeadGenerator {
     private let holding: VariableRankPositions
-    private let pair: Pair
+    private let pair: PairDirection
     private var leads: [LeadPlan]
     private let option: LeadOption
 
-    private init(holding: VariableRankPositions, pair: Pair, option: LeadOption) {
+    private init(holding: VariableRankPositions, pair: PairDirection, option: LeadOption) {
         self.holding = holding
         self.pair = pair
         self.leads = []
         self.option = option
     }
 
-    public static func generateLeads(holding: VariableRankPositions, pair: Pair, option: LeadOption) -> [LeadPlan] {
+    public static func generateLeads(holding: VariableRankPositions, pair: PairDirection, option: LeadOption) -> [LeadPlan] {
         var generator = LeadGenerator(holding: holding, pair: pair, option: option)
         generator.generateLeads()
         return generator.leads
     }
 
     private mutating func generateLeads() {
-        let choices0 = RangeChoices(holding: holding, position: pair.positions.0)
-        let choices1 = RangeChoices(holding: holding, position: pair.positions.1)
+        let choices0 = RangeChoices(holding: holding, position: pair.directions.0)
+        let choices1 = RangeChoices(holding: holding, position: pair.directions.1)
         if option == .leadHigh {
-            let shortSide0 = holding.count(for: pair.positions.0) < holding.count(for: pair.positions.1)
+            let shortSide0 = holding.count(for: pair.directions.0) < holding.count(for: pair.directions.1)
             if (!generateHighLead(choices: choices0, partnerChoices: choices1, isShortSide: shortSide0)) {
                 _ = generateHighLead(choices: choices1, partnerChoices: choices0, isShortSide: !shortSide0)
             }
@@ -129,7 +129,7 @@ public struct LeadGenerator {
          */
     }
     
-    private mutating func generateFinesses(position: Position, leadRank: Rank, partnerChoices: RangeChoices)  {
+    private mutating func generateFinesses(position: Direction, leadRank: Rank, partnerChoices: RangeChoices)  {
         for i in partnerChoices.all.indices {
             let finesseRank = partnerChoices.all[i]
             if leadRank < finesseRank && finesseRank < .ace {
@@ -141,7 +141,7 @@ public struct LeadGenerator {
         }
     }
 
-    private mutating func generateRides(position: Position, leadRank: Rank, partnerChoices: RangeChoices)  {
+    private mutating func generateRides(position: Direction, leadRank: Rank, partnerChoices: RangeChoices)  {
         var didSomething = false
         for i in partnerChoices.all.indices {
             if leadRank < partnerChoices.all[i] {
