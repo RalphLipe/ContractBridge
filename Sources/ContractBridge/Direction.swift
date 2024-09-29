@@ -20,6 +20,24 @@ public enum Direction: Int, CaseIterable, Codable {
         }
     }
 
+    // TODO: This code is duplicated between Direction and PairDirection and Vulnerable.
+    // I hate this but can't figure out a workaround using protocols since Codable provides
+    // default implementations that have to be overridden.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringValue = try container.decode(String.self)
+        guard let value = Self(from: stringValue) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot initialize \(Self.self) from invalid String value \(stringValue)")
+        }
+        self = value
+    }
+ 
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode("\(self, style: .character)")
+    }
+    // TODO: End of duplicate code
+    
     public static func dealer(boardNumber: Int) -> Direction {
         return self.init(rawValue: (boardNumber - 1) % 4)!
     }

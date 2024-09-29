@@ -11,22 +11,14 @@ import Foundation
 // on board numbers.
 public enum Vulnerable: Int, Codable {
     case none = 0, ns, ew, all
-}
-
-public extension Vulnerable {
-    func isVul(_ direction: Direction ) -> Bool {
+    
+    public func isVul(_ direction: Direction ) -> Bool {
         return isVul(direction.pairDirection)
     }
-    func isVul(_ pairDirection: PairDirection) -> Bool {
-        if self == .none { return false }
-        if self == .all { return true }
-        if self == .ns { return pairDirection == .ns }
-        assert(self == .ew)
-        return pairDirection == .ew
+    public func isVul(_ pair: PairDirection) -> Bool {
+        return (self == .all) || (self == .ns && pair == .ns) || (self == .ew && pair == .ew)
     }
-}
-
-public extension Vulnerable {
+    
     init?(from: String) {
         switch (from.lowercased()) {
             case "none", "love", "-":   self = Vulnerable.none
@@ -36,6 +28,23 @@ public extension Vulnerable {
             default: return nil
         }
     }
+    
+    // TODO: DUPLICATED CODE!  TRY TO GET RID OF THIS!
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringValue = try container.decode(String.self)
+        guard let value = Self(from: stringValue) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot initialize \(Self.self) from invalid String value \(stringValue)")
+        }
+        self = value
+    }
+ 
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode("\(self, style: .character)")
+    }
+    // TODO: END OF DUPLICATED CODE
+    
     
     init(boardNumber: Int) {
         let vulOffset = (boardNumber - 1) / 4
@@ -55,10 +64,6 @@ public extension Vulnerable {
 
 public extension String.StringInterpolation {
     mutating func appendInterpolation(_ vulnerable: Vulnerable, style: ContractBridge.Style = .symbol) {
-        if style == .name {
-            appendLiteral(vulnerable.shortDescription)
-        } else {
-            appendLiteral(vulnerable.shortDescription)
-        }
+        appendLiteral(vulnerable.shortDescription)
     }
 }
