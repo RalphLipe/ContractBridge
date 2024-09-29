@@ -69,7 +69,7 @@ class VariableRankPositionsTest: XCTestCase {
     
     func playCombo(_ v: VariableRankPositions.Variant) {
         var play = PositionRanks()
-        for p in Position.allCases {
+        for p in Direction.allCases {
             let ranks = v.ranks(for: p)
             if let r = ranks.max() {
                 play[p] = r

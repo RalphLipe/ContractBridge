@@ -5,7 +5,13 @@
 //  Created by Ralph Lipe on 3/9/22.
 //
 
-public struct Contract {
+public enum ContractError: Error {
+    case invalidLevel
+    case invalidStrain
+    case invalidRisk
+}
+
+public struct Contract: Codable {
     public let level: Int
     public let strain: Strain
     public let risk: Risk
@@ -24,28 +30,42 @@ public struct Contract {
         self.risk = .undoubled
     }
     
-    public init?(from: String) {
+    public init(from: Decoder) throws {
+        let decoder = try from.singleValueContainer()
+        let s = try decoder.decode(String.self)
+        try self.init(from: s)
+    }
+    
+    public init(from: String) throws {
         var s = from.lowercased()
         if s == "pass" {
             self.init()
             return
         }
-        if s.count < 2 { return nil }
-        guard let level = Int(String(s.first!)), level > 0 && level <= 7 else { return nil }
+        if s.count < 2 { throw ContractError.invalidLevel }
+        guard let level = Int(String(s.first!)), level > 0 && level <= 7 else { throw ContractError.invalidLevel }
         s.removeFirst()
         var strain: Strain? = nil
         if s.starts(with: "nt") {
             strain = .noTrump
             s.removeFirst(2)
         } else {
-            guard let suit = Suit(from: String(s.first!)) else { return nil }
+            guard let suit = Suit(from: String(s.first!)) else { throw ContractError.invalidStrain }
             strain = Strain(suit: suit)
             s.removeFirst()
         }
-        guard let risk = Risk(from: s), let strain = strain else { return nil }
+        guard let risk = Risk(from: s), let strain = strain else { throw ContractError.invalidRisk }
         self.init(level: level, strain: strain, risk: risk)
     }
 
+    public func encode(to: Encoder) throws {
+        var encoder = to.singleValueContainer()
+        try encoder.encode(self.serialize())
+    }
+    
+    public func serialize() -> String {
+        return "\(self, style: .character)"
+    }
     
     public func score(isVulnerable: Bool, tricksTaken: Int) -> Int {
         if isPassedOut { return 0 }

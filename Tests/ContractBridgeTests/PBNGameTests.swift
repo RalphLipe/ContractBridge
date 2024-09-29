@@ -61,9 +61,9 @@ class PBNGameTests: XCTestCase {
             XCTAssertEqual(games[4].board, 5)
             XCTAssertEqual(games[4].dealer, .north)
             if let vul = games[4].vulnerable {
-                XCTAssertTrue(vul.contains(.ns))
-                XCTAssertTrue(vul.contains(.north))
-                XCTAssertFalse(vul.contains(.west))
+                XCTAssertTrue(vul.isVul(.ns))
+                XCTAssertTrue(vul.isVul(.north))
+                XCTAssertFalse(vul.isVul(.west))
             } else {
                 XCTFail("Vulnerable is nil for board 5")
             }

@@ -11,28 +11,29 @@ import ContractBridge
 class ContractTests: XCTestCase {
 
     func testInit() throws {
-        let threeNT = Contract(from: "3NT")!
+        let threeNT = try Contract(from: "3NT")
         XCTAssertEqual(threeNT.level, 3)
         XCTAssertEqual(threeNT.strain, .noTrump)
         XCTAssertEqual(threeNT.risk, .undoubled)
+        XCTAssertEqual(threeNT.serialize(), "3NT")
         
-        let zeroLevel = Contract(from: "0NT")
-        XCTAssertNil(zeroLevel)
+        XCTAssertThrowsError(try Contract(from: "0NT"))
+        XCTAssertThrowsError(try Contract(from: "8NT"))
+        XCTAssertThrowsError(try Contract(from: "afdlkjflasjglasjg"))
         
-        let eightLevel = Contract(from: "8NT")
-        XCTAssertNil(eightLevel)
         
-        let fourSpadesX = Contract(from: "4SX")!
+        let fourSpadesX = try Contract(from: "4SX")
         XCTAssertEqual(fourSpadesX.level, 4)
         XCTAssertEqual(fourSpadesX.strain, .spades)
         XCTAssertEqual(fourSpadesX.risk, .doubled)
+        XCTAssertEqual(fourSpadesX.serialize(), "4SX")
 
-        let sevenDiamondsXX = Contract(from: "7dxx")!
+        let sevenDiamondsXX = try Contract(from: "7dxx")
         XCTAssertEqual(sevenDiamondsXX.level, 7)
         XCTAssertEqual(sevenDiamondsXX.strain, .diamonds)
         XCTAssertEqual(sevenDiamondsXX.risk, .redoubled)
 
-        let threeNTXX = Contract(from: "3nTxX")!
+        let threeNTXX = try Contract(from: "3nTxX")
         XCTAssertEqual(threeNTXX.level, 3)
         XCTAssertEqual(threeNTXX.strain, .noTrump)
         XCTAssertEqual(threeNTXX.risk, .redoubled)
@@ -43,15 +44,15 @@ class ContractTests: XCTestCase {
         XCTAssertEqual(contract.score(isVulnerable: false, tricksTaken: 10), 420)
         XCTAssertEqual(contract.score(isVulnerable: true, tricksTaken: 10), 620)
         XCTAssertEqual(contract.score(isVulnerable: false, tricksTaken: 9), -50)
-        XCTAssertEqual(contract.score(isVulnerable: Vulnerable.all.contains(.ns), tricksTaken: 8), -200)
+        XCTAssertEqual(contract.score(isVulnerable: Vulnerable.all.isVul(.ns), tricksTaken: 8), -200)
         
         let slam = Contract(level: 6, strain: .spades, risk: .undoubled)
-        XCTAssertEqual(slam.score(isVulnerable: Vulnerable.ew.contains(.east), tricksTaken: 12), 1430)
+        XCTAssertEqual(slam.score(isVulnerable: Vulnerable.ew.isVul(.east), tricksTaken: 12), 1430)
         XCTAssertEqual(slam.score(isVulnerable: true, tricksTaken: 10), -200)
         
         let grandSlam = Contract(level: 7, strain: .noTrump, risk: .doubled)
         XCTAssertEqual(grandSlam.score(isVulnerable: true, tricksTaken: 13), 2490)
-        XCTAssertEqual(grandSlam.score(isVulnerable: Vulnerable.ew.contains(.south), tricksTaken: 13), 1790)
+        XCTAssertEqual(grandSlam.score(isVulnerable: Vulnerable.ew.isVul(.south), tricksTaken: 13), 1790)
         XCTAssertEqual(grandSlam.score(isVulnerable: false, tricksTaken: 10), -500)
         XCTAssertEqual(grandSlam.score(isVulnerable: true, tricksTaken: 10), -800)
         XCTAssertEqual(grandSlam.score(isVulnerable: true, tricksTaken: 0), -3800)

@@ -10,25 +10,25 @@ import Foundation
 
 public enum TrickError: Error {
     case mustFollowSuit(leadSuit: Suit)
-    case playOutOfTurn(nextToAct: Position)
+    case playOutOfTurn(nextToAct: Direction)
     case trickComplete
     case cantUndoLead
 }
 
 public struct Trick {
-    public let leadPosition: Position
+    public let leadPosition: Direction
     public let strain: Strain
     
-    private(set) public var cards: Dictionary<Position, Card>
-    private(set) public var nextToAct: Position
-    private(set) public var winningPosition: Position
+    private(set) public var cards: Dictionary<Direction, Card>
+    private(set) public var nextToAct: Direction
+    private(set) public var winningPosition: Direction
     
-    public var isComplete: Bool { cards.count == Position.allCases.count }
+    public var isComplete: Bool { cards.count == Direction.allCases.count }
     public var leadSuit: Suit { cards[leadPosition]!.suit }
     public var winningCard: Card { cards[winningPosition]! }
     public var isTrumped: Bool { return leadSuit != strain.suit && winningCard.suit == strain.suit }
     
-    public init(lead: Card, position: Position, strain: Strain) {
+    public init(lead: Card, position: Direction, strain: Strain) {
         self.cards = [position: lead]
         self.leadPosition = position
         self.winningPosition = position
@@ -36,7 +36,7 @@ public struct Trick {
         self.strain = strain
     }
     
-    public mutating func play(card: Card, position: Position, remainingHand: Set<Card>? = nil) throws {
+    public mutating func play(card: Card, position: Direction, remainingHand: Set<Card>? = nil) throws {
         if isComplete {
             throw TrickError.trickComplete
         }

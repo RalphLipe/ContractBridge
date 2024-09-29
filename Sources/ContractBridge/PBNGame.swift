@@ -46,7 +46,7 @@ extension String: Initializable {}
 
 
 public struct PBNGame {
-    public init(event: String? = nil, site: String? = nil, date: Date? = nil, board: Int? = nil, players: [Position : String] = [:], dealer: Position? = nil, vulnerable: Vulnerable? = nil, deal: Deal? = nil, scoring: String? = nil, declarer: Position? = nil, contract: Contract? = nil, result: Int? = nil, doubleDummyTricks: DoubleDummyTricks? = nil) {
+    public init(event: String? = nil, site: String? = nil, date: Date? = nil, board: Int? = nil, players: [Direction : String] = [:], dealer: Direction? = nil, vulnerable: Vulnerable? = nil, deal: Deal? = nil, scoring: String? = nil, declarer: Direction? = nil, contract: Contract? = nil, result: Int? = nil, doubleDummyTricks: DoubleDummyTricks? = nil) {
         self.event = event
         self.site = site
         self.date = date
@@ -67,12 +67,12 @@ public struct PBNGame {
     public var site: String? = nil
     public var date: Date? = nil
     public var board: Int? = nil
-    public var players: [Position: String] = [:]
-    public var dealer: Position? = nil
+    public var players: [Direction: String] = [:]
+    public var dealer: Direction? = nil
     public var vulnerable: Vulnerable? = nil
     public var deal: Deal? = nil
     public var scoring: String? = nil // TODO:  Need formal scoring method
-    public var declarer: Position? = nil
+    public var declarer: Direction? = nil
     public var contract: Contract? = nil
     public var result: Int? = nil
 
@@ -88,9 +88,9 @@ public struct PBNGame {
         case "board":
             board = Int(value)
         case "north", "south", "east", "west":
-            players[Position(from: key)!] = value
+            players[Direction(from: key)!] = value
         case "dealer":
-            dealer = Position(from: value)
+            dealer = Direction(from: value)
         case "vulnerable":
             vulnerable = Vulnerable(from: value)
         case "deal":
@@ -98,9 +98,9 @@ public struct PBNGame {
         case "scoring":
             scoring = value
         case "declarer":
-            declarer = Position(from: value)
+            declarer = Direction(from: value)
         case "contract":
-            contract = Contract(from: value)
+            contract = try? Contract(from: value)
         case "result":
             result = Int(value)
         case "doubledummytricks":

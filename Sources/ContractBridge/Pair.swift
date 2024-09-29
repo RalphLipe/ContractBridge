@@ -1,29 +1,23 @@
 //
-//  PairPosition.swift
-//  
+//  Pair.swift
+//  ContractBridge
 //
-//  Created by Ralph Lipe on 3/9/22.
+//  Created by Ralph Lipe on 9/26/24.
 //
 
 import Foundation
 
-
-public enum Pair: Int, CaseIterable {
-    case ns = 0, ew
-    public var positions: (Position, Position)  {
-        switch self {
-        case .ns: return (.north, .south)
-        case .ew: return (.east, .west)
-        }
+public struct Pair: Codable {
+    public let number: Int
+    public let direction: PairDirection
+    public let player0: String
+    public let player1: String
+    
+    public init(number: Int, direction: PairDirection, player0: String, player1: String) {
+        self.number = number
+        self.direction = direction
+        self.player0 = player0
+        self.player1 = player1
     }
-    public var opponents: Pair {
-        return self == .ns ? .ew : .ns
-    }
-}
- 
-public extension String.StringInterpolation {
-    mutating func appendInterpolation(_ pair: Pair, style: ContractBridge.Style = .symbol) {
-        let positions = pair.positions
-        appendLiteral("\(positions.0, style: style)/\(positions.1, style: style)")
-    }
+    
 }

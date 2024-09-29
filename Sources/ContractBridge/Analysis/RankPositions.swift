@@ -38,14 +38,14 @@ public struct RankPositions : Equatable, Hashable {
      
     public init(hands: Hands, suit: Suit) {
         self.init()
-        for position in Position.allCases {
+        for position in Direction.allCases {
             self[position] = RankSet(hands[position], suit: suit)
         }
     }
     
     /// Copies the contents of a dictionary into a RankPositions structure.
     /// - Parameter dictionary: A dictionary containing positions of ranks
-    public init(_ dictionary: [Rank: Position]) {
+    public init(_ dictionary: [Rank: Direction]) {
         self.init()
         dictionary.forEach {
             rank, position in
@@ -55,10 +55,10 @@ public struct RankPositions : Equatable, Hashable {
     
     /// Accesses the position for the specified rank.
     /// - Parameter rank: The rank of the position element to access
-    public subscript(rank: Rank) -> Position? {
+    public subscript(rank: Rank) -> Direction? {
         get {
             let masked = Int((positions >> (rank.rawValue * 4)) & 0b1111)
-            return Position(rawValue: masked)
+            return Direction(rawValue: masked)
         }
         set {
             let rawValue: UInt64 = newValue == nil ? 4 : UInt64(newValue!.rawValue)
@@ -68,7 +68,7 @@ public struct RankPositions : Equatable, Hashable {
     }
     
     //TODO: DOcument and test
-    public subscript(position: Position?) -> RankSet {
+    public subscript(position: Direction?) -> RankSet {
         get {
             var ranks = RankSet()
             Rank.allCases.forEach { if self[$0] == position { ranks.insert($0) } }
@@ -86,7 +86,7 @@ public struct RankPositions : Equatable, Hashable {
         return result
     }
     
-    public mutating func reassignRanks(from: Position?, to: Position?) {
+    public mutating func reassignRanks(from: Direction?, to: Direction?) {
         for rank in Rank.allCases {
             if self[rank] == from {
                 self[rank] = to
@@ -112,8 +112,8 @@ public struct RankPositions : Equatable, Hashable {
         return positions
     }
     
-    private mutating func moveEqualRanks(pair: Pair, random: Bool = false) {
-        let positions = pair.positions
+    private mutating func moveEqualRanks(pair: PairDirection, random: Bool = false) {
+        let positions = pair.directions
         let ranks0 = self[positions.0]
         let ranks1 = self[positions.1]
         var ranges = Set<RankRange>(playableRanges(for: positions.0))
@@ -163,14 +163,14 @@ public struct RankPositions : Equatable, Hashable {
     /// ranges of J...K since the ranks are now equivalent.
     /// - Parameter position: <#_position description#>
     /// - Returns: Array of `ClosedRange<Rank>` which contain one or more ranks for the
-    public func playableRanges(for position: Position) -> [ClosedRange<Rank>] {
+    public func playableRanges(for position: Direction) -> [ClosedRange<Rank>] {
         var ranges: [ClosedRange<Rank>] = []
         var rangeLower: Rank? = nil
         var rangeUpper: Rank? = nil
         var positionHasRanks = false
-        let positionPair = position.pair
+        let positionPair = position.pairDirection
         for rank in Rank.two...Rank.ace {
-            let rankPair = self[rank]?.pair
+            let rankPair = self[rank]?.pairDirection
             if rankPair == nil || rankPair == positionPair {
                 if rangeLower == nil { rangeLower = rank }
                 rangeUpper = rank
@@ -195,7 +195,7 @@ public struct RankPositions : Equatable, Hashable {
     ///   - range:Range to limit search to
     ///   - position: Position rank is assigned to
     /// - Returns: Minimum rank held by `position` within `range`
-    public func min(in range: ClosedRange<Rank>, for position: Position) -> Rank {
+    public func min(in range: ClosedRange<Rank>, for position: Direction) -> Rank {
         for rank in range {
             if self[rank] == position { return rank }
         }
@@ -207,14 +207,14 @@ public struct RankPositions : Equatable, Hashable {
     ///   - range: Range to limit search to
     ///   - position: Position to play rank from
     /// - Returns: Minimum rank for `position`.  The rank will now contain a nil position`
-    public mutating func play(_ range: ClosedRange<Rank>, from position: Position) -> Rank {
+    public mutating func play(_ range: ClosedRange<Rank>, from position: Direction) -> Rank {
         let rank = min(in: range, for: position)
         self[rank] = nil
         return rank
     }
         
     
-    public func count(for position: Position) -> Int {
+    public func count(for position: Direction) -> Int {
         // TODO: Improve this...
         var c = 0
         for rank in Rank.allCases {
@@ -224,13 +224,13 @@ public struct RankPositions : Equatable, Hashable {
     }
     
     
-    public func count(for pair: Pair) -> Int {
-        let positions = pair.positions
+    public func count(for pair: PairDirection) -> Int {
+        let positions = pair.directions
         return count(for: positions.0) + count(for: positions.1)
     }
     
     // TODO:  Document and test
-    public func hasRanks(_ position: Position) -> Bool {
+    public func hasRanks(_ position: Direction) -> Bool {
         for rank in Rank.allCases {
             if self[rank] == position { return true }
         }
@@ -238,8 +238,8 @@ public struct RankPositions : Equatable, Hashable {
     }
     
     // TODO:  Document and test
-    public func hasRanks(_ pair: Pair) -> Bool {
-        let positions = pair.positions
+    public func hasRanks(_ pair: PairDirection) -> Bool {
+        let positions = pair.directions
         return hasRanks(positions.0) || hasRanks(positions.1)
     }
     
@@ -454,7 +454,7 @@ for position in Position.allCases {
 
 public extension String.StringInterpolation {
     mutating func appendInterpolation(_ rankPositions: RankPositions, style: ContractBridge.Style = .symbol) {
-        appendLiteral(Position.allCases.map {
+        appendLiteral(Direction.allCases.map {
             "\($0, style: style): \(rankPositions[$0], style: style)" }.joined(separator: " "))
         
     }

@@ -47,7 +47,7 @@ public class StatsCache {
 
 public class StatisticalAnalysis {
     public let holding: VariableRankPositions
-    public let leadPair: Pair
+    public let leadPair: PairDirection
     public let leadOption: LeadOption
     public let requiredTricks: Int
     public let bestStats: LeadStatistics
@@ -57,7 +57,7 @@ public class StatisticalAnalysis {
     private var bestLeadIndex: Array<LeadPlan>.Index
 
     
-    public static func analyze(holding: VariableRankPositions, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption = .considerAll, cache: StatsCache?) -> StatisticalAnalysis {
+    public static func analyze(holding: VariableRankPositions, leadPair: PairDirection, requiredTricks: Int, leadOption: LeadOption = .considerAll, cache: StatsCache?) -> StatisticalAnalysis {
         let key = StatsCacheKey(holding: holding, requiredTricks: requiredTricks, leadOption: leadOption)
         if let cache = cache {
          //   print("CACHE HIT")
@@ -69,7 +69,7 @@ public class StatisticalAnalysis {
         return sa
     }
     
-    internal init(holding: VariableRankPositions, leadPair: Pair, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache) {
+    internal init(holding: VariableRankPositions, leadPair: PairDirection, requiredTricks: Int, leadOption: LeadOption, cache: StatsCache) {
         self.holding = holding
         self.variants = holding.variants    // TODO: Is this so expensive it should be a function, not a property??
         self.leadPair = leadPair
