@@ -60,10 +60,7 @@ public enum Direction: Int, CaseIterable, Codable {
 
     
     public var pairDirection: PairDirection {
-        switch self {
-        case .north, .south: return .ns
-        case .east, .west:   return .ew
-        }
+        return (self == .north || self == .south) ? .ns : .ew
     }
 }
 
